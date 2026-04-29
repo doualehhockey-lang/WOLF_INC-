@@ -16,10 +16,34 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, readFile, unlink, mkdir } from 'fs/promises';
 import { resolve } from 'path';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import { config }  from './env.js';
 
 const execFileAsync = promisify(execFile);
+
+// ═══════════════════════════════════════════════════════════
+// TTS CACHE — évite de re-synthétiser les mêmes phrases
+// ═══════════════════════════════════════════════════════════
+
+/** @type {Map<string, {buffer: Buffer, ext: string, mimeType: string}>} */
+const _ttsCache = new Map();
+const TTS_CACHE_MAX = 100; // max entrées en mémoire
+
+function _cacheKey(text, provider) {
+  return createHash('md5').update(`${provider}:${text}`).digest('hex');
+}
+
+function _cacheGet(text, provider) {
+  return _ttsCache.get(_cacheKey(text, provider)) ?? null;
+}
+
+function _cacheSet(text, provider, result) {
+  if (_ttsCache.size >= TTS_CACHE_MAX) {
+    // Eviction FIFO : supprime la première entrée
+    _ttsCache.delete(_ttsCache.keys().next().value);
+  }
+  _ttsCache.set(_cacheKey(text, provider), result);
+}
 
 // ═══════════════════════════════════════════════════════════
 // PROVIDER 1 — PIPER TTS (local, gratuit)
@@ -188,6 +212,13 @@ export async function synthesize(text) {
   const safeText = text.trim().slice(0, 500);
   const provider = config.tts.provider;
 
+  // Retourne depuis le cache si disponible
+  const cached = _cacheGet(safeText, provider);
+  if (cached) {
+    console.log('[TTS] Cache hit');
+    return { ...cached, fallback: false };
+  }
+
   let buffer;
   let isAudioFmt = false; // true si MP3, false si WAV
 
@@ -212,12 +243,14 @@ export async function synthesize(text) {
         break;
     }
 
-    return {
+    const result = {
       buffer,
       ext:      isAudioFmt ? '.mp3' : '.wav',
       mimeType: isAudioFmt ? 'audio/mpeg' : 'audio/wav',
       fallback: false,
     };
+    _cacheSet(safeText, provider, { buffer, ext: result.ext, mimeType: result.mimeType });
+    return result;
 
   } catch (err) {
     console.error(`[TTS] Erreur provider "${provider}":`, err.message);
