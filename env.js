@@ -44,6 +44,8 @@ export const config = {
 
   // ── STT ──────────────────────────────────────────────────
   stt: {
+    // 'whisper' (défaut) | 'gather' (transcription Twilio native)
+    mode:           optional('STT_MODE', 'whisper'),
     // Chemin vers audioProcessor.js de TERMINATOR v7
     // Ex: ./terminator/audioProcessor.js  ou  ../terminator-v7/src/audioProcessor.js
     terminatorPath: optional('TERMINATOR_PATH', ''),
@@ -88,7 +90,7 @@ export const config = {
   // ── Claude / NLU ─────────────────────────────────────────
   claude: {
     apiKey: optional('CLAUDE_API_KEY', ''),
-    model:  optional('CLAUDE_MODEL', 'claude-2.1'),
+    model:  optional('CLAUDE_MODEL', 'claude-haiku-4-5-20251001'),
     endpoint: optional('CLAUDE_ENDPOINT', 'https://api.anthropic.com/v1/complete'),
   },
 

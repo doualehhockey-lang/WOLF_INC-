@@ -80,6 +80,7 @@ export function getSession(callSid) {
       callSid,
       turns:          [],
       lastActivity:   Date.now(),
+      lang:           'fr',   // detected language — 'fr' or 'en'
       pendingIntent:  null,
       pendingDate:    null,
       pendingTime:    null,
@@ -196,6 +197,25 @@ export function detectShortAnswer(text) {
   if (YES.some(w => s === w || s.startsWith(w + ' '))) return 'confirm';
   if (NO.some(w  => s === w || s.startsWith(w + ' '))) return 'deny';
   return null;
+}
+
+/**
+ * Set the detected language for a session.
+ * @param {string} callSid
+ * @param {'fr'|'en'} lang
+ */
+export function setLang(callSid, lang) {
+  const session = getSession(callSid);
+  session.lang = lang;
+}
+
+/**
+ * Get the detected language for a session.
+ * @param {string} callSid
+ * @returns {'fr'|'en'}
+ */
+export function getLang(callSid) {
+  return _store.get(callSid)?.lang ?? 'fr';
 }
 
 /**

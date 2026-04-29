@@ -2,18 +2,33 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { resolve } from 'path';
 import { EngineTwilio } from './src/ENGINE/Engine.js';
-import { autoReply, getTones }        from './responder.js';
+import { prewarmGreeting } from './twilio.js';
+import { autoReply, getTones } from './responder.js';
+import { config } from './env.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = config.port || 3000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  // Twilio needs to fetch audio files — allow it
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(cors());
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve generated TTS audio files to Twilio
+app.use('/audio', express.static(resolve(config.audioDir), {
+  maxAge: '1h',
+  setHeaders(res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  },
+}));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -66,8 +81,11 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Engine server running on port ${PORT}`);
   console.log(`📞 Twilio routes active at /twilio`);
   console.log(`💚 Health check at /health`);
+
+  // Pre-synthesize greeting so first caller hears TTS quality, not Twilio robot voice
+  await prewarmGreeting();
 });
