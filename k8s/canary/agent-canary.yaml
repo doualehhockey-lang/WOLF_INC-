@@ -1,0 +1,202 @@
+# k8s/canary/agent-canary.yaml — Canary Deployment + Ingress for wolf-engine.
+#
+# Strategy:
+#   1. CI/CD deploys this file with the new image tag (version=canary label).
+#   2. NGINX Ingress routes 10% of traffic here via the canary annotation.
+#   3. Smoke tests run against $CANARY_URL (pod on port 3001 via NodePort).
+#   4a. If smoke tests pass → CI promotes by updating agent.yaml to new tag.
+#   4b. If smoke tests fail → CI deletes this file (kubectl delete -f canary/).
+#
+# The CI/CD pipeline (.github/workflows/ci.yml) manages the full lifecycle.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Canary Deployment ─────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-canary
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: agent
+    stage:                       canary
+    # CI replaces this value:
+    version:                     "canary"
+  annotations:
+    kubernetes.io/change-cause: "canary deployment — pending promotion"
+spec:
+  # Canary = 1 pod = ~10% of the 2+1=3 total pods in service.
+  # Adjust to match: canary_replicas / (stable_replicas + canary_replicas) ≈ 10%.
+  replicas: 1
+
+  # Recreate within canary — only 1 pod, no rolling complexity needed.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge:       1
+
+  selector:
+    matchLabels:
+      app:   wolf-engine
+      stage: canary
+
+  template:
+    metadata:
+      labels:
+        app:                         wolf-engine
+        app.kubernetes.io/name:      wolf-engine
+        app.kubernetes.io/component: agent
+        stage:                       canary
+        version:                     "canary"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "8889"
+        prometheus.io/path:   "/metrics"
+        # Distinguish canary spans in Tempo
+        wolf.stage: "canary"
+
+    spec:
+      serviceAccountName: wolf-engine-sa
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser:    1000
+
+      containers:
+        - name: wolf-engine
+          # CI replaces this tag with the new image SHA before applying.
+          image: ghcr.io/doualeh/wolf_inc-:sha-canary
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+
+          envFrom:
+            - secretRef:
+                name: wolf-engine-secrets
+
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            # Canary telemetry label — visible in Grafana/Tempo traces
+            - name: WOLF_STAGE
+              value: "canary"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+
+          resources:
+            requests:
+              cpu:    "200m"
+              memory: "256Mi"
+            limits:
+              cpu:    "1000m"
+              memory: "1Gi"
+
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            initialDelaySeconds: 10
+            periodSeconds:       5
+            failureThreshold:    3
+            timeoutSeconds:      3
+
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            initialDelaySeconds: 20
+            periodSeconds:       15
+            failureThreshold:    3
+            timeoutSeconds:      5
+
+          startupProbe:
+            httpGet: { path: /health/live, port: http }
+            failureThreshold: 12
+            periodSeconds:    5
+
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.101.0
+          args: ["--config=/etc/otel/config.yaml"]
+          ports:
+            - containerPort: 4317
+            - containerPort: 4318
+            - containerPort: 8889
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits:   { cpu: "200m", memory: "256Mi" }
+          volumeMounts:
+            - name: otel-config
+              mountPath: /etc/otel
+              readOnly: true
+
+      volumes:
+        - name: otel-config
+          configMap:
+            name: otel-collector-config
+
+---
+# ── Canary Service — used by smoke tests ─────────────────────────────────────
+# Dedicated service so CI can health-check canary pods in isolation
+# before routing any real traffic.
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-canary
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: agent-canary
+spec:
+  type: ClusterIP
+  selector:
+    app:   wolf-engine
+    stage: canary
+  ports:
+    - name:       http
+      port:       80
+      targetPort: http
+
+---
+# ── Canary Ingress — 10% traffic weight ──────────────────────────────────────
+# NGINX Ingress canary annotations route a fraction of requests to agent-canary.
+# Both this Ingress and wolf-engine-ingress must share the same host + path.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wolf-engine-canary
+  namespace: wolf-engine
+  labels:
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: ingress-canary
+  annotations:
+    kubernetes.io/ingress.class:                         "nginx"
+    # ── Canary controls ───────────────────────────────────────────────────
+    nginx.ingress.kubernetes.io/canary:                  "true"
+    # Weight-based: 10% of requests → canary pods.
+    nginx.ingress.kubernetes.io/canary-weight:           "10"
+    # Header override: clients sending "X-Wolf-Canary: always" always hit canary.
+    nginx.ingress.kubernetes.io/canary-by-header:        "X-Wolf-Canary"
+    nginx.ingress.kubernetes.io/canary-by-header-value:  "always"
+    # ── Inherit timeouts from main ingress ────────────────────────────────
+    nginx.ingress.kubernetes.io/proxy-read-timeout:      "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout:      "120"
+
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - wolf-engine.example.com
+      secretName: wolf-engine-tls
+  rules:
+    - host: wolf-engine.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: agent-canary
+                port:
+                  name: http

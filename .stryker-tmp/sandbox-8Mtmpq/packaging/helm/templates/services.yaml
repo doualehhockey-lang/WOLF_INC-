@@ -1,0 +1,27 @@
+{{/*
+packaging/helm/templates/services.yaml — ClusterIP Service per enabled component.
+*/}}
+
+{{- $root := . -}}
+
+{{- range $name, $comp := .Values.components }}
+{{- if $comp.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 4 }}
+spec:
+  type: {{ $comp.service.type }}
+  selector:
+    {{- include "wolf.selectorLabels" (dict "component" $name "root" $root) | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ $comp.service.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}
+{{- end }}

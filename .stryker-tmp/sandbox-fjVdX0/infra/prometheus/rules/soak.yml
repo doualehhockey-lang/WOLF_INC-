@@ -1,0 +1,244 @@
+# infra/prometheus/rules/soak.yml — Soak test alert rules (48h staging run).
+#
+# These rules fire during and after a 48h soak test to detect:
+#   1. Latency regression vs baseline (P95 > 2s)
+#   2. Error rate spike (> 2% of requests failing)
+#   3. Memory leak indicator (RSS growing monotonically over 1h)
+#   4. DB connection pool saturation (acquired ≥ max for > 5min)
+#   5. Redis connection churn (reconnect rate spiking)
+#   6. Event loop lag (Node.js blocked for > 100ms)
+#   7. Feature flag check errors (Redis failures causing flag fallbacks)
+#
+# Load into Prometheus:
+#   kubectl apply -f infra/prometheus/rules/soak.yml
+# Or via prometheus-operator PrometheusRule CRD (adjust apiVersion accordingly).
+# ─────────────────────────────────────────────────────────────────────────────
+
+groups:
+
+  # ── Latency ───────────────────────────────────────────────────────────────────
+  - name: wolf_soak_latency
+    interval: 60s
+    rules:
+      - alert: WolfSoakP95LatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{
+              job="wolf-engine-staging",
+              route!~"/health.*|/metrics"
+            }[5m])) by (le, route)
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Soak P95 latency > 2s on {{ $labels.route }}"
+          description: >
+            P95 latency for {{ $labels.route }} is {{ $value | humanizeDuration }}
+            (threshold: 2s). Possible causes: memory pressure, DB slow queries,
+            Claude API latency, or event loop blocking.
+          runbook: "Check DB slow query logs, OTel traces, and Node.js heap usage."
+
+      - alert: WolfSoakP99LatencyHigh
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket{
+              job="wolf-engine-staging",
+              route!~"/health.*|/metrics"
+            }[5m])) by (le, route)
+          ) > 3.0
+        for: 5m
+        labels:
+          severity: critical
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Soak P99 latency > 3s on {{ $labels.route }}"
+          description: >
+            P99 latency for {{ $labels.route }} is {{ $value | humanizeDuration }}.
+            High P99 during soak indicates tail latency degradation — likely GC pause
+            or connection pool exhaustion.
+
+  # ── Error rate ────────────────────────────────────────────────────────────────
+  - name: wolf_soak_errors
+    interval: 60s
+    rules:
+      - alert: WolfSoakErrorRateHigh
+        expr: |
+          (
+            sum(rate(http_requests_total{
+              job="wolf-engine-staging",
+              status=~"5.."
+            }[5m]))
+            /
+            sum(rate(http_requests_total{
+              job="wolf-engine-staging",
+              route!~"/health.*|/metrics"
+            }[5m]))
+          ) > 0.02
+        for: 3m
+        labels:
+          severity: critical
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Soak error rate > 2% (currently {{ $value | humanizePercentage }})"
+          description: >
+            More than 2% of requests are returning 5xx errors during soak.
+            Check logs for unhandled promise rejections, circuit breaker trips,
+            or database connection failures.
+
+      - alert: WolfSoakCircuitBreakerOpen
+        expr: |
+          wolf_circuit_breaker_state{
+            job="wolf-engine-staging",
+            state="open"
+          } == 1
+        for: 2m
+        labels:
+          severity: warning
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Circuit breaker OPEN for {{ $labels.name }} during soak"
+          description: >
+            Circuit breaker {{ $labels.name }} has been OPEN for > 2 minutes.
+            This means the downstream service is failing and requests are being
+            rejected with CircuitOpenError.
+
+  # ── Memory leak detection ─────────────────────────────────────────────────────
+  - name: wolf_soak_memory
+    interval: 300s   # check every 5min to smooth out GC spikes
+    rules:
+      - alert: WolfSoakMemoryLeakSuspected
+        expr: |
+          (
+            process_resident_memory_bytes{job="wolf-engine-staging"}
+            - process_resident_memory_bytes{job="wolf-engine-staging"} offset 1h
+          ) > 50 * 1024 * 1024
+        for: 30m
+        labels:
+          severity: warning
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Possible memory leak: RSS grew > 50 MB in 1h"
+          description: >
+            Resident memory has grown by {{ $value | humanize1024 }}B in the last
+            hour without GC reclaiming it. This is a potential memory leak.
+            Check for: unclosed streams, growing caches, event listener accumulation.
+
+      - alert: WolfSoakHeapUsageHigh
+        expr: |
+          (
+            nodejs_heap_size_used_bytes{job="wolf-engine-staging"}
+            /
+            nodejs_heap_size_total_bytes{job="wolf-engine-staging"}
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Node.js heap usage > 85% during soak"
+          description: >
+            Heap is {{ $value | humanizePercentage }} full. If this persists or
+            grows throughout the soak, OOM kill is likely. Consider increasing
+            --max-old-space-size or investigating heap growth.
+
+  # ── DB connection pool ────────────────────────────────────────────────────────
+  - name: wolf_soak_db
+    interval: 60s
+    rules:
+      - alert: WolfSoakDbPoolSaturated
+        expr: |
+          wolf_db_pool_acquired{job="wolf-engine-staging"} >= 5
+        for: 5m
+        labels:
+          severity: critical
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "DB pool fully saturated ({{ $value }}/5 connections acquired)"
+          description: >
+            All 5 staging DB pool connections are acquired and none are available.
+            New queries will queue or fail. Investigate slow queries (> 500ms) or
+            long-running transactions that are not being released.
+
+      - alert: WolfSoakDbQuerySlowP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(wolf_db_query_duration_seconds_bucket{
+              job="wolf-engine-staging"
+            }[10m])) by (le)
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "DB P95 query time > 500ms during soak"
+          description: >
+            95th percentile DB query time is {{ $value | humanizeDuration }}.
+            Check for missing indexes, sequential scans, or lock contention.
+            Run EXPLAIN ANALYZE on the slowest queries from logs.
+
+  # ── Redis ─────────────────────────────────────────────────────────────────────
+  - name: wolf_soak_redis
+    interval: 60s
+    rules:
+      - alert: WolfSoakRedisUnavailable
+        expr: |
+          up{job="wolf-engine-staging"} == 1
+          unless
+          redis_connected_clients{job="redis-staging"} > 0
+        for: 2m
+        labels:
+          severity: critical
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Redis unavailable during soak — in-memory fallback active"
+          description: >
+            Wolf Engine is running but Redis appears disconnected. The app will
+            fall back to in-memory rate limiting and default feature flags.
+            This degrades rate limit accuracy across pods.
+
+      - alert: WolfSoakFeatureFlagRedisErrors
+        expr: |
+          increase(wolf_feature_flag_redis_errors_total{
+            job="wolf-engine-staging"
+          }[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Feature flag Redis read errors during soak (> 5 in 5m)"
+          description: >
+            Feature flag checks are failing to read from Redis and falling back to
+            defaults. If Redis is healthy, check connection limits or timeouts.
+
+  # ── Node.js event loop ────────────────────────────────────────────────────────
+  - name: wolf_soak_eventloop
+    interval: 30s
+    rules:
+      - alert: WolfSoakEventLoopLagHigh
+        expr: |
+          nodejs_eventloop_lag_seconds{job="wolf-engine-staging"} > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          stage:    staging
+          soak:     "true"
+        annotations:
+          summary:     "Event loop lag > 100ms during soak ({{ $value | humanizeDuration }})"
+          description: >
+            The Node.js event loop is blocked for > 100ms. This causes all concurrent
+            requests to stall. Likely causes: synchronous CPU work, large JSON.parse(),
+            or a blocking crypto operation. Profile with `--prof` or Clinic.js.

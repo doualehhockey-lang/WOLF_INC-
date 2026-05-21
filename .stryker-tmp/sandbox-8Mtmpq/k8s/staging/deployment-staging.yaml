@@ -1,0 +1,164 @@
+# k8s/staging/deployment-staging.yaml — Wolf Engine staging deployment.
+#
+# Staging-specific tuning vs production:
+#   - 1 replica (no HA needed — soak tests single pod)
+#   - DB_POOL_MAX=5 (reduced — staging DB is shared/smaller)
+#   - OTEL_ENABLED=true — traces collected for soak analysis
+#   - Resource limits tuned for soak: enough headroom to detect leaks
+#   - imagePullPolicy: Always — always test latest image SHA
+#
+# Usage:
+#   kubectl apply -k k8s/staging/
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wolf-engine-staging
+  namespace: wolf-engine-staging
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: api
+    stage:                       staging
+  annotations:
+    kubernetes.io/change-cause: "staging soak deployment"
+spec:
+  replicas: 1
+
+  # No rolling update needed for staging — recreate is cleaner for soak
+  strategy:
+    type: Recreate
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: api
+      stage:                       staging
+
+  template:
+    metadata:
+      labels:
+        app:                         wolf-engine
+        app.kubernetes.io/name:      wolf-engine
+        app.kubernetes.io/component: api
+        stage:                       staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "8889"
+        prometheus.io/path:   "/metrics"
+
+    spec:
+      serviceAccountName: wolf-engine-sa
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser:    1000
+
+      containers:
+        - name: wolf-engine
+          image: ghcr.io/doualeh/wolf_inc-:sha-latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+
+          envFrom:
+            - secretRef:
+                name: wolf-engine-secrets-staging
+            - configMapRef:
+                name: wolf-engine-staging-config
+
+          env:
+            - name: NODE_ENV
+              value: "staging"
+            - name: PORT
+              value: "3000"
+            # OTel — enabled in staging to capture soak traces
+            - name: OTEL_ENABLED
+              value: "true"
+            - name: OTEL_ENDPOINT
+              value: "http://otel-collector.wolf-engine-staging.svc.cluster.local:4318"
+            # DB pool tuned for staging (shared DB, lower concurrency)
+            - name: DB_POOL_MAX
+              value: "5"
+            - name: DB_POOL_MIN
+              value: "1"
+            # Soak identification label in logs / traces
+            - name: DEPLOY_STAGE
+              value: "staging"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef: { fieldPath: metadata.namespace }
+
+          resources:
+            # Requests: low — staging node is shared
+            requests:
+              cpu:    "100m"
+              memory: "128Mi"
+            # Limits: generous — we WANT to detect if we're approaching them
+            limits:
+              cpu:    "500m"
+              memory: "512Mi"
+
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            initialDelaySeconds: 10
+            periodSeconds:       5
+            failureThreshold:    3
+            timeoutSeconds:      3
+
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            initialDelaySeconds: 20
+            periodSeconds:       15
+            failureThreshold:    3
+            timeoutSeconds:      5
+
+          startupProbe:
+            httpGet: { path: /health/live, port: http }
+            failureThreshold: 12
+            periodSeconds:    5
+
+        # OTel collector sidecar — collects traces and forwards to Jaeger/Tempo
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.101.0
+          args: ["--config=/etc/otel/config.yaml"]
+          ports:
+            - containerPort: 4317   # gRPC
+            - containerPort: 4318   # HTTP
+            - containerPort: 8889   # Prometheus metrics
+          resources:
+            requests: { cpu: "30m",  memory: "48Mi" }
+            limits:   { cpu: "100m", memory: "128Mi" }
+          volumeMounts:
+            - name: otel-config
+              mountPath: /etc/otel
+              readOnly: true
+
+      volumes:
+        - name: otel-config
+          configMap:
+            name: otel-collector-config-staging
+
+---
+# Service — ClusterIP only (no external LB for staging)
+apiVersion: v1
+kind: Service
+metadata:
+  name: wolf-engine-staging
+  namespace: wolf-engine-staging
+  labels:
+    app:   wolf-engine
+    stage: staging
+spec:
+  selector:
+    app.kubernetes.io/component: api
+    stage:                       staging
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: ClusterIP

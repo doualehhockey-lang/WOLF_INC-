@@ -1,0 +1,184 @@
+# k8s/deployments/tts.yaml — TTS (Text-to-Speech) service endpoint.
+#
+# Wolf Engine supports multiple TTS backends selected via TTS_PROVIDER env:
+#   elevenlabs  — cloud API (default)
+#   azure       — Azure Cognitive Services
+#   piper       — local binary (no external calls)
+#   mock        — silent WAV (dev/test)
+#
+# This deployment is wolf-engine pods dedicated to TTS requests, configured
+# with TTS_PROVIDER=piper for fully local, air-gapped synthesis.
+# Swap to elevenlabs/azure for cloud TTS by updating the env + secret.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tts
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: tts
+    stage:                       stable
+    version:                     "2.0.0"
+  annotations:
+    kubernetes.io/change-cause: "initial deployment"
+spec:
+  replicas: 2
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge:       1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: tts
+      stage:                       stable
+
+  template:
+    metadata:
+      labels:
+        app:                         wolf-engine
+        app.kubernetes.io/name:      wolf-engine
+        app.kubernetes.io/component: tts
+        stage:                       stable
+        version:                     "2.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "8889"
+        prometheus.io/path:   "/metrics"
+
+    spec:
+      serviceAccountName: wolf-engine-sa
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser:    1000
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: tts
+                topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: wolf-engine
+          image: ghcr.io/doualeh/wolf_inc-:sha-latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+
+          envFrom:
+            - secretRef:
+                name: wolf-engine-secrets
+
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: TTS_PROVIDER
+              value: "piper"            # override: use local Piper binary
+            - name: PIPER_BINARY
+              value: "/usr/local/bin/piper"
+            - name: PIPER_MODEL_PATH
+              value: "/app/models/piper/fr_FR-siwis-medium.onnx"
+            - name: AUDIO_DIR
+              value: "/audio"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+
+          resources:
+            requests:
+              cpu:    "200m"
+              memory: "256Mi"
+            limits:
+              cpu:    "1000m"
+              memory: "1Gi"
+
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            initialDelaySeconds: 10
+            periodSeconds:       5
+            failureThreshold:    3
+            timeoutSeconds:      3
+
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            initialDelaySeconds: 20
+            periodSeconds:       15
+            failureThreshold:    3
+            timeoutSeconds:      5
+
+          startupProbe:
+            httpGet: { path: /health/live, port: http }
+            failureThreshold: 12
+            periodSeconds:    5
+
+          volumeMounts:
+            - name: audio-data
+              mountPath: /audio
+            - name: piper-models
+              mountPath: /app/models/piper
+              readOnly: true
+
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.101.0
+          args: ["--config=/etc/otel/config.yaml"]
+          ports:
+            - containerPort: 4317
+            - containerPort: 4318
+            - containerPort: 8889
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits:   { cpu: "200m", memory: "256Mi" }
+          volumeMounts:
+            - name: otel-config
+              mountPath: /etc/otel
+              readOnly: true
+
+      volumes:
+        - name: audio-data
+          persistentVolumeClaim:
+            claimName: wolf-audio-pvc
+        - name: piper-models
+          persistentVolumeClaim:
+            claimName: piper-models-pvc
+        - name: otel-config
+          configMap:
+            name: otel-collector-config
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tts-pdb
+  namespace: wolf-engine
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: tts
+      stage:                       stable
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: piper-models-pvc
+  namespace: wolf-engine
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: "standard"
+  resources:
+    requests:
+      storage: 2Gi

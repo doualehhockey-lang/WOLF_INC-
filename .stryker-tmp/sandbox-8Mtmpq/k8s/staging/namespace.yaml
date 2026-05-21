@@ -1,0 +1,13 @@
+# k8s/staging/namespace.yaml — Staging namespace.
+# Apply this first: kubectl apply -f k8s/staging/namespace.yaml
+# Then: kubectl apply -k k8s/staging/
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wolf-engine-staging
+  labels:
+    app:   wolf-engine
+    stage: staging
+    # Enables Prometheus scraping of pods in this namespace
+    monitoring: "true"

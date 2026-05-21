@@ -1,0 +1,13 @@
+node_modules
+frontend/node_modules
+coverage
+.git
+.github
+dist
+build
+tmp
+*.log
+*.env
+/.vscode
+/.idea
+tests/__snapshots__

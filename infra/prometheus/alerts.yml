@@ -1,0 +1,62 @@
+groups:
+  - name: wolf-engine
+    interval: 30s
+    rules:
+
+      # P95 pipeline latency > 3s for 5 minutes
+      - alert: PipelineP95High
+        expr: |
+          histogram_quantile(0.95,
+            rate(wolf_pipeline_duration_seconds_bucket[5m])
+          ) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Wolf Engine P95 latency elevated"
+          description: "P95 pipeline latency is {{ $value | humanizeDuration }} (threshold: 3s)"
+
+      # Error rate > 5% over 5 minutes
+      - alert: ErrorRateHigh
+        expr: |
+          rate(wolf_errors_total[5m])
+          / on() group_left()
+          rate(wolf_calls_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Wolf Engine error rate > 5%"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+
+      # Service down for 1 minute
+      - alert: ServiceDown
+        expr: up{job="wolf-engine"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Wolf Engine is down"
+          description: "Wolf Engine has been unreachable for more than 1 minute"
+
+      # Memory pressure — heap > 85%
+      - alert: MemoryPressure
+        expr: |
+          process_heap_bytes{job="wolf-engine"}
+          / process_heap_bytes{job="wolf-engine"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Wolf Engine heap usage > 85%"
+          description: "Heap usage is {{ $value | humanizePercentage }}"
+
+      # Rate limit events spiking (> 10/min)
+      - alert: RateLimitSpike
+        expr: rate(wolf_rate_limit_total[1m]) * 60 > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limit events spiking"
+          description: "{{ $value | humanize }} rate-limit rejections per minute"

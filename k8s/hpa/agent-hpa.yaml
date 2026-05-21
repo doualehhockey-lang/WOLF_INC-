@@ -1,0 +1,70 @@
+# k8s/hpa/agent-hpa.yaml — HPA for the wolf-engine agent pods.
+#
+# Primary metric:  CPU utilisation > 70%
+# Secondary metric: Custom "agent_pipeline_latency_p95_ms" > 500ms
+#   (requires Prometheus Adapter — see k8s/config/prometheus-adapter-cm.yaml)
+#
+# Scale range: 2 → 10 replicas
+# Cooldown:    scale-down stabilisation window = 5 min (prevent flapping)
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agent-hpa
+  namespace: wolf-engine
+  labels:
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: agent
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind:       Deployment
+    name:       agent
+
+  minReplicas: 2
+  maxReplicas: 10
+
+  metrics:
+    # ── CPU — built-in metric ──────────────────────────────────────────────
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type:               Utilization
+          averageUtilization: 70
+
+    # ── Memory — built-in metric ───────────────────────────────────────────
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type:               Utilization
+          averageUtilization: 80
+
+    # ── Pipeline latency P95 — custom metric via Prometheus Adapter ────────
+    # Requires prometheus-adapter to expose this metric. Sample rule:
+    #   - seriesQuery: 'agent_latency_ms_bucket{namespace!="",pod!=""}'
+    #     name: { matches: "^(.*)_bucket$", as: "${1}_p95" }
+    #     metricsQuery: 'histogram_quantile(0.95,sum(rate(<<.Series>>{<<.LabelMatchers>>}[2m]))by(le,pod))'
+    - type: Pods
+      pods:
+        metric:
+          name: agent_latency_ms_p95
+        target:
+          type:         AverageValue
+          averageValue: "500m"   # 500ms expressed in milli-units
+
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60      # react to spikes within 1 min
+      policies:
+        - type:          Pods
+          value:         2                # add up to 2 pods per cycle
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300     # wait 5 min before scaling down
+      policies:
+        - type:          Pods
+          value:         1                # remove at most 1 pod per cycle
+          periodSeconds: 120

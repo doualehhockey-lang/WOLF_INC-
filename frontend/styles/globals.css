@@ -1,0 +1,75 @@
+/* frontend/styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS custom properties — light mode defaults ────────────────────────── */
+:root {
+  --color-surface:    #f8fafc;
+  --color-surface-2:  #ffffff;
+  --color-border:     #e2e8f0;
+  --color-text-base:  #0f172a;
+  --color-text-muted: #64748b;
+}
+
+/* ── Dark mode overrides (applied via class="dark" on <html>) ────────────── */
+.dark {
+  --color-surface:    #0f172a;
+  --color-surface-2:  #1e293b;
+  --color-border:     #334155;
+  --color-text-base:  #f1f5f9;
+  --color-text-muted: #94a3b8;
+}
+
+/* ── Base resets ─────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    font-family: Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-surface text-text-base transition-colors duration-200;
+  }
+
+  /* Custom scrollbar — matches dark/light surface */
+  ::-webkit-scrollbar       { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-surface; }
+  ::-webkit-scrollbar-thumb { @apply bg-surface-2 rounded-full border border-border; }
+}
+
+/* ── Component helpers ───────────────────────────────────────────────────── */
+@layer components {
+  .card {
+    @apply rounded-xl border border-border bg-surface-2 shadow-sm p-4;
+  }
+
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+           transition-all duration-150 focus-visible:outline-none focus-visible:ring-2
+           focus-visible:ring-wolf-400 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-wolf-500 text-white hover:bg-wolf-600 active:bg-wolf-700;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent border border-border text-text-base
+           hover:bg-surface active:bg-surface;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+
+  .badge-green  { @apply badge bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400; }
+  .badge-red    { @apply badge bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400; }
+  .badge-yellow { @apply badge bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400; }
+  .badge-blue   { @apply badge bg-wolf-100 text-wolf-700 dark:bg-wolf-900/40 dark:text-wolf-300; }
+  .badge-gray   { @apply badge bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400; }
+}

@@ -1,0 +1,468 @@
+# packaging/helm/values.yaml — Wolf Engine Helm chart default values.
+#
+# Override per environment:
+#   helm upgrade wolf-engine ./packaging/helm -f values.prod.yaml
+#
+# Structure:
+#   global          — registry, pull policy, image pull secrets, nameOverride
+#   components      — per-service config (agent, whisper, claude, tts, ollama)
+#   ingress         — NGINX ingress + canary
+#   observability   — OTel sidecar, Prometheus scrape, Grafana
+#   canary          — canary weight and promotion thresholds
+
+# ── Global ─────────────────────────────────────────────────────────────────────
+global:
+  # Container registry prefix — override to push to your own registry.
+  registry: ghcr.io/doualeh
+  # Default image pull policy. Use Always in CI, IfNotPresent in dev.
+  imagePullPolicy: IfNotPresent
+  # imagePullSecrets:
+  #   - name: ghcr-pull-secret
+  imagePullSecrets: []
+
+  nameOverride: ""
+  fullnameOverride: ""
+
+  # Common labels added to every resource.
+  commonLabels:
+    app.kubernetes.io/part-of: wolf-engine
+    app.kubernetes.io/managed-by: helm
+
+  # Namespace — defaults to the release namespace.
+  # namespaceOverride: wolf
+
+# ── Components ─────────────────────────────────────────────────────────────────
+# Each component shares the same schema:
+#
+#   enabled          bool    — skip if false (Deployment, Service, HPA all gated)
+#   image.repository string  — image name (appended to global.registry)
+#   image.tag        string  — image tag (defaults to .Chart.AppVersion if "")
+#   image.pullPolicy string  — overrides global
+#   replicaCount     int
+#   resources        {}      — standard k8s resource requests/limits
+#   autoscaling      {}      — HPA config
+#   service          {}      — port + type
+#   env              []      — extra env vars injected into the container
+#   nodeSelector     {}
+#   tolerations      []
+#   affinity         {}
+#   podAnnotations   {}
+
+components:
+  # ── Agent (main orchestrator) ────────────────────────────────────────────────
+  agent:
+    enabled: true
+
+    image:
+      repository: wolf-engine/agent
+      tag: ""   # defaults to .Chart.AppVersion
+      pullPolicy: ""
+
+    replicaCount: 2
+
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      limits:
+        cpu: "1000m"
+        memory: "512Mi"
+
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    service:
+      type: ClusterIP
+      port: 3000
+
+    # Liveness / readiness probes
+    probes:
+      liveness:
+        path: /health/live
+        initialDelaySeconds: 15
+        periodSeconds: 20
+        timeoutSeconds: 5
+        failureThreshold: 3
+      readiness:
+        path: /health/ready
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+
+    env: []
+    #  - name: EXTRA_VAR
+    #    value: "example"
+
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "3000"
+      prometheus.io/path: "/metrics"
+
+  # ── Whisper (ASR) ────────────────────────────────────────────────────────────
+  whisper:
+    enabled: true
+
+    image:
+      repository: wolf-engine/whisper
+      tag: ""
+      pullPolicy: ""
+
+    replicaCount: 1
+
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 75
+
+    service:
+      type: ClusterIP
+      port: 9000
+
+    probes:
+      liveness:
+        path: /health
+        initialDelaySeconds: 60
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
+      readiness:
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 3
+
+    # Model size: tiny | base | small | medium | large
+    modelSize: base
+
+    # Mount a PVC for model cache (avoids re-download on pod restart).
+    modelPVC:
+      enabled: false
+      claimName: whisper-models-pvc
+      mountPath: /root/.cache/whisper
+
+    env: []
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9000"
+
+  # ── Claude (NLU proxy) ───────────────────────────────────────────────────────
+  claude:
+    enabled: true
+
+    image:
+      repository: wolf-engine/claude
+      tag: ""
+      pullPolicy: ""
+
+    replicaCount: 2
+
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
+
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+
+    service:
+      type: ClusterIP
+      port: 3000
+
+    probes:
+      liveness:
+        path: /health/live
+        initialDelaySeconds: 15
+        periodSeconds: 20
+        timeoutSeconds: 5
+        failureThreshold: 3
+      readiness:
+        path: /health/ready
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+
+    env: []
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "3000"
+      prometheus.io/path: "/metrics"
+
+  # ── TTS (Piper) ──────────────────────────────────────────────────────────────
+  tts:
+    enabled: true
+
+    image:
+      repository: wolf-engine/tts
+      tag: ""
+      pullPolicy: ""
+
+    replicaCount: 1
+
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "1000m"
+        memory: "512Mi"
+
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 70
+
+    service:
+      type: ClusterIP
+      port: 3000
+
+    probes:
+      liveness:
+        path: /health/live
+        initialDelaySeconds: 30
+        periodSeconds: 20
+        timeoutSeconds: 8
+        failureThreshold: 3
+      readiness:
+        path: /health/ready
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+
+    # Piper voice model — mounted from PVC or baked into image.
+    piperModel: fr_FR-siwis-medium.onnx
+    modelPVC:
+      enabled: false
+      claimName: tts-models-pvc
+      mountPath: /models
+
+    env: []
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "3000"
+
+  # ── Ollama (LLM) ─────────────────────────────────────────────────────────────
+  ollama:
+    enabled: true
+
+    image:
+      repository: wolf-engine/ollama
+      tag: ""
+      pullPolicy: ""
+
+    # Single replica: Ollama is stateful (model weights in PVC).
+    replicaCount: 1
+
+    resources:
+      requests:
+        cpu: "2000m"
+        memory: "6Gi"
+      limits:
+        cpu: "8000m"
+        memory: "16Gi"
+
+    autoscaling:
+      # Ollama autoscaling is tricky; disable by default (stateful + GPU).
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPUUtilizationPercentage: 80
+
+    service:
+      type: ClusterIP
+      port: 11434
+
+    probes:
+      liveness:
+        path: /
+        initialDelaySeconds: 90
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 5
+      readiness:
+        path: /
+        initialDelaySeconds: 60
+        periodSeconds: 20
+        timeoutSeconds: 10
+        failureThreshold: 5
+
+    # Model to load — passed to entrypoint as OLLAMA_MODEL env var.
+    model: llama3.2:3b
+
+    # Mount a PVC so model weights survive pod restarts.
+    modelPVC:
+      enabled: true
+      claimName: ollama-models-pvc
+      mountPath: /home/wolf/.ollama/models
+      # Set to ReadWriteOnce for single-node, ReadWriteMany for multi-node.
+      accessMode: ReadWriteOnce
+      storageSize: 20Gi
+
+    # GPU support (requires GPU node pool + NVIDIA device plugin).
+    gpu:
+      enabled: false
+      resourceName: nvidia.com/gpu
+      count: 1
+
+    env: []
+    nodeSelector: {}
+    tolerations: []
+      # Uncomment to schedule on GPU nodes:
+      # - key: "nvidia.com/gpu"
+      #   operator: "Exists"
+      #   effect: "NoSchedule"
+    affinity: {}
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "11434"
+
+# ── Ingress ────────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    # TLS — managed by cert-manager (recommended).
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+  host: wolf-engine.example.com
+
+  tls:
+    enabled: false
+    secretName: wolf-engine-tls
+
+  # Routes — maps path prefixes to component services.
+  routes:
+    - path: /api/agent
+      component: agent
+      port: 3000
+    - path: /api/tts
+      component: tts
+      port: 3000
+    - path: /api/claude
+      component: claude
+      port: 3000
+    - path: /api/whisper
+      component: whisper
+      port: 9000
+
+  # ── Canary ingress (NGINX canary annotations) ──────────────────────────────
+  canary:
+    enabled: false
+    # Weight 0–100 — percentage of traffic sent to canary pods.
+    weight: 10
+    annotations:
+      nginx.ingress.kubernetes.io/canary: "true"
+      nginx.ingress.kubernetes.io/canary-weight: "10"
+
+# ── Canary deploy config ───────────────────────────────────────────────────────
+canary:
+  # Image tag for canary pods (overrides component image.tag for canary subset).
+  imageTag: ""
+  # Promotion threshold — error rate must stay below this % for 5 min.
+  errorRateThreshold: 1
+  # Latency p99 must stay below this ms.
+  latencyThresholdMs: 2000
+  # Prometheus query used by the smoke test job.
+  smokeTestPromQuery: >
+    rate(http_requests_total{status=~"5.."}[5m])
+    / rate(http_requests_total[5m]) * 100
+
+# ── Observability ──────────────────────────────────────────────────────────────
+observability:
+  # OTel collector sidecar — injected into every enabled component pod.
+  otelSidecar:
+    enabled: false
+    image: otel/opentelemetry-collector-contrib:0.95.0
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+    # Config is mounted from a ConfigMap named wolf-engine-otel-config.
+    configMap: wolf-engine-otel-config
+
+  # Prometheus scrape — controlled via pod annotations (see component sections).
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+      namespace: monitoring
+      interval: 30s
+
+  # Grafana dashboard auto-provisioning (requires Grafana operator).
+  grafana:
+    enabled: false
+    dashboardConfigMap: wolf-engine-dashboards
+
+  # Tempo / Jaeger tracing backend.
+  tracing:
+    endpoint: http://tempo.monitoring.svc.cluster.local:4317
+    samplingRate: 0.1
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+# Reference to the K8s Secret that holds all runtime credentials.
+# Created separately via k8s/secrets/wolf-engine-secrets.yaml (or External Secrets).
+secrets:
+  name: wolf-engine-secrets
+  # Keys to mount as env vars in ALL component pods.
+  # The actual values live in the Secret — only key names listed here.
+  keys:
+    - ANTHROPIC_API_KEY
+    - TWILIO_ACCOUNT_SID
+    - TWILIO_AUTH_TOKEN
+    - JWT_SECRET
+    - REDIS_URL
+    - DATABASE_URL
+    - OLLAMA_URL
+
+# ── Pod disruption budgets ─────────────────────────────────────────────────────
+podDisruptionBudget:
+  enabled: true
+  # Minimum available pods during voluntary disruptions.
+  minAvailable: 1
+
+# ── Network policies ──────────────────────────────────────────────────────────
+networkPolicy:
+  # Mirrors k8s/rbac/wolf-engine-rbac.yaml NetworkPolicies.
+  # Set to false if your CNI does not support NetworkPolicy.
+  enabled: true

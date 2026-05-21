@@ -1,0 +1,259 @@
+{{/*
+packaging/helm/templates/deployments.yaml — one Deployment per enabled component.
+
+Iterates over .Values.components; skips any component with enabled: false.
+Each Deployment:
+  - Labels / selector use wolf.labels / wolf.selectorLabels helpers
+  - Image resolved via wolf.image (registry + repo + tag)
+  - All secrets injected as env vars via wolf.secretEnv
+  - Optional OTel sidecar via wolf.otelSidecar
+  - Liveness + readiness probes from component.probes
+  - Optional GPU resource limit (ollama)
+  - Optional PVC volume mount (whisper/tts/ollama modelPVC)
+  - PodDisruptionBudget gated by podDisruptionBudget.enabled
+*/}}
+
+{{- $root := . -}}
+
+{{- range $name, $comp := .Values.components }}
+{{- if $comp.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 4 }}
+spec:
+  replicas: {{ $comp.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "wolf.selectorLabels" (dict "component" $name "root" $root) | nindent 6 }}
+  # RollingUpdate — zero-downtime deploys. maxSurge allows extra pods during rollout.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 8 }}
+      annotations:
+        {{- with $comp.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        # Force pod restart on secret changes (hash of secret name).
+        checksum/secrets: {{ $root.Values.secrets.name | sha256sum | trunc 8 }}
+    spec:
+      # Use component-specific service account (created in rbac.yaml).
+      serviceAccountName: {{ include "wolf.serviceAccountName" (dict "component" $name "root" $root) }}
+      automountServiceAccountToken: false
+
+      {{- with $root.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      # Security context — run as non-root by default.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      {{- with $comp.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with $comp.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with $comp.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      # ── Init container: wait for dependencies ──────────────────────────────
+      {{- if or (eq $name "agent") (eq $name "claude") }}
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z ${REDIS_HOST:-redis} ${REDIS_PORT:-6379}; do
+                echo "waiting for Redis..."; sleep 2;
+              done
+          env:
+            - name: REDIS_HOST
+              value: "redis"
+      {{- end }}
+
+      # ── Ollama: pull model via init container if PVC enabled ───────────────
+      {{- if and (eq $name "ollama") $comp.modelPVC.enabled }}
+      initContainers:
+        - name: ollama-model-pull
+          image: {{ include "wolf.image" (dict "component" $comp "root" $root) }}
+          imagePullPolicy: {{ include "wolf.pullPolicy" (dict "component" $comp "root" $root) }}
+          command:
+            - sh
+            - -c
+            - |
+              ollama serve &
+              SERVER_PID=$!
+              retries=0
+              until curl -fsS http://localhost:11434/ > /dev/null 2>&1; do
+                retries=$((retries + 1))
+                [ $retries -gt 30 ] && echo "timeout" && exit 1
+                sleep 2
+              done
+              MODEL="{{ $comp.model | default "llama3.2:3b" }}"
+              if ! ollama list | grep -q "^${MODEL}"; then
+                echo "Pulling ${MODEL}..."
+                ollama pull "${MODEL}"
+              fi
+              kill $SERVER_PID
+          env:
+            - name: OLLAMA_MODELS
+              value: {{ $comp.modelPVC.mountPath }}
+          volumeMounts:
+            - name: ollama-models
+              mountPath: {{ $comp.modelPVC.mountPath }}
+      {{- end }}
+
+      containers:
+        # ── Main application container ────────────────────────────────────────
+        - name: {{ $name }}
+          image: {{ include "wolf.image" (dict "component" $comp "root" $root) }}
+          imagePullPolicy: {{ include "wolf.pullPolicy" (dict "component" $comp "root" $root) }}
+
+          ports:
+            - name: http
+              containerPort: {{ $comp.service.port }}
+              protocol: TCP
+
+          # Secrets injected as environment variables.
+          env:
+            {{- include "wolf.secretEnv" $root | nindent 12 }}
+            # Tracing endpoint
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ $root.Values.observability.tracing.endpoint | quote }}
+            - name: OTEL_TRACES_SAMPLER_ARG
+              value: {{ $root.Values.observability.tracing.samplingRate | toString | quote }}
+            # Component identity
+            - name: NODE_SERVICE
+              value: {{ $name | quote }}
+            # Ollama model override
+            {{- if eq $name "ollama" }}
+            - name: OLLAMA_MODEL
+              value: {{ $comp.model | default "llama3.2:3b" | quote }}
+            {{- end }}
+            # Whisper model size
+            {{- if eq $name "whisper" }}
+            - name: ASR_MODEL
+              value: {{ $comp.modelSize | default "base" | quote }}
+            {{- end }}
+            # TTS piper model path
+            {{- if eq $name "tts" }}
+            - name: PIPER_MODEL_PATH
+              value: {{ printf "%s/%s" ($comp.modelPVC.mountPath | default "/models") ($comp.piperModel | default "fr_FR-siwis-medium.onnx") | quote }}
+            {{- end }}
+            # Extra component-specific env vars.
+            {{- with $comp.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+          resources:
+            {{- toYaml $comp.resources | nindent 12 }}
+
+          # ── GPU resources (Ollama) ──────────────────────────────────────────
+          {{- if and (eq $name "ollama") $comp.gpu.enabled }}
+          resources:
+            {{- toYaml $comp.resources | nindent 12 }}
+            limits:
+              {{ $comp.gpu.resourceName }}: {{ $comp.gpu.count }}
+          {{- end }}
+
+          # ── Liveness probe ─────────────────────────────────────────────────
+          livenessProbe:
+            httpGet:
+              path: {{ $comp.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ $comp.probes.liveness.initialDelaySeconds }}
+            periodSeconds:       {{ $comp.probes.liveness.periodSeconds }}
+            timeoutSeconds:      {{ $comp.probes.liveness.timeoutSeconds }}
+            failureThreshold:    {{ $comp.probes.liveness.failureThreshold }}
+
+          # ── Readiness probe ────────────────────────────────────────────────
+          readinessProbe:
+            httpGet:
+              path: {{ $comp.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ $comp.probes.readiness.initialDelaySeconds }}
+            periodSeconds:       {{ $comp.probes.readiness.periodSeconds }}
+            timeoutSeconds:      {{ $comp.probes.readiness.timeoutSeconds }}
+            failureThreshold:    {{ $comp.probes.readiness.failureThreshold }}
+
+          # Container-level security context.
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+
+          # ── Volume mounts ──────────────────────────────────────────────────
+          volumeMounts:
+            {{- if and $comp.modelPVC $comp.modelPVC.enabled }}
+            - name: {{ $name }}-models
+              mountPath: {{ $comp.modelPVC.mountPath }}
+            {{- end }}
+            {{- if $root.Values.observability.otelSidecar.enabled }}
+            - name: otel-config
+              mountPath: /conf
+            {{- end }}
+
+        # ── OTel sidecar (optional) ──────────────────────────────────────────
+        {{- include "wolf.otelSidecar" $root | nindent 8 }}
+
+      # ── Volumes ─────────────────────────────────────────────────────────────
+      volumes:
+        {{- if and $comp.modelPVC $comp.modelPVC.enabled }}
+        - name: {{ $name }}-models
+          persistentVolumeClaim:
+            claimName: {{ $comp.modelPVC.claimName }}
+        {{- end }}
+        {{- include "wolf.otelVolume" $root | nindent 8 }}
+
+      # Ensure pods are spread across nodes for HA.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "wolf.selectorLabels" (dict "component" $name "root" $root) | nindent 14 }}
+
+{{- if $root.Values.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}-pdb
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 4 }}
+spec:
+  minAvailable: {{ $root.Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "wolf.selectorLabels" (dict "component" $name "root" $root) | nindent 6 }}
+{{- end }}
+
+{{- end }}
+{{- end }}

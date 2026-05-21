@@ -27,9 +27,11 @@ export function resolve(rawDate, rawTime, referenceDate = new Date()) {
   let date = '';
   let time = '';
 
-  const dateStr = String(rawDate || '').trim().toLowerCase();
+  const dateStr = String(rawDate || '')
+    .trim()
+    .toLowerCase();
   if (dateStr) {
-    if (dateStr === 'aujourd\'hui') date = referenceDate.toISOString().slice(0, 10);
+    if (dateStr === "aujourd'hui") date = referenceDate.toISOString().slice(0, 10);
     else if (dateStr === 'demain') {
       const d = new Date(referenceDate);
       d.setDate(d.getDate() + 1);
@@ -48,7 +50,9 @@ export function resolve(rawDate, rawTime, referenceDate = new Date()) {
     }
   }
 
-  const timeStr = String(rawTime || '').trim().toLowerCase();
+  const timeStr = String(rawTime || '')
+    .trim()
+    .toLowerCase();
   if (timeStr) {
     const m = timeStr.match(/^(\d{1,2})(?:h|:)?(\d{0,2})$/);
     if (m) {
@@ -61,7 +65,7 @@ export function resolve(rawDate, rawTime, referenceDate = new Date()) {
   if (!date && rawDate) date = rawDate;
   if (!time && rawTime) time = rawTime;
 
-  const iso = (date && time) ? `${date}T${time}:00Z` : (date ? `${date}T00:00:00Z` : null);
+  const iso = date && time ? `${date}T${time}:00Z` : date ? `${date}T00:00:00Z` : null;
 
   return {
     date,

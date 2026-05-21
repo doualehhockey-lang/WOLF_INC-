@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(curl -s http://localhost:11434/api/tags)",
+      "Bash(node server.js)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(curl -s http://localhost:3000/tones)",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\);console.log\\(JSON.stringify\\(JSON.parse\\(d\\),null,2\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:3000/reply -H 'Content-Type: application/json' -d '{\"content\": \"Bonjour, vous etes disponible demain ?\", \"tone\": \"wolf-inc\"}')",
+      "Bash(curl -s -X POST http://localhost:11434/api/chat -H 'Content-Type: application/json' -d '{\"model\":\"llama3.2:3b\",\"messages\":[{\"role\":\"user\",\"content\":\"dis bonjour\"}],\"stream\":false}' --max-time 120)",
+      "Bash(curl -s -X POST http://localhost:3000/reply -H 'Content-Type: application/json' -d '{\"content\": \"Bonjour, vous etes disponible demain ?\", \"tone\": \"wolf-inc\"}' --max-time 60)",
+      "Bash(curl -s -X POST http://localhost:3000/reply -H 'Content-Type: application/json' -d '{\"content\": \"Vous etes disponible demain pour un appel ?\", \"tone\": \"__TRACKED_VAR__\"}' --max-time 60)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 36804 /F)",
+      "Bash(cmd //c \"taskkill /PID 36804 /F\")"
+    ]
+  }
+}

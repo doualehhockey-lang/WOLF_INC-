@@ -1,0 +1,54 @@
+# packaging/helm/Chart.yaml — Wolf Engine Helm chart metadata.
+#
+# Helm v3 (apiVersion: v2) chart.
+# Chart version (version) follows SemVer and tracks the Helm chart changes.
+# App version (appVersion) tracks the Wolf Engine application release.
+#
+# Usage:
+#   helm install wolf-engine ./packaging/helm -f values.yaml
+#   helm upgrade wolf-engine ./packaging/helm --atomic --timeout 5m
+
+apiVersion: v2
+name: wolf-engine
+description: >
+  Wolf Engine — AI-powered voice pipeline.
+  Orchestrates Whisper STT → Claude NLU → Ollama LLM → Piper TTS
+  with full observability (OTel, Prometheus, Grafana) and canary deploys.
+
+type: application
+
+# ── Versions ──────────────────────────────────────────────────────────────────
+# Chart version: bumped whenever templates or values change.
+# appVersion:    matches the Docker image tag deployed by CI.
+version:    "1.0.0"
+appVersion: "1.0.0"
+
+# ── Keywords + annotations ────────────────────────────────────────────────────
+keywords:
+  - voice
+  - ai
+  - llm
+  - tts
+  - stt
+  - opentelemetry
+
+home: https://github.com/doualeh/wolf_inc-
+sources:
+  - https://github.com/doualeh/wolf_inc-
+
+maintainers:
+  - name: Doualeh
+    email: devops@wolf-inc.io
+
+annotations:
+  # Artifact Hub category
+  artifacthub.io/category: integration-delivery
+  # Links shown in Artifact Hub
+  artifacthub.io/links: |
+    - name: GitHub
+      url: https://github.com/doualeh/wolf_inc-
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial production release
+  # Preinstall hook notes
+  artifacthub.io/prerelease: "false"
