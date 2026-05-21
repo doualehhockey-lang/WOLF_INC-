@@ -1,91 +1,89 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import { resolve } from 'path';
-import { EngineTwilio } from './src/ENGINE/Engine.js';
-import { prewarmGreeting } from './twilio.js';
-import { autoReply, getTones } from './responder.js';
-import { config } from './env.js';
+import './env.js';
 
-const app = express();
-const PORT = config.port || 3000;
+// server.js — Wolf Engine entry point.
+// Import order is intentional: tracing must initialize before any other module.
+//
+// Start:        node server.js
+// Dev watch:    node --watch server.js
+// Tests import: { createApp } from './src/api/server.js'  (no port binding)
 
-// Middleware
-app.use(helmet({
-  // Twilio needs to fetch audio files — allow it
-  contentSecurityPolicy: false,
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-}));
-app.use(cors());
-app.use(morgan('combined'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+import { initTracing, shutdownTracing } from './src/core/tracing.js';
+await initTracing(); // no-op unless OTEL_ENABLED=true
 
-// Serve generated TTS audio files to Twilio
-app.use('/audio', express.static(resolve(config.audioDir), {
-  maxAge: '1h',
-  setHeaders(res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  },
-}));
+import { fileURLToPath } from 'url';
+import { createApp }     from './src/api/server.js';
+import { config }        from './src/core/config.js';
+import { logger }        from './src/core/logger.js';
+import { destroyDb }     from './src/infra/db/dbClient.js';
+import { redis }         from './src/infra/redis/redisClient.js';
+import { prewarmGreeting } from './src/features/voice/greeting.js';
+import { saveAudio }     from './src/services/audio.utils.js';
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    engine: 'active'
-  });
+const app  = createApp();
+const PORT = config.PORT;
+
+// ── Process-level error guards ────────────────────────────────────────────────
+
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err: err.message, stack: err.stack, type: 'uncaughtException' },
+    'Uncaught synchronous exception — process will exit');
+  setTimeout(() => process.exit(1), 500).unref();
 });
 
-// Twilio routes
-app.use('/twilio', EngineTwilio.router);
-
-// ── Auto-répondeur ──────────────────────────────────────────────────────────
-
-// GET /tones — liste des tons disponibles
-app.get('/tones', (_req, res) => {
-  res.json({ tones: getTones() });
+process.on('unhandledRejection', (reason) => {
+  logger.fatal({
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack:  reason instanceof Error ? reason.stack  : undefined,
+    type:   'unhandledRejection',
+  }, 'Unhandled promise rejection — process will exit');
+  setTimeout(() => process.exit(1), 500).unref();
 });
 
-// POST /reply — génère une réponse stylée
-// Body: { content: string, tone?: 'pro'|'sec'|'friendly'|'sarcastique'|'wolf-inc' }
-app.post('/reply', async (req, res) => {
-  const { content, tone } = req.body ?? {};
-  if (!content?.trim()) {
-    return res.status(400).json({ error: 'content is required' });
+// ── Graceful shutdown ─────────────────────────────────────────────────────────
+
+const GRACEFUL_TIMEOUT_MS = 15_000;
+let   _server = null;
+
+async function shutdown(signal) {
+  logger.info({ signal }, 'Shutdown signal received — draining connections');
+
+  // Force-kill if shutdown hangs beyond timeout
+  const killer = setTimeout(() => {
+    logger.warn({ timeoutMs: GRACEFUL_TIMEOUT_MS }, 'Shutdown timeout exceeded — forcing exit 1');
+    process.exit(1);
+  }, GRACEFUL_TIMEOUT_MS);
+  killer.unref();
+
+  // Stop accepting new connections; wait for in-flight requests to finish
+  if (_server) {
+    await new Promise((resolve) => _server.close(resolve));
   }
-  try {
-    const reply = await autoReply(content.trim(), tone);
-    res.json({ reply, tone: tone ?? 'friendly' });
-  } catch (err) {
-    console.error('[Reply]', err.message);
-    res.status(503).json({ error: 'LLM unavailable', detail: err.message });
-  }
-});
 
-// Error handling
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  await shutdownTracing().catch((err) => logger.warn({ err: err.message }, 'OTel flush failed'));
+  await destroyDb().catch((err) => logger.warn({ err: err.message }, 'DB pool drain failed'));
+  if (redis) await redis.quit().catch(() => {});
+
+  logger.info('Wolf Engine stopped — exiting 0');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
+
+// ── Start (only when run directly, not when imported by tests) ────────────────
+
+const _isMain =
+  process.argv[1] != null &&
+  fileURLToPath(import.meta.url) === process.argv[1];
+
+if (_isMain) {
+  _server = app.listen(PORT, async () => {
+    logger.info(
+      { port: PORT, env: config.NODE_ENV, redis: !!process.env.REDIS_URL, db: !!process.env.DB_HOST },
+      'Wolf Engine started'
+    );
+    await prewarmGreeting(saveAudio);
   });
-});
+}
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
-
-// Start server
-app.listen(PORT, async () => {
-  console.log(`🚀 Engine server running on port ${PORT}`);
-  console.log(`📞 Twilio routes active at /twilio`);
-  console.log(`💚 Health check at /health`);
-
-  // Pre-synthesize greeting so first caller hears TTS quality, not Twilio robot voice
-  await prewarmGreeting();
-});
+export { app };

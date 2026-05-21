@@ -1,0 +1,610 @@
+# k8s/rbac/wolf-engine-rbac.yaml — RBAC for Wolf Engine.
+#
+# Principle of least privilege: each component gets only the Kubernetes API
+# permissions it actually needs.  No wildcard verbs, no cluster-scoped rules.
+#
+# Components:
+#   agent    — orchestrator; needs to read ConfigMaps (OTel config) + own secrets
+#   whisper  — STT service; read-only access to model ConfigMap
+#   ollama   — LLM service; read-only; needs PVC bind (handled by StatefulSet SA)
+#   claude   — Claude NLU proxy; read-only config
+#   tts      — TTS service; write access to audio PVC (via Deployment, not RBAC)
+#
+# Each component gets:
+#   1. ServiceAccount (identity)
+#   2. Role           (namespace-scoped rules)
+#   3. RoleBinding    (binds the SA to the Role)
+#
+# The wolf-engine-secrets Secret is read via envFrom in the Deployment spec —
+# no RBAC rule is needed for that (it is implicit to the Pod spec).
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ServiceAccounts — one per component
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name:      agent-sa
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: agent
+  annotations:
+    # Disable auto-mounting the default token — we use explicit volumeMount only.
+    # Each Deployment sets automountServiceAccountToken: false in podSpec.
+    wolf.security/created-by: "wolf-engine-rbac.yaml"
+automountServiceAccountToken: false
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name:      whisper-sa
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: whisper
+  annotations:
+    wolf.security/created-by: "wolf-engine-rbac.yaml"
+automountServiceAccountToken: false
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name:      ollama-sa
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: ollama
+  annotations:
+    wolf.security/created-by: "wolf-engine-rbac.yaml"
+automountServiceAccountToken: false
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name:      claude-sa
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: claude
+  annotations:
+    wolf.security/created-by: "wolf-engine-rbac.yaml"
+automountServiceAccountToken: false
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name:      tts-sa
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: tts
+  annotations:
+    wolf.security/created-by: "wolf-engine-rbac.yaml"
+automountServiceAccountToken: false
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Roles — namespace-scoped, least-privilege
+# ══════════════════════════════════════════════════════════════════════════════
+
+---
+
+# agent-role — orchestrator needs to read ConfigMaps (OTel, app config) and
+# its own Pod metadata (for REQUEST_ID / POD_NAME env injection).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name:      agent-role
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: agent
+rules:
+  # Read OTel collector config and any app-level ConfigMaps.
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs:     ["get", "list", "watch"]
+    resourceNames:
+      - otel-collector-config
+      - wolf-engine-config      # optional: feature flags / tuning params
+
+  # Read own Pod's metadata — used by downward API for POD_NAME, POD_IP.
+  # Note: the downward API does not require RBAC; this rule is for explicit
+  # client-go calls (e.g. leader election if added in future).
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs:     ["get"]
+
+  # Allow agent to emit Kubernetes Events for audit trail.
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs:     ["create", "patch"]
+
+---
+
+# whisper-role — STT service; no Kubernetes API access beyond OTel config.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name:      whisper-role
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: whisper
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs:     ["get", "list"]
+    resourceNames:
+      - otel-collector-config
+
+---
+
+# ollama-role — LLM; only needs OTel config.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name:      ollama-role
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: ollama
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs:     ["get", "list"]
+    resourceNames:
+      - otel-collector-config
+
+---
+
+# claude-role — Claude NLU proxy; read OTel config.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name:      claude-role
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: claude
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs:     ["get", "list"]
+    resourceNames:
+      - otel-collector-config
+
+---
+
+# tts-role — TTS service; read OTel config.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name:      tts-role
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: tts
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs:     ["get", "list"]
+    resourceNames:
+      - otel-collector-config
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RoleBindings — bind each SA to its Role
+# ══════════════════════════════════════════════════════════════════════════════
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name:      agent-rolebinding
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: agent
+subjects:
+  - kind:      ServiceAccount
+    name:      agent-sa
+    namespace: wolf-engine
+roleRef:
+  kind:     Role
+  name:     agent-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name:      whisper-rolebinding
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: whisper
+subjects:
+  - kind:      ServiceAccount
+    name:      whisper-sa
+    namespace: wolf-engine
+roleRef:
+  kind:     Role
+  name:     whisper-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name:      ollama-rolebinding
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: ollama
+subjects:
+  - kind:      ServiceAccount
+    name:      ollama-sa
+    namespace: wolf-engine
+roleRef:
+  kind:     Role
+  name:     ollama-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name:      claude-rolebinding
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: claude
+subjects:
+  - kind:      ServiceAccount
+    name:      claude-sa
+    namespace: wolf-engine
+roleRef:
+  kind:     Role
+  name:     claude-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name:      tts-rolebinding
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: tts
+subjects:
+  - kind:      ServiceAccount
+    name:      tts-sa
+    namespace: wolf-engine
+roleRef:
+  kind:     Role
+  name:     tts-role
+  apiGroup: rbac.authorization.k8s.io
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NetworkPolicy — enforce zero-trust pod-to-pod communication
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Default deny-all + selective allow per component.
+# Applied in addition to RBAC (orthogonal control plane).
+
+---
+
+# Default: deny all ingress/egress within the namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name:      default-deny-all
+  namespace: wolf-engine
+  labels:
+    app.kubernetes.io/name: wolf-engine
+spec:
+  podSelector: {}   # selects ALL pods in the namespace
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+
+# agent — accepts traffic from NGINX ingress + Prometheus scraper;
+#          initiates traffic to whisper, claude, tts, ollama, redis, postgres.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name:      agent-netpol
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: agent
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: agent
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow NGINX ingress controller pods.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+
+    # Allow Prometheus scraper (in-cluster).
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8889
+
+  egress:
+    # DNS (required for service discovery).
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Whisper STT service.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: whisper
+      ports:
+        - protocol: TCP
+          port: 9000
+
+    # Claude NLU proxy.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: claude
+      ports:
+        - protocol: TCP
+          port: 3000
+
+    # TTS service.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: tts
+      ports:
+        - protocol: TCP
+          port: 3000
+
+    # Ollama LLM service.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: ollama
+      ports:
+        - protocol: TCP
+          port: 11434
+
+    # Redis (rate-limiting, caching).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+
+    # PostgreSQL.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # OTel collector sidecar (loopback — same pod).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: agent
+      ports:
+        - protocol: TCP
+          port: 4317
+        - protocol: TCP
+          port: 4318
+
+    # Twilio + Anthropic API (external HTTPS).
+    - ports:
+        - protocol: TCP
+          port: 443
+
+---
+
+# whisper — only accepts from agent; egress to OTel sidecar.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name:      whisper-netpol
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: whisper
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: whisper
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: agent
+      ports:
+        - protocol: TCP
+          port: 9000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8889
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+
+# ollama — only accepts from agent; needs external egress for model pull on init.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name:      ollama-netpol
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: ollama
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: ollama
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: agent
+      ports:
+        - protocol: TCP
+          port: 11434
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8889
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Model pull from registry (HTTPS).
+    - ports:
+        - protocol: TCP
+          port: 443
+
+---
+
+# claude — only accepts from agent.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name:      claude-netpol
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: claude
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: claude
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: agent
+      ports:
+        - protocol: TCP
+          port: 3000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8889
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Anthropic API.
+    - ports:
+        - protocol: TCP
+          port: 443
+
+---
+
+# tts — only accepts from agent.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name:      tts-netpol
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/component: tts
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: tts
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: agent
+      ports:
+        - protocol: TCP
+          port: 3000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8889
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

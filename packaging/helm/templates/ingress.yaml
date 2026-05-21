@@ -1,0 +1,88 @@
+{{/*
+packaging/helm/templates/ingress.yaml — NGINX Ingress + optional canary ingress.
+
+Stable ingress routes each path to its component Service.
+Canary ingress duplicates the routes and adds NGINX canary annotations,
+splitting traffic by weight (values.ingress.canary.weight).
+*/}}
+
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "wolf.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" "ingress" "root" .) | nindent 4 }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          {{- range .Values.ingress.routes }}
+          - path: {{ .path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "wolf.componentName" (dict "component" .component "root" $) }}
+                port:
+                  number: {{ .port }}
+          {{- end }}
+
+{{- if .Values.ingress.canary.enabled }}
+---
+# Canary ingress — mirrors stable routes but sends canary.weight % of traffic
+# to pods labelled with the canary image tag.
+# Canary pods are selected by the canary Deployment (not generated here —
+# managed by the CI release pipeline via helm upgrade --set canary.imageTag=...).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "wolf.fullname" . }}-canary
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" "ingress-canary" "root" .) | nindent 4 }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: {{ .Values.ingress.canary.weight | toString | quote }}
+    {{- with .Values.ingress.canary.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          {{- range .Values.ingress.routes }}
+          - path: {{ .path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "wolf.componentName" (dict "component" .component "root" $) }}-canary
+                port:
+                  number: {{ .port }}
+          {{- end }}
+{{- end }}
+{{- end }}

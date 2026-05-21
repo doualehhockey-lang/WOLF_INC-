@@ -1,0 +1,513 @@
+# packaging/ci/release-pipeline.yaml — Wolf Engine release pipeline.
+#
+# Triggers:
+#   - push of a semver tag  (v*.*.*) → full release
+#   - push to main branch   → canary deploy (10 % weight)
+#   - pull_request → validate + build only (no push/deploy)
+#
+# Stages:
+#   1. validate   — lint Dockerfiles (hadolint), lint Helm chart (helm lint)
+#   2. build      — matrix build of all 5 service images, push to GHCR
+#   3. release    — create GitHub Release + changelog
+#   4. deploy     — helm upgrade --atomic (stable on tag, canary on main)
+#   5. smoke      — curl health endpoints; check Prometheus error rate
+#   6. promote    — set canary weight=100 on success (tagged releases only)
+#   7. rollback   — helm rollback on any deploy/smoke failure
+#   8. notify     — Slack notification (success or failure)
+#
+# Secrets required (set in repo Settings → Secrets):
+#   GHCR_TOKEN          — GitHub PAT with packages:write
+#   KUBECONFIG_B64      — base64-encoded kubeconfig for the target cluster
+#   ANTHROPIC_API_KEY   — injected into the K8s secret during deploy
+#   TWILIO_ACCOUNT_SID
+#   TWILIO_AUTH_TOKEN
+#   JWT_SECRET
+#   REDIS_URL
+#   DATABASE_URL
+#   SLACK_WEBHOOK_URL   — for notifications
+
+name: Wolf Engine — Release Pipeline
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"        # e.g. v1.2.3
+      - "v[0-9]+.[0-9]+.[0-9]+-rc*"    # e.g. v1.2.3-rc1
+    branches:
+      - main                             # canary deploy
+  pull_request:
+    branches:
+      - main                             # validate + build only
+
+# Cancel in-flight runs for the same ref (saves CI minutes).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+  HELM_CHART_PATH: ./packaging/helm
+  RELEASE_NAME: wolf-engine
+  NAMESPACE: wolf-engine
+  # Canary traffic weight (%) on main branch deploys.
+  CANARY_WEIGHT: "10"
+
+# ── Jobs ──────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ── 1. Validate ─────────────────────────────────────────────────────────────
+  validate:
+    name: Validate (lint Dockerfiles + Helm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Lint all Dockerfiles with hadolint.
+      - name: Lint Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: packaging/docker/agent.Dockerfile
+          ignore: DL3018,DL3008   # apk/apt pinning warnings acceptable in CI
+
+      - name: Lint remaining Dockerfiles
+        run: |
+          for f in packaging/docker/*.Dockerfile; do
+            echo "--- hadolint: $f"
+            docker run --rm -i hadolint/hadolint < "$f" || exit 1
+          done
+
+      # Install Helm and lint the chart.
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.14.3"
+
+      - name: Helm lint
+        run: |
+          helm lint ${{ env.HELM_CHART_PATH }} \
+            --set global.registry=ghcr.io/doualeh \
+            --strict
+
+      - name: Helm template (dry-run)
+        run: |
+          helm template ${{ env.RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --set global.registry=ghcr.io/doualeh \
+            > /tmp/rendered.yaml
+          echo "Rendered $(wc -l < /tmp/rendered.yaml) lines"
+
+      # Validate rendered manifests with kubeconform.
+      - name: kubeconform
+        uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          entrypoint: /kubeconform
+          args: >
+            -strict
+            -ignore-missing-schemas
+            -kubernetes-version 1.29.0
+            /tmp/rendered.yaml
+
+  # ── 2. Build images ──────────────────────────────────────────────────────────
+  build:
+    name: Build ${{ matrix.service }}
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: agent
+            dockerfile: packaging/docker/agent.Dockerfile
+          - service: claude
+            dockerfile: packaging/docker/claude.Dockerfile
+          - service: tts
+            dockerfile: packaging/docker/tts.Dockerfile
+          - service: whisper
+            dockerfile: packaging/docker/whisper.Dockerfile
+          - service: ollama
+            dockerfile: packaging/docker/ollama.Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Resolve image tag from git ref.
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="sha-${GITHUB_SHA::8}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "image=${{ env.IMAGE_PREFIX }}/wolf-engine/${{ matrix.service }}:${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/wolf-engine/${{ matrix.service }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ steps.tag.outputs.tag }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 3. GitHub Release ────────────────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    # Only on semver tags.
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need full history for changelog
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            LOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
+          else
+            LOG=$(git log --pretty=format:"- %s (%h)" --no-merges | head -30)
+          fi
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$LOG" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Wolf Engine ${{ github.ref_name }}
+          body: |
+            ## What's changed
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Docker images
+
+            | Service | Image |
+            |---------|-------|
+            | agent   | `ghcr.io/${{ github.repository_owner }}/wolf-engine/agent:${{ github.ref_name }}` |
+            | claude  | `ghcr.io/${{ github.repository_owner }}/wolf-engine/claude:${{ github.ref_name }}` |
+            | tts     | `ghcr.io/${{ github.repository_owner }}/wolf-engine/tts:${{ github.ref_name }}` |
+            | whisper | `ghcr.io/${{ github.repository_owner }}/wolf-engine/whisper:${{ github.ref_name }}` |
+            | ollama  | `ghcr.io/${{ github.repository_owner }}/wolf-engine/ollama:${{ github.ref_name }}` |
+
+            ## Deploy
+
+            ```bash
+            helm upgrade --install wolf-engine ./packaging/helm \
+              --namespace wolf-engine \
+              --atomic --timeout 10m \
+              --set global.registry=ghcr.io/${{ github.repository_owner }} \
+              --set components.agent.image.tag=${{ github.ref_name }}
+            ```
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
+
+  # ── 4. Deploy ────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy (${{ startsWith(github.ref, 'refs/tags/v') && 'stable' || 'canary' }})
+    needs: build
+    runs-on: ubuntu-latest
+    # Skip deploy on PRs.
+    if: github.event_name != 'pull_request'
+    environment:
+      name: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'canary' }}
+      url: https://wolf-engine.example.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "is_stable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=sha-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+            echo "is_stable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.14.3"
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Create/update namespace
+        run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      # Inject all secrets before deploying.
+      - name: Sync K8s secrets
+        run: |
+          kubectl create secret generic wolf-engine-secrets \
+            --namespace ${{ env.NAMESPACE }} \
+            --from-literal=ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
+            --from-literal=TWILIO_ACCOUNT_SID="${{ secrets.TWILIO_ACCOUNT_SID }}" \
+            --from-literal=TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}" \
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --from-literal=REDIS_URL="${{ secrets.REDIS_URL }}" \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --from-literal=OLLAMA_URL="http://${{ env.RELEASE_NAME }}-ollama:11434" \
+            --save-config --dry-run=client -o yaml | kubectl apply -f -
+
+      # ── Stable deploy (tagged release) ────────────────────────────────────
+      - name: Helm upgrade (stable)
+        if: steps.tag.outputs.is_stable == 'true'
+        run: |
+          helm upgrade --install ${{ env.RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --atomic \
+            --timeout 10m \
+            --wait \
+            --set global.registry=${{ env.IMAGE_PREFIX }} \
+            --set-string components.agent.image.tag=${{ steps.tag.outputs.tag }} \
+            --set-string components.claude.image.tag=${{ steps.tag.outputs.tag }} \
+            --set-string components.tts.image.tag=${{ steps.tag.outputs.tag }} \
+            --set-string components.whisper.image.tag=${{ steps.tag.outputs.tag }} \
+            --set-string components.ollama.image.tag=${{ steps.tag.outputs.tag }} \
+            --set secrets.external=true \
+            --history-max 10
+
+      # ── Canary deploy (main branch) ───────────────────────────────────────
+      - name: Helm upgrade (canary)
+        if: steps.tag.outputs.is_stable == 'false'
+        run: |
+          helm upgrade --install ${{ env.RELEASE_NAME }}-canary ${{ env.HELM_CHART_PATH }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --atomic \
+            --timeout 10m \
+            --wait \
+            --set global.registry=${{ env.IMAGE_PREFIX }} \
+            --set-string components.agent.image.tag=${{ steps.tag.outputs.tag }} \
+            --set-string components.claude.image.tag=${{ steps.tag.outputs.tag }} \
+            --set-string components.tts.image.tag=${{ steps.tag.outputs.tag }} \
+            --set ingress.canary.enabled=true \
+            --set ingress.canary.weight=${{ env.CANARY_WEIGHT }} \
+            --set secrets.external=true \
+            --history-max 5
+
+      # Save revision for rollback.
+      - name: Save Helm revision
+        run: |
+          REV=$(helm history ${{ env.RELEASE_NAME }} -n ${{ env.NAMESPACE }} --max 1 -o json | jq '.[0].revision')
+          echo "helm_revision=${REV}" >> "$GITHUB_ENV"
+
+  # ── 5. Smoke tests ───────────────────────────────────────────────────────────
+  smoke:
+    name: Smoke tests
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Wait for rollout
+        run: |
+          for svc in agent claude tts whisper ollama; do
+            kubectl rollout status deployment/${{ env.RELEASE_NAME }}-${svc} \
+              -n ${{ env.NAMESPACE }} --timeout=5m || true
+          done
+
+      - name: Health checks
+        run: |
+          BASE="https://wolf-engine.example.com"
+          for path in /api/agent/health/live /api/claude/health/live /api/tts/health/live; do
+            echo "Checking $BASE$path ..."
+            curl -fsS --retry 5 --retry-delay 10 "$BASE$path" || exit 1
+          done
+
+      - name: Prometheus error rate check
+        run: |
+          PROM_URL="${{ secrets.PROMETHEUS_URL || 'http://prometheus.monitoring.svc.cluster.local:9090' }}"
+          QUERY='rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100'
+          RESULT=$(curl -fsS "${PROM_URL}/api/v1/query" \
+            --data-urlencode "query=${QUERY}" | jq '.data.result[0].value[1] // "0"' -r)
+          echo "Error rate: ${RESULT}%"
+          # Fail if error rate > 1%.
+          if (( $(echo "$RESULT > 1" | bc -l) )); then
+            echo "Error rate ${RESULT}% exceeds threshold 1%"
+            exit 1
+          fi
+
+  # ── 6. Promote canary ────────────────────────────────────────────────────────
+  promote:
+    name: Promote canary → stable
+    needs: smoke
+    runs-on: ubuntu-latest
+    # Only promote on tagged releases after successful smoke tests.
+    if: |
+      github.event_name != 'pull_request' &&
+      startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.14.3"
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      # Remove the canary ingress (100% traffic to stable).
+      - name: Disable canary ingress
+        run: |
+          helm upgrade ${{ env.RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --reuse-values \
+            --set ingress.canary.enabled=false \
+            --atomic --timeout 5m
+
+      # Delete the canary Helm release if present.
+      - name: Delete canary release
+        run: |
+          if helm status ${{ env.RELEASE_NAME }}-canary -n ${{ env.NAMESPACE }} > /dev/null 2>&1; then
+            helm delete ${{ env.RELEASE_NAME }}-canary -n ${{ env.NAMESPACE }}
+          fi
+
+  # ── 7. Rollback ──────────────────────────────────────────────────────────────
+  rollback:
+    name: Rollback on failure
+    needs: [deploy, smoke]
+    runs-on: ubuntu-latest
+    # Run only if deploy or smoke failed (not cancelled).
+    if: |
+      always() &&
+      github.event_name != 'pull_request' &&
+      (needs.deploy.result == 'failure' || needs.smoke.result == 'failure')
+
+    steps:
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.14.3"
+
+      - name: Helm rollback
+        run: |
+          echo "Rolling back ${{ env.RELEASE_NAME }} in ${{ env.NAMESPACE }}"
+          helm rollback ${{ env.RELEASE_NAME }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --wait \
+            --timeout 5m \
+            || echo "Rollback failed — manual intervention required"
+
+      - name: Verify rollback
+        run: |
+          for svc in agent claude tts whisper ollama; do
+            kubectl rollout status deployment/${{ env.RELEASE_NAME }}-${svc} \
+              -n ${{ env.NAMESPACE }} --timeout=3m || true
+          done
+
+  # ── 8. Notify ────────────────────────────────────────────────────────────────
+  notify:
+    name: Slack notification
+    needs: [validate, build, deploy, smoke, promote, rollback]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name != 'pull_request'
+
+    steps:
+      - name: Determine outcome
+        id: outcome
+        run: |
+          if [[ "${{ needs.smoke.result }}" == "success" ]]; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
+            echo "emoji=white_check_mark" >> "$GITHUB_OUTPUT"
+            echo "color=#36a64f" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ needs.rollback.result }}" == "success" ]]; then
+            echo "status=rolled_back" >> "$GITHUB_OUTPUT"
+            echo "emoji=rewind" >> "$GITHUB_OUTPUT"
+            echo "color=#ff9800" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            echo "emoji=x" >> "$GITHUB_OUTPUT"
+            echo "color=#e01e5a" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post to Slack
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "color": "${{ steps.outcome.outputs.color }}",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": ":${{ steps.outcome.outputs.emoji }}: *Wolf Engine* — ${{ steps.outcome.outputs.status }}\n*Ref:* `${{ github.ref_name }}`  *By:* ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+                    }
+                  }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

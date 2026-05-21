@@ -1,0 +1,21 @@
+# k8s/services/whisper-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: whisper
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: whisper
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  selector:
+    app.kubernetes.io/component: whisper
+    stage:                       stable
+  ports:
+    - name:       http
+      port:       9000
+      targetPort: http
+      protocol:   TCP

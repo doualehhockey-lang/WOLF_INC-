@@ -1,108 +1,80 @@
-// src/services/nlu.js — v2
+// nlu.js — v2
 // NLU avec mémoire conversationnelle.
-//
-// AMÉLIORATION v2 : le contexte des tours précédents est injecté dans le prompt
-// Ollama → résout les références implicites ("annule-le", "change l'heure").
+// Le contexte des tours précédents est injecté dans le prompt → résout les références implicites.
 
 'use strict';
 
-import { analyze }                    from './claude.js';
-import { normalizeIntent }            from './agent.js';
+import { analyze } from './claude.js';
+import { normalizeIntent } from './agent.js';
 import { resolve as resolveDateTime } from './dateparser.js';
-import { config }                     from './env.js';
-import {
-  buildContext,
-  getLastEntities,
-  detectShortAnswer,
-} from './memory.js';
+import { config } from './env.js';
+import { childLogger } from './utils/logger.js';
+import { buildContext, getLastEntities, detectShortAnswer } from './memory.js';
 
-const CONFIDENCE_THRESHOLD = 0.30; // légèrement abaissé — le contexte aide le LLM
+const log = childLogger('nlu');
+const CONFIDENCE_THRESHOLD = 0.3;
 
-// ═══════════════════════════════════════════════════════════
-// PROMPT CONTEXTUEL
-// ═══════════════════════════════════════════════════════════
+// ── Prompt contextuel ─────────────────────────────────────────────────────────
 
-/**
- * Construit le message utilisateur enrichi du contexte mémoire.
- * Si un historique existe, il est préfixé au message pour guider le LLM.
- * @param {string} text
- * @param {string} context - historique formaté par memory.buildContext()
- * @returns {string}
- */
 function buildContextualMessage(text, context) {
   if (!context) return text;
   return `${context}\n\nNouveau message à analyser : "${text}"`;
 }
 
-// ═══════════════════════════════════════════════════════════
-// RÉSOLUTION DES RÉFÉRENCES IMPLICITES
-// ═══════════════════════════════════════════════════════════
+// ── Résolution des références implicites ──────────────────────────────────────
 
-/**
- * Si le LLM retourne 'unknown' mais qu'on a un contexte pending,
- * tente de résoudre les références implicites.
- *
- * Ex: "annule-le" → intent:unknown + contexte:{ pendingIntent:'create_event', pendingDate:'2026-03-19' }
- *     → on infère intent:cancel_event avec la même date
- *
- * @param {Object} nlu        - résultat brut du LLM
- * @param {string} text       - message original
- * @param {string} callSid    - pour accéder aux entités mémorisées
- * @returns {Object}          - nlu potentiellement enrichi
- */
 function resolveImplicitReferences(nlu, text, callSid) {
   if (!callSid) return nlu;
 
   const shortAnswer = detectShortAnswer(text);
   const lastEntities = getLastEntities(callSid);
-
   if (!lastEntities) return nlu;
 
-  // Cas 1 : "oui" / "confirme" après une question de l'agent
-  // → confirme le dernier intent en cours
   if (shortAnswer === 'confirm' && lastEntities.intent) {
-    console.log(`[NLU] Référence implicite résolue: "confirm" → ${lastEntities.intent}`);
+    log.debug({ resolved: 'confirm', intent: lastEntities.intent }, 'Implicit reference resolved');
     return {
       ...nlu,
-      intent:  lastEntities.intent,
-      date:    lastEntities.isoDate ?? nlu.date,
-      time:    lastEntities.isoTime ?? nlu.time,
+      intent: lastEntities.intent,
+      date: lastEntities.isoDate ?? nlu.date,
+      time: lastEntities.isoTime ?? nlu.time,
       subject: lastEntities.subject ?? nlu.subject,
       _resolved: 'confirm',
     };
   }
 
-  // Cas 2 : "non" / "annule" → annule l'action en cours
   if (shortAnswer === 'deny') {
-    console.log('[NLU] Référence implicite résolue: "deny" → unknown (action annulée)');
+    log.debug({ resolved: 'deny' }, 'Implicit reference resolved');
     return { ...nlu, intent: 'unknown', _resolved: 'deny' };
   }
 
-  // Cas 3 : verbe implicite ("annule-le", "supprime-le", "change l'heure")
-  // Le LLM retourne unknown parce qu'il n'a pas le contexte de "le"
   if (nlu.intent === 'unknown' || nlu.confidence < 0.4) {
     const lower = text.toLowerCase();
 
-    // "annule-le", "annule ça", "supprime"
     if (/annul|supprim|efface/.test(lower) && lastEntities.isoDate) {
-      console.log(`[NLU] Référence implicite résolue: "${text}" → cancel_event`);
+      log.debug(
+        { text: text.slice(0, 40), resolved: 'implicit-cancel' },
+        'Implicit reference resolved'
+      );
       return {
         ...nlu,
-        intent:  'cancel_event',
-        date:    lastEntities.isoDate,
-        time:    lastEntities.isoTime,
+        intent: 'cancel_event',
+        date: lastEntities.isoDate,
+        time: lastEntities.isoTime,
         _resolved: 'implicit-cancel',
       };
     }
 
-    // "change l'heure", "décale", "déplace"
-    if (/change|decal|deplace|repousse|modif/.test(lower.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) {
-      console.log(`[NLU] Référence implicite résolue: "${text}" → update_event`);
+    const normalised = lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (/change|decal|deplace|repousse|modif/.test(normalised)) {
+      log.debug(
+        { text: text.slice(0, 40), resolved: 'implicit-update' },
+        'Implicit reference resolved'
+      );
       return {
         ...nlu,
-        intent:  'update_event',
-        date:    nlu.date || lastEntities.isoDate,
-        time:    nlu.time || lastEntities.isoTime,
+        intent: 'update_event',
+        date: nlu.date || lastEntities.isoDate,
+        time: nlu.time || lastEntities.isoTime,
         _resolved: 'implicit-update',
       };
     }
@@ -111,9 +83,7 @@ function resolveImplicitReferences(nlu, text, callSid) {
   return nlu;
 }
 
-// ═══════════════════════════════════════════════════════════
-// API PUBLIQUE
-// ═══════════════════════════════════════════════════════════
+// ── API PUBLIQUE ──────────────────────────────────────────────────────────────
 
 /**
  * @typedef {Object} NluResult
@@ -131,84 +101,79 @@ function resolveImplicitReferences(nlu, text, callSid) {
  * @property {string[]}    missing
  * @property {string[]}    errors
  * @property {string}      strategy
- * @property {string}      [_resolved] - debug: comment la référence implicite a été résolue
+ * @property {string}      [_resolved]
  */
 
 /**
- * Analyse un texte transcrit avec contexte mémoire.
  * @param {string}  text
- * @param {string}  [callSid]       - pour la mémoire conversationnelle
+ * @param {string}  [callSid]
  * @param {Date}    [referenceDate]
  * @returns {Promise<NluResult>}
  */
 export async function understand(text, callSid = null, referenceDate = new Date()) {
   if (!text?.trim()) return _failResult('empty-transcript');
 
-  // ── 1. Contexte mémoire ─────────────────────────────────
   const context = callSid ? buildContext(callSid) : '';
   const fullMessage = buildContextualMessage(text.trim(), context);
 
-  if (context) console.log('[NLU] Contexte injecté dans le prompt');
+  if (context) log.debug({ callSid }, 'Memory context injected into NLU prompt');
 
-  // ── 2. Appel Ollama ─────────────────────────────────────
   let nlu;
   try {
-    nlu = await analyze(fullMessage, {
-      model:       config.ollama.model,
-      temperature: 0.05,
-    });
+    nlu = await analyze(fullMessage, { model: config.ollama.model, temperature: 0.05 });
   } catch (err) {
-    console.error('[NLU] analyze() failed:', err.message);
-    return _failResult(`ollama-error: ${err.message}`);
+    log.error({ err: err.message, callSid }, 'NLU analyze() failed');
+    return _failResult(`analyze-error: ${err.message}`);
   }
 
-  // ── 3. Résolution références implicites ─────────────────
   nlu = resolveImplicitReferences(nlu, text.trim(), callSid);
 
-  // ── 4. Seuil confiance ───────────────────────────────────
   if (nlu.confidence < CONFIDENCE_THRESHOLD && !nlu._resolved) {
     return {
-      ok: false, intent: 'unknown', rawIntent: nlu.intent,
-      subject: '', date: '', time: '',
-      isoDate: null, isoTime: null, iso: null,
-      confidence: nlu.confidence, needsClarification: true,
-      missing: [], errors: ['low-confidence'], strategy: nlu.strategy,
+      ok: false,
+      intent: 'unknown',
+      rawIntent: nlu.intent,
+      subject: '',
+      date: '',
+      time: '',
+      isoDate: null,
+      isoTime: null,
+      iso: null,
+      confidence: nlu.confidence,
+      needsClarification: true,
+      missing: [],
+      errors: ['low-confidence'],
+      strategy: nlu.strategy,
     };
   }
 
-  // ── 5. Normalisation intent ──────────────────────────────
   const intent = normalizeIntent(nlu.intent);
-
-  // ── 6. Résolution date/heure ─────────────────────────────
-  // Si le LLM n'a pas extrait de date (référence implicite), on utilise
-  // les entités de la mémoire
   const lastEntities = callSid ? getLastEntities(callSid) : null;
   const rawDate = nlu.date || (lastEntities?.isoDate ?? '');
   const rawTime = nlu.time || (lastEntities?.isoTime ?? '');
-
   const resolved = resolveDateTime(rawDate, rawTime, referenceDate);
-  const missing  = _getMissing(intent, resolved);
+  const missing = _getMissing(intent, resolved);
 
   return {
-    ok:                 true,
+    ok: true,
     intent,
-    rawIntent:          nlu.intent,
-    subject:            nlu.subject ?? '',
-    date:               nlu.date    ?? '',
-    time:               nlu.time    ?? '',
-    isoDate:            resolved.date,
-    isoTime:            resolved.time,
-    iso:                resolved.iso,
-    confidence:         nlu.confidence,
+    rawIntent: nlu.intent,
+    subject: nlu.subject ?? '',
+    date: nlu.date ?? '',
+    time: nlu.time ?? '',
+    isoDate: resolved.date,
+    isoTime: resolved.time,
+    iso: resolved.iso,
+    confidence: nlu.confidence,
     needsClarification: false,
     missing,
-    errors:             nlu.errors ?? [],
-    strategy:           nlu.strategy,
-    _resolved:          nlu._resolved,
+    errors: nlu.errors ?? [],
+    strategy: nlu.strategy,
+    _resolved: nlu._resolved,
   };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function _getMissing(intent, resolved) {
   const m = [];
@@ -224,10 +189,19 @@ function _getMissing(intent, resolved) {
 
 function _failResult(reason) {
   return {
-    ok: false, intent: 'unknown', rawIntent: '',
-    subject: '', date: '', time: '',
-    isoDate: null, isoTime: null, iso: null,
-    confidence: 0, needsClarification: false,
-    missing: [], errors: [reason], strategy: 'none',
+    ok: false,
+    intent: 'unknown',
+    rawIntent: '',
+    subject: '',
+    date: '',
+    time: '',
+    isoDate: null,
+    isoTime: null,
+    iso: null,
+    confidence: 0,
+    needsClarification: false,
+    missing: [],
+    errors: [reason],
+    strategy: 'none',
   };
 }
