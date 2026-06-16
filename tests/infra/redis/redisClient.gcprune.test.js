@@ -6,9 +6,15 @@ import { jest } from '@jest/globals';
 
 // Use fake timers BEFORE import so setInterval uses fake timers
 jest.useFakeTimers();
+<<<<<<< HEAD
 jest.setSystemTime(0); // Pin fake time at epoch 0
 
 delete process.env.REDIS_URL; // Use in-memory store
+=======
+jest.setSystemTime(0);  // Pin fake time at epoch 0
+
+delete process.env.REDIS_URL;  // Use in-memory store
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }),

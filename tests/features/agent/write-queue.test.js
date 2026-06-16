@@ -9,9 +9,13 @@ describe('WriteQueue', () => {
 
   test('executes writeFn on enqueue', async () => {
     const calls = [];
+<<<<<<< HEAD
     const q = new WriteQueue(async () => {
       calls.push(Date.now());
     });
+=======
+    const q     = new WriteQueue(async () => { calls.push(Date.now()); });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await q.enqueue();
     expect(calls).toHaveLength(1);
   });
@@ -39,9 +43,13 @@ describe('WriteQueue', () => {
       calls.push(Date.now());
       if (calls.length === 1) {
         // Block on first write to observe pending behaviour
+<<<<<<< HEAD
         await new Promise(r => {
           resolve1 = r;
         });
+=======
+        await new Promise(r => { resolve1 = r; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       }
     });
 
@@ -59,9 +67,13 @@ describe('WriteQueue', () => {
   test('isRunning and hasPending flags', async () => {
     let unblock;
     const q = new WriteQueue(async () => {
+<<<<<<< HEAD
       await new Promise(r => {
         unblock = r;
       });
+=======
+      await new Promise(r => { unblock = r; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     const p = q.enqueue();
@@ -73,7 +85,11 @@ describe('WriteQueue', () => {
 
   test('recovers gracefully from writeFn errors', async () => {
     let count = 0;
+<<<<<<< HEAD
     const q = new WriteQueue(async () => {
+=======
+    const q   = new WriteQueue(async () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       count++;
       if (count === 1) throw new Error('simulated write failure');
     });

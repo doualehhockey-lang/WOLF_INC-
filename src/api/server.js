@@ -5,6 +5,10 @@
 
 import express from 'express';
 import helmet from 'helmet';
+<<<<<<< HEAD
+=======
+import morgan from 'morgan';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 import cookieParser from 'cookie-parser';
 import { resolve } from 'path';
 import { logger } from '../core/logger.js';
@@ -14,10 +18,13 @@ import { requestId } from './middleware/requestId.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { router } from './router.js';
 import { adminRouter } from '../features/admin/admin.router.js';
+<<<<<<< HEAD
 import { i18nMiddleware } from '../core/i18n.js';
 import { gdprRouter } from '../features/gdpr/gdpr.router.js';
 import { billingRouter } from '../features/billing/billing.router.js';
 import { mountSwagger } from './swagger.js';
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 /**
  * Build and return the configured Express application.
@@ -26,13 +33,18 @@ import { mountSwagger } from './swagger.js';
  */
 export function createApp() {
   const app = express();
+<<<<<<< HEAD
   // Trust exactly one proxy hop (the load balancer / ingress).
   // 'true' trusts any X-Forwarded-For value, enabling IP spoofing for rate limit bypass.
   app.set('trust proxy', 1);
+=======
+  app.set('trust proxy', true);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   // ── Security headers ─────────────────────────────────────────────────────────
   app.use(
     helmet({
+<<<<<<< HEAD
       contentSecurityPolicy: isProd
         ? {
             directives: {
@@ -48,6 +60,17 @@ export function createApp() {
             },
           }
         : false,
+=======
+      contentSecurityPolicy: isProd ? {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", 'https:'],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'", 'https:'],
+        },
+      } : false,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
   );
@@ -55,6 +78,7 @@ export function createApp() {
   // ── CORS — strict whitelist on API routes ─────────────────────────────────────
   app.use(cors);
 
+<<<<<<< HEAD
   // ── i18n — language detection from Accept-Language header ────────────────────
   app.use(i18nMiddleware);
 
@@ -65,11 +89,17 @@ export function createApp() {
   // The billing router applies express.raw() only on /billing/webhook.
   app.use('/billing', billingRouter);
 
+=======
+  // ── Request ID for log correlation ────────────────────────────────────────────
+  app.use(requestId);
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   // ── Body parsers ──────────────────────────────────────────────────────────────
   app.use(cookieParser());
   app.use(express.json({ limit: '64kb' }));
   app.use(express.urlencoded({ extended: true, limit: '64kb' }));
 
+<<<<<<< HEAD
   // ── HTTP access log ───────────────────────────────────────────────────────────
   // M6 FIX: Morgan removed. It piped into Pino, creating two log entries per
   // request (one unstructured Morgan string, one from Pino directly). In addition,
@@ -88,6 +118,14 @@ export function createApp() {
     );
     next();
   });
+=======
+  // ── HTTP access log (Pino-backed) ─────────────────────────────────────────────
+  app.use(
+    morgan('combined', {
+      stream: { write: msg => logger.info({ type: 'http' }, msg.trim()) },
+    })
+  );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   // ── HTTPS redirect in production ──────────────────────────────────────────────
   if (isProd) {
@@ -113,10 +151,13 @@ export function createApp() {
   app.use('/', router);
   // Mount admin surface separately so it can reside at /admin and be protected.
   app.use('/admin', adminRouter);
+<<<<<<< HEAD
   // GDPR compliance endpoints (JWT-protected)
   app.use('/api/user', gdprRouter);
   // OpenAPI docs (Swagger UI at /api-docs, raw spec at /api-docs.json)
   mountSwagger(app);
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   // ── Error handling — must come last ──────────────────────────────────────────
   app.use(notFound);

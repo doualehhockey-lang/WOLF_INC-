@@ -17,6 +17,7 @@ import clsx from 'clsx';
 // ── Event type icons + badge classes ─────────────────────────────────────────
 
 const EVENT_META = {
+<<<<<<< HEAD
   jwt_ok: { label: 'JWT OK', badge: 'badge-green', Icon: ShieldCheck },
   jwt_expired: { label: 'JWT Expired', badge: 'badge-yellow', Icon: ShieldAlert },
   jwt_invalid: { label: 'JWT Invalid', badge: 'badge-red', Icon: ShieldX },
@@ -24,6 +25,15 @@ const EVENT_META = {
   apikey_bad: { label: 'API Key Bad', badge: 'badge-red', Icon: ShieldX },
   rbac_deny: { label: 'RBAC Deny', badge: 'badge-red', Icon: ShieldX },
   rate_limited: { label: 'Rate Limited', badge: 'badge-yellow', Icon: Clock },
+=======
+  jwt_ok:       { label: 'JWT OK',       badge: 'badge-green', Icon: ShieldCheck },
+  jwt_expired:  { label: 'JWT Expired',  badge: 'badge-yellow', Icon: ShieldAlert },
+  jwt_invalid:  { label: 'JWT Invalid',  badge: 'badge-red',   Icon: ShieldX    },
+  apikey_ok:    { label: 'API Key OK',   badge: 'badge-blue',  Icon: ShieldCheck },
+  apikey_bad:   { label: 'API Key Bad',  badge: 'badge-red',   Icon: ShieldX    },
+  rbac_deny:    { label: 'RBAC Deny',    badge: 'badge-red',   Icon: ShieldX    },
+  rate_limited: { label: 'Rate Limited', badge: 'badge-yellow', Icon: Clock      },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 
 const ALL_TYPES = Object.keys(EVENT_META);
@@ -33,7 +43,11 @@ const ALL_TYPES = Object.keys(EVENT_META);
 function FilterBar({ search, setSearch, selectedTypes, setSelectedTypes }) {
   const toggleType = type =>
     setSelectedTypes(prev =>
+<<<<<<< HEAD
       prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+=======
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
 
   return (
@@ -65,7 +79,11 @@ function FilterBar({ search, setSearch, selectedTypes, setSelectedTypes }) {
               className={clsx(
                 badge,
                 'cursor-pointer select-none transition-opacity',
+<<<<<<< HEAD
                 !active && 'opacity-40'
+=======
+                !active && 'opacity-40',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
               )}
               aria-pressed={active}
               aria-label={`Filter: ${label}`}
@@ -118,11 +136,15 @@ function EventTable({ events }) {
         </thead>
         <tbody className="divide-y divide-border">
           {events.map((ev, i) => {
+<<<<<<< HEAD
             const meta = EVENT_META[ev.type] ?? {
               label: ev.type,
               badge: 'badge-gray',
               Icon: ShieldAlert,
             };
+=======
+            const meta = EVENT_META[ev.type] ?? { label: ev.type, badge: 'badge-gray', Icon: ShieldAlert };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             return (
               <tr key={ev.id ?? i} className="hover:bg-surface transition-colors">
                 <td className="px-4 py-2 text-xs font-mono text-text-muted whitespace-nowrap">
@@ -134,8 +156,17 @@ function EventTable({ events }) {
                 <td className="px-4 py-2 font-mono text-xs truncate max-w-[120px]">
                   {ev.sub ?? '—'}
                 </td>
+<<<<<<< HEAD
                 <td className="px-4 py-2 text-xs text-text-muted">{ev.resource ?? '—'}</td>
                 <td className="px-4 py-2 font-mono text-xs text-text-muted">{ev.ip ?? '—'}</td>
+=======
+                <td className="px-4 py-2 text-xs text-text-muted">
+                  {ev.resource ?? '—'}
+                </td>
+                <td className="px-4 py-2 font-mono text-xs text-text-muted">
+                  {ev.ip ?? '—'}
+                </td>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
                 <td className="px-4 py-2 text-xs text-text-muted truncate max-w-[200px]">
                   {ev.detail ?? '—'}
                 </td>
@@ -207,7 +238,11 @@ function formatTime(ts) {
  * }} props
  */
 export default function SecurityManager({ events = [], loading, error }) {
+<<<<<<< HEAD
   const [search, setSearch] = useState('');
+=======
+  const [search,        setSearch]        = useState('');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const [selectedTypes, setSelectedTypes] = useState([]);
 
   const filtered = useMemo(() => {
@@ -215,12 +250,20 @@ export default function SecurityManager({ events = [], loading, error }) {
     if (selectedTypes.length) list = list.filter(e => selectedTypes.includes(e.type));
     if (search.trim()) {
       const q = search.toLowerCase();
+<<<<<<< HEAD
       list = list.filter(
         e =>
           (e.sub ?? '').toLowerCase().includes(q) ||
           (e.ip ?? '').toLowerCase().includes(q) ||
           (e.resource ?? '').toLowerCase().includes(q) ||
           (e.detail ?? '').toLowerCase().includes(q)
+=======
+      list = list.filter(e =>
+        (e.sub      ?? '').toLowerCase().includes(q) ||
+        (e.ip       ?? '').toLowerCase().includes(q) ||
+        (e.resource ?? '').toLowerCase().includes(q) ||
+        (e.detail   ?? '').toLowerCase().includes(q),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       );
     }
     return list;

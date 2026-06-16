@@ -14,14 +14,19 @@ const mockGaugeInc = jest.fn();
 const mockGaugeDec = jest.fn();
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   eventsStoredGauge: { inc: mockGaugeInc, dec: mockGaugeDec, set: jest.fn() },
+<<<<<<< HEAD
   errorCounter: { inc: jest.fn() },
   auditLogFailures: { inc: jest.fn() },
+=======
+  errorCounter:      { inc: jest.fn() },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Build a chainable Knex mock builder ───────────────────────────────────────
 // Each method returns `this` so chaining works; terminal methods are promises.
 function makeBuilder(terminalResult) {
   const b = {
+<<<<<<< HEAD
     where: jest.fn().mockReturnThis(),
     whereNull: jest.fn().mockReturnThis(),
     whereILike: jest.fn().mockReturnThis(),
@@ -32,6 +37,18 @@ function makeBuilder(terminalResult) {
     update: jest.fn().mockReturnThis(),
     first: jest.fn().mockResolvedValue(terminalResult ?? null),
     count: jest.fn().mockResolvedValue(terminalResult ?? [{ count: '0' }]),
+=======
+    where:     jest.fn().mockReturnThis(),
+    whereNull: jest.fn().mockReturnThis(),
+    whereILike: jest.fn().mockReturnThis(),
+    orderBy:   jest.fn().mockReturnThis(),
+    select:    jest.fn().mockResolvedValue(terminalResult ?? []),
+    insert:    jest.fn().mockReturnThis(),
+    returning: jest.fn().mockResolvedValue(terminalResult ?? []),
+    update:    jest.fn().mockReturnThis(),
+    first:     jest.fn().mockResolvedValue(terminalResult ?? null),
+    count:     jest.fn().mockResolvedValue(terminalResult ?? [{ count: '0' }]),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
   return b;
 }
@@ -41,13 +58,19 @@ const mockDb = jest.fn(() => _builder);
 mockDb.fn = { now: jest.fn(() => 'NOW()') };
 
 jest.unstable_mockModule('../../../src/infra/db/dbClient.js', () => ({
+<<<<<<< HEAD
   db: mockDb,
   dbAvailable: true,
   pendingMigrationCount: 0,
+=======
+  db:          mockDb,
+  dbAvailable: true,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 const {
+<<<<<<< HEAD
   listEvents,
   createEvent,
   findEventByDate,
@@ -59,6 +82,14 @@ const {
 
 const EVT = { id: 1, subject: 'Médecin', date: '2026-06-01', time: '09:00' };
 const USER = 'user-key-42';
+=======
+  listEvents, createEvent, findEventByDate, findEventBySubject,
+  softDeleteEvent, updateEvent, getTotalCount,
+} = await import('../../../src/features/agent/db.store.js');
+
+const EVT    = { id: 1, subject: 'Médecin', date: '2026-06-01', time: '09:00' };
+const USER   = 'user-key-42';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -109,18 +140,26 @@ describe('createEvent', () => {
   test('inserts into events table', async () => {
     await createEvent(USER, { subject: 'Médecin', date: '2026-06-01', time: '09:00' });
     expect(_builder.insert).toHaveBeenCalledWith({
+<<<<<<< HEAD
       user_key: USER,
       subject: 'Médecin',
       date: '2026-06-01',
       time: '09:00',
+=======
+      user_key: USER, subject: 'Médecin', date: '2026-06-01', time: '09:00',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
   });
 
   test('uses "Rendez-vous" when subject is falsy', async () => {
     await createEvent(USER, { subject: '', date: '2026-06-01', time: '09:00' });
+<<<<<<< HEAD
     expect(_builder.insert).toHaveBeenCalledWith(
       expect.objectContaining({ subject: 'Rendez-vous' })
     );
+=======
+    expect(_builder.insert).toHaveBeenCalledWith(expect.objectContaining({ subject: 'Rendez-vous' }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('returns the inserted event', async () => {
@@ -142,11 +181,15 @@ describe('findEventByDate', () => {
   test('queries with user_key and date', async () => {
     _builder.first.mockResolvedValue(EVT);
     await findEventByDate(USER, '2026-06-01');
+<<<<<<< HEAD
     expect(_builder.where).toHaveBeenCalledWith({
       user_key: USER,
       date: '2026-06-01',
       deleted_at: null,
     });
+=======
+    expect(_builder.where).toHaveBeenCalledWith({ user_key: USER, date: '2026-06-01', deleted_at: null });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('returns event when found', async () => {
@@ -230,6 +273,7 @@ describe('updateEvent', () => {
 
   test('only includes allowed fields in patch (date/time/subject)', async () => {
     _builder.returning.mockResolvedValue([EVT]);
+<<<<<<< HEAD
     await updateEvent(USER, 1, {
       date: '2026-07-01',
       time: '10:00',
@@ -240,6 +284,11 @@ describe('updateEvent', () => {
     expect(_builder.update).toHaveBeenCalledWith(
       expect.objectContaining({ date: '2026-07-01', time: '10:00', subject: 'Kiné' })
     );
+=======
+    await updateEvent(USER, 1, { date: '2026-07-01', time: '10:00', subject: 'Kiné', extra: 'ignored' });
+    expect(_builder.update).toHaveBeenCalledWith(expect.not.objectContaining({ extra: 'ignored' }));
+    expect(_builder.update).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-07-01', time: '10:00', subject: 'Kiné' }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 

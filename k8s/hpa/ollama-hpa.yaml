@@ -1,0 +1,57 @@
+# k8s/hpa/ollama-hpa.yaml — HPA for Ollama LLM pods.
+# Ollama is memory-heavy. Scale conservatively to avoid OOM on model reload.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ollama-hpa
+  namespace: wolf-engine
+  labels:
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: ollama
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind:       Deployment
+    name:       ollama
+
+  minReplicas: 1
+  maxReplicas: 4   # bounded by GPU/memory availability
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type:               Utilization
+          averageUtilization: 70
+
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type:               Utilization
+          averageUtilization: 75
+
+    - type: Pods
+      pods:
+        metric:
+          name: provider_latency_ms_p95_ollama
+        target:
+          type:         AverageValue
+          averageValue: "500m"
+
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 120   # Ollama is slow to start — wait longer
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+    scaleDown:
+      stabilizationWindowSeconds: 600   # 10 min cooldown — model unload is expensive
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 300

@@ -17,9 +17,14 @@ jest.unstable_mockModule('../../../src/core/config.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   pipelineLatency: { startTimer: jest.fn(() => jest.fn()) },
+<<<<<<< HEAD
   errorCounter: { inc: jest.fn() },
   activeSessions: { set: jest.fn() },
   auditLogFailures: { inc: jest.fn() },
+=======
+  errorCounter:    { inc: jest.fn() },
+  activeSessions:  { set: jest.fn() },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const mockUnderstand = jest.fn();
@@ -38,6 +43,7 @@ jest.unstable_mockModule('../../../src/features/tts/tts.service.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
+<<<<<<< HEAD
   addUserTurn: jest.fn(async () => {}),
   addAgentTurn: jest.fn(async () => {}),
   getSession: jest.fn(async () => ({ turns: [] })),
@@ -64,6 +70,27 @@ jest.unstable_mockModule('../../../src/features/voice/twiml.builder.js', () => (
 
 jest.unstable_mockModule('../../../src/services/claude.client.js', () => ({
   translate: jest.fn(async text => text),
+=======
+  addUserTurn:  jest.fn(async () => {}),
+  addAgentTurn: jest.fn(async () => {}),
+  getStats:     jest.fn(() => ({ activeSessions: 0 })),
+}));
+
+jest.unstable_mockModule('../../../src/features/lang/lang.service.js', () => ({
+  detectLang:   jest.fn(() => 'fr'),
+  twilioLocale: jest.fn(() => 'fr-FR'),
+}));
+
+const mockTwimlSay = jest.fn((msg) => `<Say>${msg}</Say>`);
+jest.unstable_mockModule('../../../src/features/voice/twiml.builder.js', () => ({
+  twimlSayThenGather:  mockTwimlSay,
+  twimlPlayThenGather: jest.fn((url) => `<Play>${url}</Play>`),
+  twimlError:          jest.fn(() => '<Error/>'),
+}));
+
+jest.unstable_mockModule('../../../src/services/claude.client.js', () => ({
+  translate: jest.fn(async (text) => text),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
@@ -75,11 +102,15 @@ const saveAudio = jest.fn(async () => ({ filename: 'audio.wav' }));
 
 beforeEach(() => {
   jest.clearAllMocks();
+<<<<<<< HEAD
   mockSynthesize.mockResolvedValue({
     buffer: Buffer.alloc(44),
     ext: '.wav',
     mimeType: 'audio/wav',
   });
+=======
+  mockSynthesize.mockResolvedValue({ buffer: Buffer.alloc(44), ext: '.wav', mimeType: 'audio/wav' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   mockDispatch.mockResolvedValue({ ok: true, message: 'Ok' });
 });
 
@@ -88,6 +119,7 @@ beforeEach(() => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('_buildMissingQuestion — heure-only missing with subject (lines 130, 136)', () => {
+<<<<<<< HEAD
   test('generates "What time..." question when only heure is missing and subject is set', async () => {
     mockUnderstand.mockResolvedValueOnce({
       ok: true,
@@ -104,6 +136,24 @@ describe('_buildMissingQuestion — heure-only missing with subject (lines 130, 
       missing: ['heure'], // only heure → line 136 TRUE branch
       errors: [],
       strategy: 'claude',
+=======
+  test('generates "À quelle heure..." question when only heure is missing and subject is set', async () => {
+    mockUnderstand.mockResolvedValueOnce({
+      ok:                 true,
+      intent:             'create_event',
+      rawIntent:          'create_event',
+      subject:            'médecin',          // truthy → line 130 TRUE branch
+      date:               '2026-10-01',
+      time:               '',
+      isoDate:            '2026-10-01',
+      isoTime:            null,
+      iso:                null,
+      confidence:         0.9,
+      needsClarification: true,
+      missing:            ['heure'],          // only heure → line 136 TRUE branch
+      errors:             [],
+      strategy:           'claude',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     const twiml = await runPipeline(CTX, saveAudio);
@@ -121,6 +171,7 @@ describe('_buildMissingQuestion — heure-only missing with subject (lines 130, 
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('_buildMissingQuestion — subject TRUE with date missing (line 130)', () => {
+<<<<<<< HEAD
   test('includes subject in "What day..." question', async () => {
     mockUnderstand.mockResolvedValueOnce({
       ok: true,
@@ -137,6 +188,24 @@ describe('_buildMissingQuestion — subject TRUE with date missing (line 130)', 
       missing: ['date'],
       errors: [],
       strategy: 'claude',
+=======
+  test('includes subject in "Pour quel jour..." question', async () => {
+    mockUnderstand.mockResolvedValueOnce({
+      ok:                 true,
+      intent:             'create_event',
+      rawIntent:          'create_event',
+      subject:            'dentiste',         // truthy → line 130 TRUE branch
+      date:               '',
+      time:               '',
+      isoDate:            null,
+      isoTime:            null,
+      iso:                null,
+      confidence:         0.9,
+      needsClarification: true,
+      missing:            ['date'],
+      errors:             [],
+      strategy:           'claude',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     const twiml = await runPipeline(CTX, saveAudio);

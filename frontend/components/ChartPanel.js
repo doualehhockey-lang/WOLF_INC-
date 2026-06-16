@@ -15,6 +15,7 @@
 
 import {
   ResponsiveContainer,
+<<<<<<< HEAD
   LineChart,
   Line,
   BarChart,
@@ -23,6 +24,11 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+=======
+  LineChart, Line,
+  BarChart,  Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   ReferenceLine,
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -37,8 +43,12 @@ function WolfTooltip({ active, payload, label, unit = '' }) {
       <p className="text-text-muted mb-1">{label}</p>
       {payload.map(p => (
         <p key={p.dataKey} style={{ color: p.color }} className="font-mono">
+<<<<<<< HEAD
           {p.name}: {p.value}
           {unit}
+=======
+          {p.name}: {p.value}{unit}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         </p>
       ))}
     </div>
@@ -49,7 +59,11 @@ function WolfTooltip({ active, payload, label, unit = '' }) {
 
 function StatPanel({ value, unit = '', delta, deltaLabel, suffix, loading, error }) {
   if (loading) return <SkeletonStat />;
+<<<<<<< HEAD
   if (error) return <ErrorState message={error.message} />;
+=======
+  if (error)   return <ErrorState message={error.message} />;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   const deltaSign = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
 
@@ -62,12 +76,19 @@ function StatPanel({ value, unit = '', delta, deltaLabel, suffix, loading, error
         )}
       </p>
       {suffix && <p className="text-xs text-text-muted">{suffix}</p>}
+<<<<<<< HEAD
       {delta !== undefined && <DeltaBadge sign={deltaSign} delta={delta} label={deltaLabel} />}
+=======
+      {delta !== undefined && (
+        <DeltaBadge sign={deltaSign} delta={delta} label={deltaLabel} />
+      )}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     </div>
   );
 }
 
 function DeltaBadge({ sign, delta, label }) {
+<<<<<<< HEAD
   const Icon = sign === 'up' ? TrendingUp : sign === 'down' ? TrendingDown : Minus;
   const color =
     sign === 'up'
@@ -75,12 +96,24 @@ function DeltaBadge({ sign, delta, label }) {
       : sign === 'down'
         ? 'text-red-500 dark:text-red-400'
         : 'text-text-muted';
+=======
+  const Icon  = sign === 'up' ? TrendingUp : sign === 'down' ? TrendingDown : Minus;
+  const color = sign === 'up'
+    ? 'text-emerald-500 dark:text-emerald-400'
+    : sign === 'down'
+    ? 'text-red-500 dark:text-red-400'
+    : 'text-text-muted';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <p className={clsx('flex items-center gap-1 text-xs font-medium', color)}>
       <Icon className="h-3 w-3" aria-hidden="true" />
+<<<<<<< HEAD
       {Math.abs(delta)}
       {label ?? ''}
+=======
+      {Math.abs(delta)}{label ?? ''}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     </p>
   );
 }
@@ -89,12 +122,17 @@ function DeltaBadge({ sign, delta, label }) {
 
 function LinePanel({ data, dataKey, color = '#4070f4', unit = '', refValue, loading, error }) {
   if (loading) return <SkeletonChart />;
+<<<<<<< HEAD
   if (error) return <ErrorState message={error.message} />;
+=======
+  if (error)   return <ErrorState message={error.message} />;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <ResponsiveContainer width="100%" height={140}>
       <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+<<<<<<< HEAD
         <XAxis
           dataKey="ts"
           tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
@@ -105,6 +143,10 @@ function LinePanel({ data, dataKey, color = '#4070f4', unit = '', refValue, load
           tickLine={false}
           axisLine={false}
         />
+=======
+        <XAxis dataKey="ts" tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} tickLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         <Tooltip content={<WolfTooltip unit={unit} />} />
         {refValue !== undefined && (
           <ReferenceLine y={refValue} stroke="var(--color-text-muted)" strokeDasharray="4 4" />
@@ -126,12 +168,17 @@ function LinePanel({ data, dataKey, color = '#4070f4', unit = '', refValue, load
 
 function BarPanel({ data, dataKey, color = '#4070f4', unit = '', loading, error }) {
   if (loading) return <SkeletonChart />;
+<<<<<<< HEAD
   if (error) return <ErrorState message={error.message} />;
+=======
+  if (error)   return <ErrorState message={error.message} />;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <ResponsiveContainer width="100%" height={140}>
       <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+<<<<<<< HEAD
         <XAxis
           dataKey="ts"
           tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
@@ -142,6 +189,10 @@ function BarPanel({ data, dataKey, color = '#4070f4', unit = '', loading, error 
           tickLine={false}
           axisLine={false}
         />
+=======
+        <XAxis dataKey="ts" tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} tickLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         <Tooltip content={<WolfTooltip unit={unit} />} />
         <Bar dataKey={dataKey} fill={color} radius={[3, 3, 0, 0]} maxBarSize={24} />
       </BarChart>
@@ -175,7 +226,15 @@ function SkeletonChart() {
 }
 
 function ErrorState({ message }) {
+<<<<<<< HEAD
   return <p className="text-xs text-red-500 dark:text-red-400 py-2">Failed to load: {message}</p>;
+=======
+  return (
+    <p className="text-xs text-red-500 dark:text-red-400 py-2">
+      Failed to load: {message}
+    </p>
+  );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
@@ -208,11 +267,22 @@ export default function ChartPanel({
   variant = 'stat',
   className,
   loading = false,
+<<<<<<< HEAD
   error = null,
   ...rest
 }) {
   return (
     <article className={clsx('card flex flex-col gap-3', className)} aria-label={title}>
+=======
+  error   = null,
+  ...rest
+}) {
+  return (
+    <article
+      className={clsx('card flex flex-col gap-3', className)}
+      aria-label={title}
+    >
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       {/* Header */}
       <div>
         <p className="text-sm font-medium text-text-base">{title}</p>
@@ -220,9 +290,21 @@ export default function ChartPanel({
       </div>
 
       {/* Body */}
+<<<<<<< HEAD
       {variant === 'stat' && <StatPanel loading={loading} error={error} {...rest} />}
       {variant === 'line' && <LinePanel loading={loading} error={error} {...rest} />}
       {variant === 'bar' && <BarPanel loading={loading} error={error} {...rest} />}
+=======
+      {variant === 'stat' && (
+        <StatPanel loading={loading} error={error} {...rest} />
+      )}
+      {variant === 'line' && (
+        <LinePanel loading={loading} error={error} {...rest} />
+      )}
+      {variant === 'bar' && (
+        <BarPanel  loading={loading} error={error} {...rest} />
+      )}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     </article>
   );
 }

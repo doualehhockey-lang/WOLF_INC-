@@ -7,6 +7,7 @@ import supertest from 'supertest';
 // ── Mock external dependencies before importing app ───────────────────────────
 
 jest.unstable_mockModule('../../src/core/tracing.js', () => ({
+<<<<<<< HEAD
   initTracing: jest.fn(() => Promise.resolve()),
   shutdownTracing: jest.fn(() => Promise.resolve()),
   startSpan: jest.fn(() => ({
@@ -16,15 +17,26 @@ jest.unstable_mockModule('../../src/core/tracing.js', () => ({
     end: jest.fn(),
   })),
   withSpan: jest.fn((_n, _a, fn) => fn({ end: jest.fn() })),
+=======
+  initTracing:    jest.fn(() => Promise.resolve()),
+  shutdownTracing: jest.fn(() => Promise.resolve()),
+  startSpan:      jest.fn(() => ({ setAttributes: jest.fn(), setStatus: jest.fn(), recordException: jest.fn(), end: jest.fn() })),
+  withSpan:       jest.fn((_n, _a, fn) => fn({ end: jest.fn() })),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const refreshStore = new Map();
 
 jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
+<<<<<<< HEAD
   redis: null,
   redisAvailable: false,
   isRedisAvailable: jest.fn().mockReturnValue(false),
   cacheGet: jest.fn(async key => (refreshStore.has(key) ? refreshStore.get(key) : null)),
+=======
+  redis: null, redisAvailable: false,
+  cacheGet: jest.fn(async key => refreshStore.has(key) ? refreshStore.get(key) : null),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   cacheSet: jest.fn(async (key, value) => {
     refreshStore.set(key, value);
     return 'OK';
@@ -33,6 +45,7 @@ jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
     refreshStore.delete(key);
     return 1;
   }),
+<<<<<<< HEAD
   cacheIncr: jest.fn(() => Promise.resolve(1)),
   cacheExpire: jest.fn(() => Promise.resolve()),
   cacheTtl: jest.fn(() => Promise.resolve(60)),
@@ -79,11 +92,43 @@ jest.unstable_mockModule('../../src/features/nlu/nlu.service.js', () => ({
       strategy: 'mock',
     })
   ),
+=======
+  cacheIncr:   jest.fn(() => Promise.resolve(1)),
+  cacheExpire: jest.fn(() => Promise.resolve()),
+  cacheTtl:    jest.fn(() => Promise.resolve(60)),
+  evalScript:  jest.fn(() => Promise.resolve([1, 1])),
+}));
+
+jest.unstable_mockModule('../../src/infra/db/dbClient.js', () => ({
+  db: null, dbAvailable: false, destroyDb: jest.fn(() => Promise.resolve()),
+}));
+
+jest.unstable_mockModule('../../src/features/tts/tts.service.js', () => ({
+  synthesize: jest.fn(() => Promise.resolve({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav', fallback: false })),
+}));
+
+jest.unstable_mockModule('../../src/services/audio.utils.js', () => ({
+  saveAudio:           jest.fn(() => Promise.resolve({ filepath: '/tmp/t.wav', filename: 't.wav' })),
+  downloadTwilioMedia: jest.fn(),
+  mulawToWav:          jest.fn(b => b),
+  pcm16ToWav:          jest.fn(b => b),
+}));
+
+jest.unstable_mockModule('../../src/features/nlu/nlu.service.js', () => ({
+  understand: jest.fn(() => Promise.resolve({
+    ok: true, intent: 'list_events', confidence: 0.9, subject: '',
+    isoDate: null, isoTime: null, needsClarification: false, missing: [], errors: [], strategy: 'mock',
+  })),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('../../src/features/responder/responder.service.js', () => ({
   autoReply: jest.fn(() => Promise.resolve('Réponse mockée')),
+<<<<<<< HEAD
   getTones: jest.fn(() => ['friendly', 'pro', 'sec', 'sarcastique', 'wolf-inc']),
+=======
+  getTones:  jest.fn(() => ['friendly', 'pro', 'sec', 'sarcastique', 'wolf-inc']),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Import app after mocks ────────────────────────────────────────────────────
@@ -126,12 +171,16 @@ describe('POST /auth/token', () => {
 
 describe('POST /auth/refresh', () => {
   let refreshCookie;
+<<<<<<< HEAD
   let csrfToken;
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   beforeAll(async () => {
     const res = await request.post('/auth/token').send({ apiKey: 'test-key-abc123' });
     const rawCookie = res.headers['set-cookie']?.find(c => c.startsWith('wolf_rt='));
     refreshCookie = rawCookie?.split(';')[0];
+<<<<<<< HEAD
 
     // Obtain a CSRF token — GET /auth/csrf sets the wolf_csrf cookie
     const csrfRes = await request.get('/auth/csrf');
@@ -145,13 +194,26 @@ describe('POST /auth/refresh', () => {
       .post('/auth/refresh')
       .set('Cookie', `${refreshCookie}; wolf_csrf=${csrfToken}`)
       .set('X-CSRF-Token', csrfToken);
+=======
+  });
+
+  test('issues new accessToken with valid refresh cookie', async () => {
+    if (!refreshCookie) return; // guard for CI without cookie support
+    const res = await request.post('/auth/refresh').set('Cookie', refreshCookie);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('accessToken');
   });
 
+<<<<<<< HEAD
   test('rejects with 403 when CSRF token missing', async () => {
     const res = await request.post('/auth/refresh');
     expect(res.status).toBe(403);
+=======
+  test('rejects with 401 when no cookie', async () => {
+    const res = await request.post('/auth/refresh');
+    expect(res.status).toBe(401);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 
@@ -160,6 +222,7 @@ describe('POST /auth/refresh', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('POST /auth/logout', () => {
+<<<<<<< HEAD
   test('clears cookie and returns ok with CSRF token', async () => {
     const csrfRes = await request.get('/auth/csrf');
     const csrfCookie = csrfRes.headers['set-cookie']?.find(c => c.startsWith('wolf_csrf='));
@@ -177,6 +240,13 @@ describe('POST /auth/logout', () => {
     const res = await request.post('/auth/logout');
     expect(res.status).toBe(403);
   });
+=======
+  test('clears cookie and returns ok', async () => {
+    const res = await request.post('/auth/logout');
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -197,16 +267,24 @@ describe('Protected routes', () => {
   });
 
   test('POST /reply returns 401 with invalid token', async () => {
+<<<<<<< HEAD
     const res = await request
       .post('/reply')
+=======
+    const res = await request.post('/reply')
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       .set('Authorization', 'Bearer invalid.token.here')
       .send({ content: 'test' });
     expect(res.status).toBe(401);
   });
 
   test('POST /reply succeeds (200 or 503) with valid Bearer token', async () => {
+<<<<<<< HEAD
     const res = await request
       .post('/reply')
+=======
+    const res = await request.post('/reply')
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ content: 'Bonjour' });
     // 200 = LLM answered  |  503 = LLM unavailable (Ollama not running in test)

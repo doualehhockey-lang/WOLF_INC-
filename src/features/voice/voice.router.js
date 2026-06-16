@@ -2,13 +2,21 @@
 // Mounts at /twilio (configured in src/api/router.js).
 // Applies: TwiML headers, HMAC verification, body validation.
 
+<<<<<<< HEAD
 import { Router } from 'express';
 import { config as _config } from '../../core/config.js';
+=======
+import { Router }    from 'express';
+import { config }    from '../../core/config.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 import { TWIML_HEADERS } from './twiml.builder.js';
 import {
   handleVoice,
   handleGather,
+<<<<<<< HEAD
   handleGatherResult,
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   handleStatus,
   handleHealth,
 } from './voice.controller.js';
@@ -24,6 +32,7 @@ voiceRouter.use((_req, res, next) => {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 // Wrappers forward unhandled rejections to Express error handler via next().
 // Without .catch(next), async throws become unhandled promise rejections and
 // the client hangs (no response, no timeout reset).
@@ -32,3 +41,9 @@ voiceRouter.post('/gather', (req, res, next) => handleGather(req, res, saveAudio
 voiceRouter.post('/gather-result', (req, res, next) => handleGatherResult(req, res).catch(next));
 voiceRouter.post('/status', (req, res, next) => handleStatus(req, res).catch(next));
 voiceRouter.get('/health', (req, res) => handleHealth(req, res));
+=======
+voiceRouter.post('/voice',  (req, res) => handleVoice(req, res, saveAudio));
+voiceRouter.post('/gather', (req, res) => handleGather(req, res, saveAudio));
+voiceRouter.post('/status', (req, res) => handleStatus(req, res));
+voiceRouter.get ('/health', (req, res) => handleHealth(req, res));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b

@@ -3,12 +3,21 @@
 // All mutations are atomic within a single Node.js process.
 
 import { readFileSync, mkdirSync, existsSync } from 'fs';
+<<<<<<< HEAD
 import { writeFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { childLogger } from '../../core/logger.js';
 import { config } from '../../core/config.js';
 import { eventsStoredGauge, errorCounter } from '../../core/metrics.js';
 import { WriteQueue } from './write-queue.js';
+=======
+import { writeFile }                            from 'fs/promises';
+import { resolve, dirname }                     from 'path';
+import { childLogger }                          from '../../core/logger.js';
+import { config }                               from '../../core/config.js';
+import { eventsStoredGauge, errorCounter }      from '../../core/metrics.js';
+import { WriteQueue }                           from './write-queue.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 const log = childLogger('json-store');
 
@@ -67,7 +76,11 @@ function _save() {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function listEvents(userKey) {
+<<<<<<< HEAD
   return [..._userEvents(userKey)].sort(
+=======
+  return [...(_userEvents(userKey))].sort(
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)
   );
 }
@@ -94,7 +107,11 @@ export async function findEventBySubject(userKey, subject) {
 
 export async function softDeleteEvent(userKey, id) {
   const events = _userEvents(userKey);
+<<<<<<< HEAD
   const idx = events.findIndex(e => e.id === id);
+=======
+  const idx    = events.findIndex(e => e.id === id);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   if (idx === -1) return null;
   const [removed] = events.splice(idx, 1);
   eventsStoredGauge.dec();

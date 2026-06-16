@@ -12,20 +12,29 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
     EVENTS_FILE: '/tmp/json-store-defaults-test/events.json',
+<<<<<<< HEAD
     MAX_EVENTS: 100,
+=======
+    MAX_EVENTS:  100,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   eventsStoredGauge: { inc: jest.fn(), dec: jest.fn(), set: jest.fn() },
+<<<<<<< HEAD
   errorCounter: { inc: jest.fn() },
   auditLogFailures: { inc: jest.fn() },
+=======
+  errorCounter:      { inc: jest.fn() },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // fs mocks: existsSync=true (dir exists, no mkdirSync needed),
 // readFileSync returns '{}' → JSON has no events or counter fields
 // → destructuring defaults { events = {}, counter = 1 } both fire (line 28 TRUE branches)
 const mockReadFileSync = jest.fn(() => '{}');
+<<<<<<< HEAD
 const mockExistsSync = jest.fn(() => true);
 const mockMkdirSync = jest.fn();
 const mockWriteFile = jest.fn(async () => {});
@@ -34,6 +43,16 @@ jest.unstable_mockModule('fs', () => ({
   readFileSync: mockReadFileSync,
   mkdirSync: mockMkdirSync,
   existsSync: mockExistsSync,
+=======
+const mockExistsSync   = jest.fn(() => true);
+const mockMkdirSync    = jest.fn();
+const mockWriteFile    = jest.fn(async () => {});
+
+jest.unstable_mockModule('fs', () => ({
+  readFileSync: mockReadFileSync,
+  mkdirSync:    mockMkdirSync,
+  existsSync:   mockExistsSync,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('fs/promises', () => ({
@@ -42,12 +61,17 @@ jest.unstable_mockModule('fs/promises', () => ({
 
 jest.unstable_mockModule('../../../src/features/agent/write-queue.js', () => ({
   WriteQueue: class MockWriteQueue {
+<<<<<<< HEAD
     constructor(fn) {
       this._fn = fn;
     }
     async enqueue() {
       await this._fn();
     }
+=======
+    constructor(fn) { this._fn = fn; }
+    async enqueue() { await this._fn(); }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 

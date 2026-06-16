@@ -14,6 +14,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 // Provide DB_HOST in config to trigger the init block
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     DB_HOST: 'localhost',
     DB_PORT: 5432,
     DB_USER: 'postgres',
@@ -24,15 +25,35 @@ jest.unstable_mockModule('../../../src/core/config.js', () => ({
     JWT_SECRET: 'testjwtsecret1234567890testjwtsecret1234567890',
     JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
     API_KEYS: ['test-key'],
+=======
+    DB_HOST:     'localhost',
+    DB_PORT:     5432,
+    DB_USER:     'postgres',
+    DB_PASSWORD: 'secret',
+    DB_NAME:     'wolf_test',
+    BASE_URL:    'http://localhost:3000',
+    PHONE_SALT:  'testsalt1234567890',
+    JWT_SECRET:  'testjwtsecret1234567890testjwtsecret1234567890',
+    JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
+    API_KEYS:    ['test-key'],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 // ── Mock knex ─────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 const mockRaw = jest.fn(async () => [{ 1: 1 }]);
 const mockDestroy = jest.fn(async () => {});
 
 const mockKnexInstance = {
   raw: mockRaw,
+=======
+const mockRaw     = jest.fn(async () => [{ 1: 1 }]);
+const mockDestroy = jest.fn(async () => {});
+
+const mockKnexInstance = {
+  raw:     mockRaw,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   destroy: mockDestroy,
 };
 
@@ -49,6 +70,7 @@ const { db, dbAvailable, destroyDb } = await import('../../../src/infra/db/dbCli
 
 describe('dbClient — connected initialization', () => {
   test('knex was called with correct pg config', () => {
+<<<<<<< HEAD
     expect(MockKnex).toHaveBeenCalledWith(
       expect.objectContaining({
         client: 'pg',
@@ -59,6 +81,16 @@ describe('dbClient — connected initialization', () => {
         }),
       })
     );
+=======
+    expect(MockKnex).toHaveBeenCalledWith(expect.objectContaining({
+      client: 'pg',
+      connection: expect.objectContaining({
+        host: 'localhost',
+        port: 5432,
+        database: 'wolf_test',
+      }),
+    }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('SELECT 1 was issued to verify connection', () => {
@@ -77,7 +109,11 @@ describe('dbClient — connected initialization', () => {
     const poolConfig = MockKnex.mock.calls[0][0].pool;
     expect(poolConfig.min).toBe(2);
     expect(poolConfig.max).toBe(10);
+<<<<<<< HEAD
     expect(poolConfig.acquireTimeoutMillis).toBe(3_000);
+=======
+    expect(poolConfig.acquireTimeoutMillis).toBe(10_000);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 

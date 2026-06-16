@@ -45,7 +45,11 @@ describe('apiFetch — non-native-fetch branch (lines 41-44)', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       'https://api.example.com/endpoint',
+<<<<<<< HEAD
       expect.objectContaining({ agent: httpsAgent, method: 'GET' })
+=======
+      expect.objectContaining({ agent: httpsAgent, method: 'GET' }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -65,7 +69,11 @@ describe('apiFetch — non-native-fetch branch (lines 41-44)', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       'http://internal.service/endpoint',
+<<<<<<< HEAD
       expect.objectContaining({ agent: httpAgent })
+=======
+      expect.objectContaining({ agent: httpAgent }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -88,21 +96,30 @@ describe('apiFetch — non-native-fetch branch (lines 41-44)', () => {
 describe('apiFetch — agent selection', () => {
   let originalFetch;
 
+<<<<<<< HEAD
   beforeEach(() => {
     originalFetch = globalThis.fetch;
   });
   afterEach(() => {
     globalThis.fetch = originalFetch;
   });
+=======
+  beforeEach(() => { originalFetch = globalThis.fetch; });
+  afterEach(() => { globalThis.fetch = originalFetch; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   test('selects httpsAgent for https:// URLs', async () => {
     let readCount = 0;
     const mockFetch = jest.fn().mockResolvedValue({ ok: true });
     Object.defineProperty(globalThis, 'fetch', {
+<<<<<<< HEAD
       get() {
         readCount++;
         return readCount === 1 ? undefined : mockFetch;
       },
+=======
+      get() { readCount++; return readCount === 1 ? undefined : mockFetch; },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       configurable: true,
     });
 
@@ -115,10 +132,14 @@ describe('apiFetch — agent selection', () => {
     let readCount = 0;
     const mockFetch = jest.fn().mockResolvedValue({ ok: true });
     Object.defineProperty(globalThis, 'fetch', {
+<<<<<<< HEAD
       get() {
         readCount++;
         return readCount === 1 ? undefined : mockFetch;
       },
+=======
+      get() { readCount++; return readCount === 1 ? undefined : mockFetch; },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       configurable: true,
     });
 

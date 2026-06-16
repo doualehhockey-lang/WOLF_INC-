@@ -1,0 +1,68 @@
+# k8s/config/otel-collector-cm.yaml — ConfigMap for the OpenTelemetry sidecar.
+#
+# Each pod in the wolf-engine namespace runs an otelcol-contrib sidecar that:
+#   • Receives traces/metrics from the Node.js app (OTLP gRPC on port 4317)
+#   • Exports traces to Grafana Tempo
+#   • Exports metrics to Prometheus (scrape endpoint on :8889/metrics)
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: wolf-engine
+  labels:
+    app.kubernetes.io/component: observability
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
+
+    processors:
+      batch:
+        send_batch_size:     512
+        send_batch_max_size: 1024
+        timeout:             5s
+      memory_limiter:
+        limit_mib:      256
+        spike_limit_mib: 64
+        check_interval:  1s
+      resource:
+        attributes:
+          - action: insert
+            key: k8s.namespace
+            from_attribute: k8s.namespace.name
+
+    exporters:
+      # Grafana Tempo — trace storage
+      otlp/tempo:
+        endpoint: "tempo.monitoring.svc.cluster.local:4317"
+        tls:
+          insecure: true
+
+      # Prometheus — pull-based metrics scrape
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        namespace: wolf
+        send_timestamps: true
+        metric_expiration: 3m
+
+      # Structured logging (stdout — shipped by node log collector)
+      logging:
+        verbosity: basic
+
+    service:
+      pipelines:
+        traces:
+          receivers:  [otlp]
+          processors: [memory_limiter, batch, resource]
+          exporters:  [otlp/tempo, logging]
+        metrics:
+          receivers:  [otlp]
+          processors: [memory_limiter, batch]
+          exporters:  [prometheus]

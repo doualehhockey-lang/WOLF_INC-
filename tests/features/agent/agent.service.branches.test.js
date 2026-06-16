@@ -9,6 +9,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
+<<<<<<< HEAD
 const mockAgentLatency = { startTimer: jest.fn(() => jest.fn()) };
 const mockIntentCounter = { inc: jest.fn() };
 const mockErrorCounter = { inc: jest.fn() };
@@ -41,19 +42,61 @@ const mockJsonStore = {
 };
 
 jest.unstable_mockModule('../../../src/features/agent/db.store.js', () => mockDbStore);
+=======
+const mockAgentLatency  = { startTimer: jest.fn(() => jest.fn()) };
+const mockIntentCounter = { inc: jest.fn() };
+const mockErrorCounter  = { inc: jest.fn() };
+jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
+  agentLatency:   mockAgentLatency,
+  intentCounter:  mockIntentCounter,
+  errorCounter:   mockErrorCounter,
+}));
+
+jest.unstable_mockModule('../../../src/features/agent/intent.normalizer.js', () => ({
+  normalizeIntent: (i) => i,
+}));
+
+const mockDbStore = {
+  listEvents:         jest.fn(),
+  createEvent:        jest.fn(),
+  findEventByDate:    jest.fn(),
+  findEventBySubject: jest.fn(),
+  softDeleteEvent:    jest.fn(),
+  updateEvent:        jest.fn(),
+};
+const mockJsonStore = {
+  listEvents:         jest.fn(),
+  createEvent:        jest.fn(),
+  findEventByDate:    jest.fn(),
+  findEventBySubject: jest.fn(),
+  softDeleteEvent:    jest.fn(),
+  updateEvent:        jest.fn(),
+};
+
+jest.unstable_mockModule('../../../src/features/agent/db.store.js',   () => mockDbStore);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 jest.unstable_mockModule('../../../src/features/agent/json.store.js', () => mockJsonStore);
 
 // ── dbAvailable: TRUE → uses dbStore (lines 15-17 TRUE branch) ─────────────
 jest.unstable_mockModule('../../../src/infra/db/dbClient.js', () => ({
+<<<<<<< HEAD
   db: jest.fn(),
   dbAvailable: true, // ← triggers line 15-17 TRUE branch
   pendingMigrationCount: 0,
+=======
+  db:          jest.fn(),
+  dbAvailable: true,   // ← triggers line 15-17 TRUE branch
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const { dispatch } = await import('../../../src/features/agent/agent.service.js');
 
 const USER = 'user-branch-test';
+<<<<<<< HEAD
 const EVT = { id: 99, subject: 'Dentiste', date: '2026-07-15', time: '14:00' };
+=======
+const EVT  = { id: 99, subject: 'Dentiste', date: '2026-07-15', time: '14:00' };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -86,6 +129,7 @@ describe('agent.service — dbStore selection (lines 15-17 TRUE)', () => {
 
   test('uses dbStore.createEvent when dbAvailable is true', async () => {
     const result = await dispatch(
+<<<<<<< HEAD
       {
         intent: 'create_event',
         subject: 'Kiné',
@@ -94,6 +138,9 @@ describe('agent.service — dbStore selection (lines 15-17 TRUE)', () => {
         date: '',
         time: '',
       },
+=======
+      { intent: 'create_event', subject: 'Kiné', isoDate: '2026-08-01', isoTime: '09:00', date: '', time: '' },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       USER
     );
 
@@ -116,12 +163,21 @@ describe('update_event — no effectiveDate (lines 80, 85 FALSE)', () => {
 
     const result = await dispatch(
       {
+<<<<<<< HEAD
         intent: 'update_event',
         subject: 'Kiné',
         isoDate: null, // no date → effectiveDate = null || '' = ''  (falsy)
         isoTime: null,
         date: '',
         time: '',
+=======
+        intent:  'update_event',
+        subject: 'Kiné',
+        isoDate: null,   // no date → effectiveDate = null || '' = ''  (falsy)
+        isoTime: null,
+        date:    '',
+        time:    '',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       },
       USER
     );
@@ -140,12 +196,21 @@ describe('update_event — no effectiveDate (lines 80, 85 FALSE)', () => {
 
     await dispatch(
       {
+<<<<<<< HEAD
         intent: 'update_event',
         subject: '',
         isoDate: null,
         isoTime: '10:30', // has time
         date: '',
         time: '',
+=======
+        intent:  'update_event',
+        subject: '',
+        isoDate: null,
+        isoTime: '10:30',  // has time
+        date:    '',
+        time:    '',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       },
       USER
     );

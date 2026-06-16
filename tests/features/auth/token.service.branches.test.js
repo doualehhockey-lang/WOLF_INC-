@@ -2,9 +2,15 @@
 // Covers token.service.js line 66: if (!payload.jti) throw new Error('Missing refresh token id')
 
 import { jest } from '@jest/globals';
+<<<<<<< HEAD
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = 'test-access-secret-padding-1234567890';
+=======
+import jwt      from 'jsonwebtoken';
+
+const JWT_SECRET         = 'test-access-secret-padding-1234567890';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 const JWT_REFRESH_SECRET = 'test-refresh-secret-padding-1234567890';
 
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
@@ -20,6 +26,7 @@ jest.unstable_mockModule('../../../src/core/config.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
+<<<<<<< HEAD
   cacheSet: jest.fn(async () => {}),
   cacheGet: jest.fn(async () => '1'), // return truthy — token not revoked
   cacheDel: jest.fn(async () => {}),
@@ -28,6 +35,14 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   cacheTtl: jest.fn(async () => -1),
   isRedisAvailable: jest.fn().mockReturnValue(false),
   evalScript: jest.fn(async () => null),
+=======
+  cacheSet:    jest.fn(async () => {}),
+  cacheGet:    jest.fn(async () => '1'),  // return truthy — token not revoked
+  cacheDel:    jest.fn(async () => {}),
+  cacheIncr:   jest.fn(async () => 1),
+  cacheExpire: jest.fn(async () => {}),
+  cacheTtl:    jest.fn(async () => -1),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const { refreshTokens } = await import('../../../src/features/auth/token.service.js');

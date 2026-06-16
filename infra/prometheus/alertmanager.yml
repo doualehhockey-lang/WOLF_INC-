@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # infra/prometheus/alertmanager.yml
 #
 # Routing: critical alerts go to Slack; all alerts also hit a generic webhook.
@@ -62,3 +63,15 @@ inhibit_rules:
     target_match:
       severity: 'warning'
     equal: ['alertname']
+=======
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'team-webhook'
+
+receivers:
+  - name: 'team-webhook'
+    webhook_configs:
+      - url: 'https://example.com/alert-receiver' # replace with your webhook
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b

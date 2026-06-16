@@ -8,6 +8,7 @@ export default class Redis {
   constructor() {}
   async connect() {}
   async ping() {}
+<<<<<<< HEAD
   async get() {
     return null;
   }
@@ -35,5 +36,16 @@ export default class Redis {
   async eval() {
     return null;
   }
+=======
+  async get() { return null; }
+  async set() { return 'OK'; }
+  async setex() { return 'OK'; }
+  async del() { return 1; }
+  async incr() { return 1; }
+  async expire() { return 1; }
+  async ttl() { return -1; }
+  async getBuffer() { return null; }
+  async eval() { return null; }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   on() {}
 }

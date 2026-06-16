@@ -19,6 +19,7 @@
 
 import { useState, useCallback } from 'react';
 import {
+<<<<<<< HEAD
   Rocket,
   CheckCircle2,
   RotateCcw,
@@ -29,6 +30,10 @@ import {
   Loader2,
   ChevronDown,
   ExternalLink,
+=======
+  Rocket, CheckCircle2, RotateCcw, Zap, Lock, Unlock,
+  AlertTriangle, Loader2, Clock, ChevronDown, ExternalLink,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -44,18 +49,27 @@ function Confirm({ message, onConfirm, onCancel, loading, danger = false }) {
     >
       <div className="card max-w-sm w-full shadow-2xl space-y-4">
         <div className="flex gap-3 items-start">
+<<<<<<< HEAD
           <AlertTriangle
             className={clsx('h-5 w-5 shrink-0 mt-0.5', danger ? 'text-red-500' : 'text-amber-500')}
           />
+=======
+          <AlertTriangle className={clsx('h-5 w-5 shrink-0 mt-0.5',
+            danger ? 'text-red-500' : 'text-amber-500')} />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           <div>
             <p className="text-sm font-medium">Confirm action</p>
             <p className="text-sm text-text-muted mt-1">{message}</p>
           </div>
         </div>
         <div className="flex justify-end gap-2">
+<<<<<<< HEAD
           <button className="btn-ghost" onClick={onCancel} disabled={loading}>
             Cancel
           </button>
+=======
+          <button className="btn-ghost" onClick={onCancel} disabled={loading}>Cancel</button>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           <button
             className={danger ? 'btn-danger' : 'btn-primary'}
             onClick={onConfirm}
@@ -98,6 +112,7 @@ function TagInput({ value, onChange }) {
 
 // ── Single action card ────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 function ActionCard({
   label,
   desc,
@@ -111,6 +126,12 @@ function ActionCard({
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null); // 'ok' | 'error'
+=======
+function ActionCard({ label, desc, icon: Icon, confirmMsg, variant, disabled, onExecute, danger = false }) {
+  const [confirming, setConfirming] = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [result,     setResult]     = useState(null); // 'ok' | 'error'
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   const execute = useCallback(async () => {
     setConfirming(false);
@@ -128,7 +149,12 @@ function ActionCard({
   }, [onExecute]);
 
   const btnCls =
+<<<<<<< HEAD
     variant === 'danger' ? 'btn-danger' : variant === 'primary' ? 'btn-primary' : 'btn-ghost';
+=======
+    variant === 'danger'  ? 'btn-danger'  :
+    variant === 'primary' ? 'btn-primary' : 'btn-ghost';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <>
@@ -144,6 +170,7 @@ function ActionCard({
 
       <article className="card flex flex-col gap-4" aria-label={label}>
         <div className="flex items-start gap-3">
+<<<<<<< HEAD
           <div
             className={clsx(
               'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
@@ -154,13 +181,25 @@ function ActionCard({
                   : 'bg-surface text-text-muted'
             )}
           >
+=======
+          <div className={clsx(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+            variant === 'danger'  ? 'bg-red-500/10 text-red-500'  :
+            variant === 'primary' ? 'bg-wolf-500/10 text-wolf-500' :
+                                    'bg-surface text-text-muted',
+          )}>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             <Icon className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">{label}</p>
             <p className="text-xs text-text-muted mt-0.5">{desc}</p>
           </div>
+<<<<<<< HEAD
           {result === 'ok' && <span className="badge-green">Done</span>}
+=======
+          {result === 'ok'    && <span className="badge-green">Done</span>}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           {result === 'error' && <span className="badge-red">Failed</span>}
         </div>
 
@@ -170,7 +209,13 @@ function ActionCard({
           disabled={disabled || loading}
           aria-busy={loading}
         >
+<<<<<<< HEAD
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+=======
+          {loading
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <Icon    className="h-4 w-4" />}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           {loading ? 'Working…' : label}
         </button>
       </article>
@@ -180,18 +225,28 @@ function ActionCard({
 
 // ── Deploy history table ──────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 const STATUS_BADGE = {
   success: 'badge-green',
   failure: 'badge-red',
   running: 'badge-yellow',
   cancelled: 'badge-gray',
 };
+=======
+const STATUS_BADGE = { success: 'badge-green', failure: 'badge-red', running: 'badge-yellow', cancelled: 'badge-gray' };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 function HistoryTable({ runs }) {
   const [limit, setLimit] = useState(10);
 
+<<<<<<< HEAD
   if (!runs?.length)
     return <p className="text-sm text-text-muted text-center py-6">No deploy history available.</p>;
+=======
+  if (!runs?.length) return (
+    <p className="text-sm text-text-muted text-center py-6">No deploy history available.</p>
+  );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <div className="space-y-2">
@@ -200,6 +255,7 @@ function HistoryTable({ runs }) {
           <thead className="bg-surface border-b border-border">
             <tr>
               {['#', 'SHA', 'Branch', 'Type', 'Status', 'Duration', 'By', 'Link'].map(h => (
+<<<<<<< HEAD
                 <th
                   key={h}
                   scope="col"
@@ -207,6 +263,10 @@ function HistoryTable({ runs }) {
                 >
                   {h}
                 </th>
+=======
+                <th key={h} scope="col"
+                  className="px-4 py-2.5 text-left text-xs font-medium text-text-muted">{h}</th>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
               ))}
             </tr>
           </thead>
@@ -230,6 +290,7 @@ function HistoryTable({ runs }) {
                 <td className="px-4 py-2.5 text-xs text-text-muted">{run.triggeredBy ?? '—'}</td>
                 <td className="px-4 py-2.5">
                   {run.url && (
+<<<<<<< HEAD
                     <a
                       href={run.url}
                       target="_blank"
@@ -237,6 +298,11 @@ function HistoryTable({ runs }) {
                       className="flex items-center gap-1 text-wolf-500 text-xs hover:underline"
                       aria-label="Open CI run"
                     >
+=======
+                    <a href={run.url} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-1 text-wolf-500 text-xs hover:underline"
+                       aria-label="Open CI run">
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
                       CI <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
@@ -279,7 +345,11 @@ function StatusStrip({ status }) {
       <div>
         <p className="text-xs text-text-muted">Stable Replicas</p>
         <span className="font-mono text-sm">
+<<<<<<< HEAD
           {status.stableReplicas !== null
+=======
+          {status.stableReplicas != null
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             ? `${status.stableReplicas.ready}/${status.stableReplicas.desired}`
             : '—'}
         </span>
@@ -287,7 +357,13 @@ function StatusStrip({ status }) {
       <div>
         <p className="text-xs text-text-muted">Last Deploy</p>
         <span className="text-xs text-text-muted">
+<<<<<<< HEAD
           {status.lastDeployAt ? new Date(status.lastDeployAt).toLocaleString('fr-FR') : '—'}
+=======
+          {status.lastDeployAt
+            ? new Date(status.lastDeployAt).toLocaleString('fr-FR')
+            : '—'}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         </span>
       </div>
     </div>
@@ -298,6 +374,7 @@ function StatusStrip({ status }) {
 
 function DeployLock({ locked, onToggle }) {
   return (
+<<<<<<< HEAD
     <div
       className={clsx(
         'card flex items-center gap-3 py-3',
@@ -311,6 +388,19 @@ function DeployLock({ locked, onToggle }) {
       )}
       <div className="flex-1">
         <p className="text-sm font-medium">Deployments are {locked ? 'LOCKED' : 'unlocked'}</p>
+=======
+    <div className={clsx(
+      'card flex items-center gap-3 py-3',
+      locked && 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20',
+    )}>
+      {locked
+        ? <Lock   className="h-5 w-5 text-amber-500 shrink-0" />
+        : <Unlock className="h-5 w-5 text-emerald-500 shrink-0" />}
+      <div className="flex-1">
+        <p className="text-sm font-medium">
+          Deployments are {locked ? 'LOCKED' : 'unlocked'}
+        </p>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         <p className="text-xs text-text-muted">
           {locked
             ? 'All deploy actions are blocked. Unlock to proceed.'
@@ -344,6 +434,7 @@ function DeployLock({ locked, onToggle }) {
  * }} props
  */
 export default function DeployAdminControls({
+<<<<<<< HEAD
   onCanary,
   onPromote,
   onRollback,
@@ -358,6 +449,16 @@ export default function DeployAdminControls({
   const [force, setForce] = useState(false);
 
   const tagReady = tag.trim().length > 0;
+=======
+  onCanary, onPromote, onRollback, onFull,
+  status = null, history = [], loading = false, error = null,
+}) {
+  const [tag,     setTag]     = useState('');
+  const [locked,  setLocked]  = useState(false);
+  const [force,   setForce]   = useState(false);
+
+  const tagReady    = tag.trim().length > 0;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const canaryAlive = !!status?.canaryTag;
 
   if (error) {
@@ -432,7 +533,13 @@ export default function DeployAdminControls({
       {/* History */}
       <section aria-label="Deploy history">
         <h3 className="text-sm font-medium mb-3">Deploy History</h3>
+<<<<<<< HEAD
         {loading ? <div className="animate-pulse card h-32" /> : <HistoryTable runs={history} />}
+=======
+        {loading
+          ? <div className="animate-pulse card h-32" />
+          : <HistoryTable runs={history} />}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       </section>
     </div>
   );

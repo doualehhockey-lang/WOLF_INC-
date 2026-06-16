@@ -8,12 +8,17 @@ import { jest } from '@jest/globals';
 jest.unstable_mockModule('../../../../src/core/config.js', () => ({
   config: {
     PIPER_MODEL_PATH: '/models/fr.onnx',
+<<<<<<< HEAD
     PIPER_BINARY: '/usr/local/bin/piper',
+=======
+    PIPER_BINARY:     '/usr/local/bin/piper',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 // ── Mock fs/promises ──────────────────────────────────────────────────────────
 const mockWriteFile = jest.fn(async () => {});
+<<<<<<< HEAD
 const mockReadFile = jest.fn(async () => Buffer.alloc(100, 0xab));
 const mockUnlink = jest.fn(async () => {});
 const mockMkdir = jest.fn(async () => {});
@@ -22,6 +27,16 @@ jest.unstable_mockModule('fs/promises', () => ({
   readFile: mockReadFile,
   unlink: mockUnlink,
   mkdir: mockMkdir,
+=======
+const mockReadFile  = jest.fn(async () => Buffer.alloc(100, 0xAB));
+const mockUnlink    = jest.fn(async () => {});
+const mockMkdir     = jest.fn(async () => {});
+jest.unstable_mockModule('fs/promises', () => ({
+  writeFile: mockWriteFile,
+  readFile:  mockReadFile,
+  unlink:    mockUnlink,
+  mkdir:     mockMkdir,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock child_process / util ─────────────────────────────────────────────────
@@ -41,16 +56,27 @@ jest.unstable_mockModule('crypto', () => ({
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 const { synthesizePiper } = await import('../../../../src/features/tts/providers/piper.js');
+<<<<<<< HEAD
 const { TtsError } = await import('../../../../src/core/errors.js');
 const { config } = await import('../../../../src/core/config.js');
+=======
+const { TtsError }        = await import('../../../../src/core/errors.js');
+const { config }          = await import('../../../../src/core/config.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 beforeEach(() => {
   jest.clearAllMocks();
   _uuidCount = 0;
   config.PIPER_MODEL_PATH = '/models/fr.onnx';
+<<<<<<< HEAD
   config.PIPER_BINARY = '/usr/local/bin/piper';
   mockExecFileAsync.mockResolvedValue({ stdout: '', stderr: '' });
   mockReadFile.mockResolvedValue(Buffer.alloc(100, 0xab));
+=======
+  config.PIPER_BINARY     = '/usr/local/bin/piper';
+  mockExecFileAsync.mockResolvedValue({ stdout: '', stderr: '' });
+  mockReadFile.mockResolvedValue(Buffer.alloc(100, 0xAB));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   mockUnlink.mockResolvedValue(undefined);
 });
 
@@ -88,7 +114,15 @@ describe('synthesizePiper — success', () => {
   test('writes text to input file (truncated to 1000 chars)', async () => {
     const longText = 'x'.repeat(2000);
     await synthesizePiper(longText);
+<<<<<<< HEAD
     expect(mockWriteFile).toHaveBeenCalledWith(expect.any(String), 'x'.repeat(1000), 'utf8');
+=======
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.any(String),
+      'x'.repeat(1000),
+      'utf8',
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('calls execFileAsync with piper binary and model flags', async () => {
@@ -96,7 +130,11 @@ describe('synthesizePiper — success', () => {
     expect(mockExecFileAsync).toHaveBeenCalledWith(
       '/usr/local/bin/piper',
       expect.arrayContaining(['--model', '/models/fr.onnx', '--output_file', expect.any(String)]),
+<<<<<<< HEAD
       expect.objectContaining({ timeout: 30_000 })
+=======
+      expect.objectContaining({ timeout: 30_000 }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 

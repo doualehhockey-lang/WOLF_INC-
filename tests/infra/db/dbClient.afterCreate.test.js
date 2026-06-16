@@ -10,22 +10,38 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     DB_HOST: 'localhost',
     DB_PORT: 5432,
     DB_USER: 'postgres',
     DB_PASSWORD: 'secret',
     DB_NAME: 'wolf_test',
+=======
+    DB_HOST:     'localhost',
+    DB_PORT:     5432,
+    DB_USER:     'postgres',
+    DB_PASSWORD: 'secret',
+    DB_NAME:     'wolf_test',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 // Capture the knex config so we can test afterCreate
 let capturedConfig = null;
 
+<<<<<<< HEAD
 const mockRaw = jest.fn(async () => []);
 const mockDestroy = jest.fn(async () => {});
 
 jest.unstable_mockModule('knex', () => ({
   default: jest.fn(cfg => {
+=======
+const mockRaw     = jest.fn(async () => []);
+const mockDestroy = jest.fn(async () => {});
+
+jest.unstable_mockModule('knex', () => ({
+  default: jest.fn((cfg) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     capturedConfig = cfg;
     return { raw: mockRaw, destroy: mockDestroy };
   }),

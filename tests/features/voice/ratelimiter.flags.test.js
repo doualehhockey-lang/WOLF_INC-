@@ -4,6 +4,7 @@
 import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('../../../src/core/featureFlags.js', () => ({
+<<<<<<< HEAD
   isEnabled: jest.fn(async flag => flag !== 'rate-limit'), // default: RATE_LIMIT disabled
   FLAGS: {
     RATE_LIMIT: 'rate-limit',
@@ -15,6 +16,15 @@ jest.unstable_mockModule('../../../src/core/featureFlags.js', () => ({
   getAllFlags: jest.fn(),
   snapshotFlags: jest.fn(() => ({})),
   clearCache: jest.fn(),
+=======
+  isEnabled: jest.fn(async (flag) => flag !== 'rate-limit'), // default: RATE_LIMIT disabled
+  FLAGS: {
+    RATE_LIMIT: 'rate-limit',
+    PIPELINE_VOICE: 'pipeline.voice', PIPELINE_SMS: 'pipeline.sms',
+    CLAUDE_NLU: 'claude.nlu',         OLLAMA_NLU:  'ollama.nlu',
+  },
+  setFlag: jest.fn(), getAllFlags: jest.fn(), snapshotFlags: jest.fn(() => ({})), clearCache: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
@@ -23,14 +33,21 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: { inc: jest.fn() },
+<<<<<<< HEAD
   pipelineLatency: { startTimer: jest.fn(() => jest.fn()) },
   errorCounter: { inc: jest.fn() },
   activeSessions: { set: jest.fn() },
   auditLogFailures: { inc: jest.fn() },
+=======
+  pipelineLatency:  { startTimer: jest.fn(() => jest.fn()) },
+  errorCounter:     { inc: jest.fn() },
+  activeSessions:   { set: jest.fn() },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   evalScript: jest.fn(async () => [1, 0]), // would normally rate-limit
+<<<<<<< HEAD
   cacheIncr: jest.fn(async () => 999), // counter way above limit
   cacheExpire: jest.fn(),
   cacheGet: jest.fn(async () => null),
@@ -41,6 +58,17 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   cacheTtl: jest.fn(),
   redisAvailable: true,
   isRedisAvailable: jest.fn().mockReturnValue(true),
+=======
+  cacheIncr:  jest.fn(async () => 999),    // counter way above limit
+  cacheExpire: jest.fn(),
+  cacheGet:   jest.fn(async () => null),
+  cacheSet:   jest.fn(),
+  cacheDel:   jest.fn(),
+  cacheGetBuffer: jest.fn(),
+  cacheSetBuffer: jest.fn(),
+  cacheTtl:   jest.fn(),
+  redisAvailable: true,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   redis: null,
 }));
 

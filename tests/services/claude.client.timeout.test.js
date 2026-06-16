@@ -18,7 +18,11 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
     CLAUDE_API_KEY: 'sk-timeout-key',
+<<<<<<< HEAD
     CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
+=======
+    CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
@@ -27,6 +31,7 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
   apiFetch: mockApiFetch,
 }));
 
+<<<<<<< HEAD
 const mockRecordRequest = jest.fn();
 const mockRecordFailure = jest.fn();
 const mockRecordLatency = jest.fn();
@@ -37,6 +42,17 @@ jest.unstable_mockModule('../../src/services/metrics.js', () => ({
   recordLatency: mockRecordLatency,
   setCircuitState: mockSetCircuitState,
   auditLogFailures: { inc: jest.fn() },
+=======
+const mockRecordRequest   = jest.fn();
+const mockRecordFailure   = jest.fn();
+const mockRecordLatency   = jest.fn();
+const mockSetCircuitState = jest.fn();
+jest.unstable_mockModule('../../src/services/metrics.js', () => ({
+  recordRequest:   mockRecordRequest,
+  recordFailure:   mockRecordFailure,
+  recordLatency:   mockRecordLatency,
+  setCircuitState: mockSetCircuitState,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const { analyze } = await import('../../src/services/claude.client.js');
@@ -53,6 +69,7 @@ describe('TimeoutError branches — lines 51, 58', () => {
   test('all 3 attempts timeout → TimeoutError reaches _failureReason and _requestStatus', async () => {
     jest.clearAllMocks();
     // apiFetch hangs, listens for abort signal → rejects with AbortError when signal fires
+<<<<<<< HEAD
     mockApiFetch.mockImplementation(
       (_url, opts) =>
         new Promise((_resolve, reject) => {
@@ -64,6 +81,18 @@ describe('TimeoutError branches — lines 51, 58', () => {
             });
           }
         })
+=======
+    mockApiFetch.mockImplementation((_url, opts) =>
+      new Promise((_resolve, reject) => {
+        if (opts?.signal) {
+          opts.signal.addEventListener('abort', () => {
+            const err = new Error('The operation was aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        }
+      })
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
 
     // analyze() → _call → withRetry → breaker.exec → apiFetch (hangs)
@@ -73,9 +102,15 @@ describe('TimeoutError branches — lines 51, 58', () => {
 
     // Advance enough for all 3 attempts (30s each) + backoff delays (200+400ms)
     // Use runAllTimersAsync to process all pending timers and their callbacks
+<<<<<<< HEAD
     await jest.advanceTimersByTimeAsync(31_000); // attempt 0 timeout + backoff
     await jest.advanceTimersByTimeAsync(31_000); // attempt 1 timeout + backoff
     await jest.advanceTimersByTimeAsync(31_000); // attempt 2 timeout (final)
+=======
+    await jest.advanceTimersByTimeAsync(31_000);  // attempt 0 timeout + backoff
+    await jest.advanceTimersByTimeAsync(31_000);  // attempt 1 timeout + backoff
+    await jest.advanceTimersByTimeAsync(31_000);  // attempt 2 timeout (final)
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     const result = await analyzePromise;
     expect(result.strategy).toBe('rule-based');

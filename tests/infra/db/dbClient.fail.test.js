@@ -10,6 +10,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     DB_HOST: 'bad-host',
     DB_PORT: 5432,
     DB_USER: 'postgres',
@@ -20,15 +21,31 @@ jest.unstable_mockModule('../../../src/core/config.js', () => ({
     JWT_SECRET: 'testjwtsecret1234567890testjwtsecret1234567890',
     JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
     API_KEYS: ['test-key'],
+=======
+    DB_HOST:     'bad-host',
+    DB_PORT:     5432,
+    DB_USER:     'postgres',
+    DB_PASSWORD: '',
+    DB_NAME:     'wolf_engine',
+    BASE_URL:    'http://localhost:3000',
+    PHONE_SALT:  'testsalt1234567890',
+    JWT_SECRET:  'testjwtsecret1234567890testjwtsecret1234567890',
+    JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
+    API_KEYS:    ['test-key'],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 // ── knex mock: raw() rejects ──────────────────────────────────────────────────
 const mockDestroy = jest.fn(async () => {});
 const mockKnexInstance = {
+<<<<<<< HEAD
   raw: jest.fn(async () => {
     throw new Error('ECONNREFUSED bad-host:5432');
   }),
+=======
+  raw:     jest.fn(async () => { throw new Error('ECONNREFUSED bad-host:5432'); }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   destroy: mockDestroy,
 };
 

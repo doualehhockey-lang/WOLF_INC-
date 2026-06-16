@@ -17,6 +17,7 @@
 //   onDeletePod   — (name: string) => Promise<void>
 //   grafanaPanels — GrafanaPanel[]
 
+<<<<<<< HEAD
 import { useState, useMemo } from 'react';
 import {
   Server,
@@ -28,6 +29,13 @@ import {
   Loader2,
   AlertTriangle,
   ExternalLink,
+=======
+import { useState, useMemo }    from 'react';
+import {
+  Server, Cpu, HardDrive, AlertCircle,
+  CheckCircle2, XCircle, Clock, Trash2,
+  Loader2, AlertTriangle, ExternalLink,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -43,12 +51,19 @@ function NodeRow({ node }) {
   const healthy = node.status === 'Ready';
 
   // Summarise conditions to a tooltip string.
+<<<<<<< HEAD
   const conditionSummary = node.conditions?.map(c => `${c.type}=${c.status}`).join(', ') ?? '';
+=======
+  const conditionSummary = node.conditions
+    ?.map(c => `${c.type}=${c.status}`)
+    .join(', ') ?? '';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <tr className="hover:bg-surface transition-colors">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
+<<<<<<< HEAD
           <Server
             className={clsx('h-4 w-4 shrink-0', healthy ? 'text-emerald-500' : 'text-red-500')}
             aria-hidden="true"
@@ -56,15 +71,35 @@ function NodeRow({ node }) {
           <div>
             <p className="text-sm font-mono font-medium">{node.name}</p>
             {node.version && <p className="text-xs text-text-muted font-mono">{node.version}</p>}
+=======
+          <Server className={clsx('h-4 w-4 shrink-0',
+            healthy ? 'text-emerald-500' : 'text-red-500')} aria-hidden="true" />
+          <div>
+            <p className="text-sm font-mono font-medium">{node.name}</p>
+            {node.version && (
+              <p className="text-xs text-text-muted font-mono">{node.version}</p>
+            )}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           </div>
         </div>
       </td>
 
       <td className="px-4 py-3">
+<<<<<<< HEAD
         <span className={healthy ? 'badge-green' : 'badge-red'}>{node.status ?? 'Unknown'}</span>
       </td>
 
       <td className="px-4 py-3 text-xs text-text-muted">{node.roles?.join(', ') ?? '—'}</td>
+=======
+        <span className={healthy ? 'badge-green' : 'badge-red'}>
+          {node.status ?? 'Unknown'}
+        </span>
+      </td>
+
+      <td className="px-4 py-3 text-xs text-text-muted">
+        {node.roles?.join(', ') ?? '—'}
+      </td>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
       <td className="px-4 py-3">
         <UsageBar pct={node.cpuUsagePct} label={`CPU ${node.cpuUsagePct ?? '—'}%`} />
@@ -78,22 +113,41 @@ function NodeRow({ node }) {
         {node.conditions?.length ?? 0} conditions
       </td>
 
+<<<<<<< HEAD
       <td className="px-4 py-3 text-xs text-text-muted">{node.age ?? '—'}</td>
+=======
+      <td className="px-4 py-3 text-xs text-text-muted">
+        {node.age ?? '—'}
+      </td>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     </tr>
   );
 }
 
+<<<<<<< HEAD
 function UsageBar({ pct, label: _label }) {
   const safeP = Math.min(pct ?? 0, 100);
   const color = safeP > 85 ? 'bg-red-500' : safeP > 70 ? 'bg-amber-500' : 'bg-emerald-500';
+=======
+function UsageBar({ pct, label }) {
+  const safeP = Math.min(pct ?? 0, 100);
+  const color  =
+    safeP > 85 ? 'bg-red-500' :
+    safeP > 70 ? 'bg-amber-500' : 'bg-emerald-500';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <div className="flex items-center gap-2">
       <div className="w-20 bg-surface rounded-full h-1.5 overflow-hidden" aria-hidden="true">
+<<<<<<< HEAD
         <div
           className={clsx('h-1.5 rounded-full transition-all', color)}
           style={{ width: `${safeP}%` }}
         />
+=======
+        <div className={clsx('h-1.5 rounded-full transition-all', color)}
+             style={{ width: `${safeP}%` }} />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       </div>
       <span className="text-xs font-mono tabular-nums text-text-muted">
         {pct !== undefined ? `${pct}%` : '—'}
@@ -108,12 +162,21 @@ function QuotaPanel({ quota }) {
   if (!quota) return null;
 
   const items = [
+<<<<<<< HEAD
     { label: 'CPU Request', used: quota.cpuRequestUsed, max: quota.cpuRequestLimit },
     { label: 'CPU Limit', used: quota.cpuLimitUsed, max: quota.cpuLimitMax },
     { label: 'Mem Request', used: quota.memRequestUsed, max: quota.memRequestLimit },
     { label: 'Mem Limit', used: quota.memLimitUsed, max: quota.memLimitMax },
     { label: 'Pods', used: quota.podsUsed, max: quota.podsMax },
     { label: 'Services', used: quota.servicesUsed, max: quota.servicesMax },
+=======
+    { label: 'CPU Request',    used: quota.cpuRequestUsed,  max: quota.cpuRequestLimit  },
+    { label: 'CPU Limit',      used: quota.cpuLimitUsed,    max: quota.cpuLimitMax       },
+    { label: 'Mem Request',    used: quota.memRequestUsed,  max: quota.memRequestLimit   },
+    { label: 'Mem Limit',      used: quota.memLimitUsed,    max: quota.memLimitMax       },
+    { label: 'Pods',           used: quota.podsUsed,        max: quota.podsMax           },
+    { label: 'Services',       used: quota.servicesUsed,    max: quota.servicesMax       },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   ];
 
   return (
@@ -126,6 +189,7 @@ function QuotaPanel({ quota }) {
             <div key={label} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-text-muted">{label}</span>
+<<<<<<< HEAD
                 <span className="font-mono tabular-nums">
                   {used ?? '—'} / {max ?? '—'}
                 </span>
@@ -136,6 +200,14 @@ function QuotaPanel({ quota }) {
                     'h-1.5 rounded-full',
                     pct > 90 ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-wolf-500'
                   )}
+=======
+                <span className="font-mono tabular-nums">{used ?? '—'} / {max ?? '—'}</span>
+              </div>
+              <div className="w-full bg-surface rounded-full h-1.5 overflow-hidden">
+                <div
+                  className={clsx('h-1.5 rounded-full',
+                    pct > 90 ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-wolf-500')}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
                   style={{ width: `${pct}%` }}
                   role="progressbar"
                   aria-valuenow={pct}
@@ -155,6 +227,7 @@ function QuotaPanel({ quota }) {
 // ── Pod card with delete action ───────────────────────────────────────────────
 
 const PHASE_STYLE = {
+<<<<<<< HEAD
   Running: 'badge-green',
   Pending: 'badge-yellow',
   Failed: 'badge-red',
@@ -164,16 +237,32 @@ const PHASE_STYLE = {
 
 function PodCard({ pod, onDelete }) {
   const [confirm, setConfirm] = useState(false);
+=======
+  Running:   'badge-green',
+  Pending:   'badge-yellow',
+  Failed:    'badge-red',
+  Succeeded: 'badge-blue',
+  Unknown:   'badge-gray',
+};
+
+function PodCard({ pod, onDelete }) {
+  const [confirm,  setConfirm]  = useState(false);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
     setDeleting(true);
+<<<<<<< HEAD
     try {
       await onDelete(pod.name);
     } finally {
       setDeleting(false);
       setConfirm(false);
     }
+=======
+    try { await onDelete(pod.name); }
+    finally { setDeleting(false); setConfirm(false); }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
 
   return (
@@ -197,6 +286,7 @@ function PodCard({ pod, onDelete }) {
               </div>
             </div>
             <div className="flex justify-end gap-2">
+<<<<<<< HEAD
               <button className="btn-ghost" onClick={() => setConfirm(false)} disabled={deleting}>
                 Cancel
               </button>
@@ -206,6 +296,10 @@ function PodCard({ pod, onDelete }) {
                 disabled={deleting}
                 aria-busy={deleting}
               >
+=======
+              <button className="btn-ghost" onClick={() => setConfirm(false)} disabled={deleting}>Cancel</button>
+              <button className="btn-danger" onClick={handleDelete} disabled={deleting} aria-busy={deleting}>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
                 {deleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Delete
               </button>
@@ -215,10 +309,15 @@ function PodCard({ pod, onDelete }) {
       )}
 
       <article
+<<<<<<< HEAD
         className={clsx(
           'card flex flex-col gap-3',
           pod.phase === 'Failed' && 'border-red-300 dark:border-red-800'
         )}
+=======
+        className={clsx('card flex flex-col gap-3',
+          pod.phase === 'Failed' && 'border-red-300 dark:border-red-800')}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         aria-label={`Pod: ${pod.name}`}
       >
         <div className="flex items-start justify-between gap-2">
@@ -241,18 +340,29 @@ function PodCard({ pod, onDelete }) {
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-xs">
+<<<<<<< HEAD
           <MiniStat label="Restarts" value={pod.restarts ?? 0} warn={(pod.restarts ?? 0) > 3} />
           <MiniStat
             label="CPU"
             value={pod.cpuM ? `${pod.cpuM}m` : '—'}
             warn={pod.cpuM > pod.cpuRequestM * 0.9}
           />
+=======
+          <MiniStat label="Restarts" value={pod.restarts ?? 0}
+                    warn={(pod.restarts ?? 0) > 3} />
+          <MiniStat label="CPU" value={pod.cpuM ? `${pod.cpuM}m` : '—'}
+                    warn={pod.cpuM > pod.cpuRequestM * 0.9} />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           <MiniStat label="Mem" value={pod.memMi ? `${pod.memMi}Mi` : '—'} />
         </div>
 
         <p className="text-xs text-text-muted">
+<<<<<<< HEAD
           Ready:{' '}
           <span className={pod.ready ? 'text-emerald-500' : 'text-red-500'}>
+=======
+          Ready: <span className={pod.ready ? 'text-emerald-500' : 'text-red-500'}>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             {pod.ready ? 'Yes' : 'No'}
           </span>
         </p>
@@ -263,6 +373,7 @@ function PodCard({ pod, onDelete }) {
 
 function MiniStat({ label, value, warn }) {
   return (
+<<<<<<< HEAD
     <div
       className={clsx(
         'rounded-md px-2 py-1 bg-surface text-center',
@@ -277,6 +388,12 @@ function MiniStat({ label, value, warn }) {
       >
         {value}
       </p>
+=======
+    <div className={clsx('rounded-md px-2 py-1 bg-surface text-center',
+      warn && 'bg-amber-50 dark:bg-amber-900/20')}>
+      <p className={clsx('font-mono font-medium tabular-nums text-xs',
+        warn && 'text-amber-600 dark:text-amber-400')}>{value}</p>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       <p className="text-text-muted text-[10px]">{label}</p>
     </div>
   );
@@ -315,15 +432,20 @@ function GrafanaPanels({ panels }) {
 function ClusterSummary({ pods, nodes }) {
   const podCounts = useMemo(() => {
     const c = { Running: 0, Pending: 0, Failed: 0, total: pods.length };
+<<<<<<< HEAD
     pods.forEach(p => {
       c[p.phase] = (c[p.phase] ?? 0) + 1;
     });
+=======
+    pods.forEach(p => { c[p.phase] = (c[p.phase] ?? 0) + 1; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     return c;
   }, [pods]);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {[
+<<<<<<< HEAD
         { label: 'Total Pods', value: podCounts.total, icon: Server, color: 'text-wolf-500' },
         {
           label: 'Running',
@@ -333,6 +455,12 @@ function ClusterSummary({ pods, nodes }) {
         },
         { label: 'Pending', value: podCounts.Pending ?? 0, icon: Clock, color: 'text-amber-500' },
         { label: 'Nodes', value: nodes.length, icon: HardDrive, color: 'text-wolf-500' },
+=======
+        { label: 'Total Pods',   value: podCounts.total,          icon: Server,        color: 'text-wolf-500'    },
+        { label: 'Running',      value: podCounts.Running ?? 0,   icon: CheckCircle2,  color: 'text-emerald-500' },
+        { label: 'Pending',      value: podCounts.Pending  ?? 0,  icon: Clock,         color: 'text-amber-500'   },
+        { label: 'Nodes',        value: nodes.length,             icon: HardDrive,     color: 'text-wolf-500'    },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       ].map(({ label, value, icon: Icon, color }) => (
         <div key={label} className="card flex items-center gap-3">
           <Icon className={clsx('h-5 w-5 shrink-0', color)} aria-hidden="true" />
@@ -361,6 +489,7 @@ function ClusterSummary({ pods, nodes }) {
  * }} props
  */
 export default function ClusterAdminView({
+<<<<<<< HEAD
   pods = [],
   hpa = [],
   nodes = [],
@@ -376,6 +505,14 @@ export default function ClusterAdminView({
       const k = p.component ?? 'other';
       (map[k] = map[k] ?? []).push(p);
     });
+=======
+  pods = [], hpa = [], nodes = [], quota = null,
+  loading, error, onDeletePod, grafanaPanels = [],
+}) {
+  const grouped = useMemo(() => {
+    const map = {};
+    pods.forEach(p => { const k = p.component ?? 'other'; (map[k] = map[k] ?? []).push(p); });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
   }, [pods]);
 
@@ -413,6 +550,7 @@ export default function ClusterAdminView({
           <table className="w-full text-sm" aria-label="Kubernetes nodes">
             <thead className="bg-surface border-b border-border">
               <tr>
+<<<<<<< HEAD
                 {['Node', 'Status', 'Roles', 'CPU Usage', 'Mem Usage', 'Conditions', 'Age'].map(
                   h => (
                     <th
@@ -424,6 +562,12 @@ export default function ClusterAdminView({
                     </th>
                   )
                 )}
+=======
+                {['Node', 'Status', 'Roles', 'CPU Usage', 'Mem Usage', 'Conditions', 'Age'].map(h => (
+                  <th key={h} scope="col"
+                    className="px-4 py-2.5 text-left text-xs font-medium text-text-muted">{h}</th>
+                ))}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -433,9 +577,15 @@ export default function ClusterAdminView({
                     No nodes found.
                   </td>
                 </tr>
+<<<<<<< HEAD
               ) : (
                 nodes.map((node, i) => <NodeRow key={node.name ?? i} node={node} />)
               )}
+=======
+              ) : nodes.map((node, i) => (
+                <NodeRow key={node.name ?? i} node={node} />
+              ))}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             </tbody>
           </table>
         </div>
@@ -449,6 +599,7 @@ export default function ClusterAdminView({
             <thead className="bg-surface border-b border-border">
               <tr>
                 {['Component', 'Current', 'Desired', 'Min', 'Max', 'CPU %', 'Target %'].map(h => (
+<<<<<<< HEAD
                   <th
                     key={h}
                     scope="col"
@@ -456,6 +607,10 @@ export default function ClusterAdminView({
                   >
                     {h}
                   </th>
+=======
+                  <th key={h} scope="col"
+                    className="px-4 py-2.5 text-left text-xs font-medium text-text-muted">{h}</th>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
                 ))}
               </tr>
             </thead>
@@ -466,6 +621,7 @@ export default function ClusterAdminView({
                     No HPA resources found.
                   </td>
                 </tr>
+<<<<<<< HEAD
               ) : (
                 hpa.map((h, i) => (
                   <tr key={h.name ?? i} className="hover:bg-surface transition-colors">
@@ -494,6 +650,24 @@ export default function ClusterAdminView({
                   </tr>
                 ))
               )}
+=======
+              ) : hpa.map((h, i) => (
+                <tr key={h.name ?? i} className="hover:bg-surface transition-colors">
+                  <td className="px-4 py-2.5 font-medium">{h.component ?? h.name}</td>
+                  <td className="px-4 py-2.5 font-mono tabular-nums">{h.currentReplicas}</td>
+                  <td className="px-4 py-2.5 font-mono tabular-nums">{h.desiredReplicas}</td>
+                  <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">{h.minReplicas}</td>
+                  <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">{h.maxReplicas}</td>
+                  <td className={clsx('px-4 py-2.5 font-mono tabular-nums',
+                    h.cpuUtilization > h.targetCpuUtilization ? 'text-amber-500' : 'text-text-base')}>
+                    {h.cpuUtilization ?? '—'}%
+                  </td>
+                  <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">
+                    {h.targetCpuUtilization ?? '—'}%
+                  </td>
+                </tr>
+              ))}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             </tbody>
           </table>
         </div>

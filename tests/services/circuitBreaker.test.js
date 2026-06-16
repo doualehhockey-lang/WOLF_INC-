@@ -4,12 +4,17 @@
 
 import { jest } from '@jest/globals';
 import {
+<<<<<<< HEAD
   CircuitBreaker,
   CircuitOpenError,
   TimeoutError,
   HttpError,
   withRetry,
   STATE,
+=======
+  CircuitBreaker, CircuitOpenError, TimeoutError, HttpError,
+  withRetry, STATE,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 } from '../../src/services/circuitBreaker.js';
 
 // ── Test factory ──────────────────────────────────────────────────────────────
@@ -17,6 +22,7 @@ import {
 function makeBreaker(overrides = {}) {
   let fakeNow = 1_000_000;
   const cb = new CircuitBreaker('test', {
+<<<<<<< HEAD
     failureThreshold: 3,
     errorRateThreshold: 0.5,
     minCalls: 10,
@@ -39,6 +45,25 @@ const abortFn = signal =>
   new Promise((_, reject) => {
     signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
   });
+=======
+    failureThreshold:   3,
+    errorRateThreshold: 0.5,
+    minCalls:           10,
+    windowMs:           60_000,
+    openDurationMs:     10_000,
+    now: () => fakeNow,
+    ...overrides,
+  });
+  const advance = (ms) => { fakeNow += ms; };
+  return { cb, advance, getNow: () => fakeNow };
+}
+
+const succeed  = async () => 'ok';
+const fail     = async () => { throw new Error('boom'); };
+const abortFn  = (signal) => new Promise((_, reject) => {
+  signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+});
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Custom error classes
@@ -133,10 +158,14 @@ describe('CLOSED → OPEN (error rate)', () => {
 
   test('expires old calls out of the sliding window', async () => {
     const { cb, advance } = makeBreaker({
+<<<<<<< HEAD
       failureThreshold: 100,
       errorRateThreshold: 0.5,
       minCalls: 4,
       windowMs: 5_000,
+=======
+      failureThreshold: 100, errorRateThreshold: 0.5, minCalls: 4, windowMs: 5_000,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     for (let i = 0; i < 4; i++) await expect(cb.exec(fail)).rejects.toThrow();
     expect(cb.getState()).toBe(STATE.OPEN);
@@ -188,11 +217,15 @@ describe('OPEN → HALF_OPEN transition', () => {
 
   test('fires onStateChange to HALF_OPEN then CLOSED', async () => {
     const onStateChange = jest.fn();
+<<<<<<< HEAD
     const { cb, advance } = makeBreaker({
       failureThreshold: 1,
       openDurationMs: 5_000,
       onStateChange,
     });
+=======
+    const { cb, advance } = makeBreaker({ failureThreshold: 1, openDurationMs: 5_000, onStateChange });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await expect(cb.exec(fail)).rejects.toThrow();
     advance(5_001);
     await cb.exec(succeed);
@@ -267,6 +300,7 @@ describe('HALF_OPEN: concurrent probe protection', () => {
     advance(5_001);
 
     let resolveProbe;
+<<<<<<< HEAD
     const slowFn = () =>
       new Promise(r => {
         resolveProbe = r;
@@ -274,6 +308,12 @@ describe('HALF_OPEN: concurrent probe protection', () => {
 
     const probe1 = cb.exec(slowFn); // starts probe, sets _halfOpenProbeInFlight=true
     const probe2 = cb.exec(succeed); // should be blocked
+=======
+    const slowFn = () => new Promise(r => { resolveProbe = r; });
+
+    const probe1 = cb.exec(slowFn);   // starts probe, sets _halfOpenProbeInFlight=true
+    const probe2 = cb.exec(succeed);  // should be blocked
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     await expect(probe2).rejects.toBeInstanceOf(CircuitOpenError);
 
@@ -397,34 +437,53 @@ describe('withRetry', () => {
 
   test('throws after exhausting maxRetries', async () => {
     const fn = jest.fn().mockRejectedValue(new Error('persistent'));
+<<<<<<< HEAD
     await expect(withRetry(fn, { maxRetries: 2, baseMs: 1, maxMs: 5 })).rejects.toThrow(
       'persistent'
     );
+=======
+    await expect(withRetry(fn, { maxRetries: 2, baseMs: 1, maxMs: 5 }))
+      .rejects.toThrow('persistent');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(fn).toHaveBeenCalledTimes(3); // 1 initial + 2 retries
   });
 
   test('does NOT retry on CircuitOpenError', async () => {
     const fn = jest.fn().mockRejectedValue(new CircuitOpenError('test'));
+<<<<<<< HEAD
     await expect(withRetry(fn, { maxRetries: 3, baseMs: 1, maxMs: 5 })).rejects.toBeInstanceOf(
       CircuitOpenError
     );
+=======
+    await expect(withRetry(fn, { maxRetries: 3, baseMs: 1, maxMs: 5 }))
+      .rejects.toBeInstanceOf(CircuitOpenError);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
   test('does NOT retry on 4xx HttpError', async () => {
     const fn = jest.fn().mockRejectedValue(new HttpError(422, 'Unprocessable'));
+<<<<<<< HEAD
     await expect(withRetry(fn, { maxRetries: 3, baseMs: 1, maxMs: 5 })).rejects.toBeInstanceOf(
       HttpError
     );
+=======
+    await expect(withRetry(fn, { maxRetries: 3, baseMs: 1, maxMs: 5 }))
+      .rejects.toBeInstanceOf(HttpError);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
   test('does NOT retry on any 4xx (400, 401, 403, 404, 429)', async () => {
     for (const status of [400, 401, 403, 404, 429]) {
       const fn = jest.fn().mockRejectedValue(new HttpError(status, `HTTP ${status}`));
+<<<<<<< HEAD
       await expect(withRetry(fn, { maxRetries: 3, baseMs: 1, maxMs: 5 })).rejects.toBeInstanceOf(
         HttpError
       );
+=======
+      await expect(withRetry(fn, { maxRetries: 3, baseMs: 1, maxMs: 5 })).rejects.toBeInstanceOf(HttpError);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       expect(fn).toHaveBeenCalledTimes(1);
     }
   });
@@ -452,9 +511,14 @@ describe('withRetry', () => {
   test('respects custom shouldRetry predicate', async () => {
     const fn = jest.fn().mockRejectedValue(new Error('custom'));
     const shouldRetry = jest.fn(() => false);
+<<<<<<< HEAD
     await expect(
       withRetry(fn, { maxRetries: 3, baseMs: 1, maxMs: 5, shouldRetry })
     ).rejects.toThrow('custom');
+=======
+    await expect(withRetry(fn, { maxRetries: 3, baseMs: 1, maxMs: 5, shouldRetry }))
+      .rejects.toThrow('custom');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(fn).toHaveBeenCalledTimes(1);
     expect(shouldRetry).toHaveBeenCalledTimes(1);
   });
@@ -462,6 +526,7 @@ describe('withRetry', () => {
   test('passes correct attempt index to shouldRetry', async () => {
     const attempts = [];
     const fn = jest.fn().mockRejectedValue(new Error('x'));
+<<<<<<< HEAD
     const shouldRetry = (err, attempt) => {
       attempts.push(attempt);
       return attempt < 2;
@@ -469,6 +534,11 @@ describe('withRetry', () => {
     await expect(
       withRetry(fn, { maxRetries: 5, baseMs: 1, maxMs: 5, shouldRetry })
     ).rejects.toThrow('x');
+=======
+    const shouldRetry = (err, attempt) => { attempts.push(attempt); return attempt < 2; };
+    await expect(withRetry(fn, { maxRetries: 5, baseMs: 1, maxMs: 5, shouldRetry }))
+      .rejects.toThrow('x');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(attempts).toEqual([0, 1, 2]);
     expect(fn).toHaveBeenCalledTimes(3);
   });

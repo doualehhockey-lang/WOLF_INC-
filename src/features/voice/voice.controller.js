@@ -1,5 +1,6 @@
 // src/features/voice/voice.controller.js — Route handlers for Twilio voice webhooks.
 // Keeps controllers thin: validate → rate-limit → delegate to pipeline.
+<<<<<<< HEAD
 //
 // Hardening:
 //   - Gather-level idempotency: deduplicates Twilio webhook retries by
@@ -69,17 +70,38 @@ async function _saveGatherReply(hash, twiml) {
   }
 }
 
+=======
+
+import { childLogger }                    from '../../core/logger.js';
+import { config }                         from '../../core/config.js';
+import { callsTotal, activeSessions, errorCounter } from '../../core/metrics.js';
+import { isRateLimited }                  from './rate-limiter.js';
+import { runPipeline, withTimeout }       from './pipeline.js';
+import { getGreetingUrl, GREETING_TEXT }  from './greeting.js';
+import { clearSession, getStats as memStats } from '../memory/memory.service.js';
+import { detectLang, twilioLocale }       from '../lang/lang.service.js';
+import { sanitizeText }                   from '../../api/middleware/validation.js';
+import {
+  twimlGather, twimlPlayThenGather, twimlSayThenGather, twimlError,
+} from './twiml.builder.js';
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 const log = childLogger('voice');
 
 // ── POST /twilio/voice ────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 export async function handleVoice(req, res, _saveAudio) {
+=======
+export async function handleVoice(req, res, saveAudio) {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const { CallSid: callSid, From: from } = req.body;
   log.info({ callSid }, 'Incoming call');
   callsTotal.inc();
 
   if (await isRateLimited(from)) {
     log.warn({ callSid }, 'Rate limited on /voice');
+<<<<<<< HEAD
     // M8 FIX: Retry-After tells Twilio and monitoring systems when to retry.
     // RATE_WINDOW is 60s — caller should back off for the full window.
     res.set('Retry-After', '60');
@@ -94,6 +116,16 @@ export async function handleVoice(req, res, _saveAudio) {
   const gatherUrl = `${config.BASE_URL}/twilio/gather`;
   const greetingUrl = getGreetingUrl();
   const twiml = greetingUrl
+=======
+    return res.send(
+      twimlSayThenGather('Trop de requêtes. Veuillez patienter.', `${config.BASE_URL}/twilio/gather`)
+    );
+  }
+
+  const gatherUrl    = `${config.BASE_URL}/twilio/gather`;
+  const greetingUrl  = getGreetingUrl();
+  const twiml        = greetingUrl
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     ? twimlPlayThenGather(greetingUrl, gatherUrl)
     : twimlGather(GREETING_TEXT, gatherUrl, { timeout: 5, speechTimeout: 'auto' });
 
@@ -101,14 +133,18 @@ export async function handleVoice(req, res, _saveAudio) {
 }
 
 // ── POST /twilio/gather ───────────────────────────────────────────────────────
+<<<<<<< HEAD
 // Phase 1: Validate input, start pipeline async, respond immediately with a
 // natural filler message ("Un instant, je vérifie...") so the caller never
 // hears silence. The <Redirect> sends Twilio to /twilio/gather-result to
 // pick up the real response once the pipeline finishes.
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 export async function handleGather(req, res, saveAudio) {
   const {
     SpeechResult: rawText = '',
+<<<<<<< HEAD
     Confidence: confidence,
     CallSid: callSid,
     From: from,
@@ -117,11 +153,22 @@ export async function handleGather(req, res, saveAudio) {
   const text = sanitizeText(rawText, 500);
   const userLang = detectLang(text);
   const locale = twilioLocale(userLang);
+=======
+    Confidence:   confidence,
+    CallSid:      callSid,
+    From:         from,
+  } = req.body;
+
+  const text     = sanitizeText(rawText, 500);
+  const userLang = detectLang(text);
+  const locale   = twilioLocale(userLang);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const gatherUrl = `${config.BASE_URL}/twilio/gather`;
 
   log.info({ callSid, text: text?.slice(0, 80), confidence, locale }, 'Gather received');
 
   if (await isRateLimited(from)) {
+<<<<<<< HEAD
     res.set('Retry-After', '60');
     return res.send(
       twimlSayThenGather(
@@ -160,10 +207,26 @@ export async function handleGather(req, res, saveAudio) {
         errorCounter.inc({ service: 'pipeline', errorType: err.code ?? 'unknown' });
         return twimlError(gatherUrl, locale);
       }),
+=======
+    return res.send(twimlSayThenGather('Trop de requêtes.', gatherUrl, { locale }));
+  }
+
+  if (!text) {
+    return res.send(twimlSayThenGather("Je n'ai pas bien entendu. Pouvez-vous répéter ?", gatherUrl, { locale }));
+  }
+
+  const twiml = await withTimeout(
+    () => runPipeline({ text, callSid, from }, saveAudio).catch(err => {
+      log.error({ err: err.message, callSid }, 'Pipeline error');
+      errorCounter.inc({ service: 'pipeline', errorType: err.code ?? 'unknown' });
+      return twimlError(gatherUrl, locale);
+    }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     gatherUrl,
     locale
   );
 
+<<<<<<< HEAD
   // Store the pending result keyed by callSid
   _pendingResults.set(callSid, pipelinePromise);
 
@@ -206,6 +269,9 @@ export async function handleGatherResult(req, res) {
     log.error({ err: err.message, callSid }, 'Pipeline result retrieval failed');
     res.send(twimlError(gatherUrl));
   }
+=======
+  res.send(twiml);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 // ── POST /twilio/status ───────────────────────────────────────────────────────
@@ -225,6 +291,7 @@ export async function handleStatus(req, res) {
 
 export function handleHealth(req, res) {
   res.json({
+<<<<<<< HEAD
     ok: true,
     timestamp: new Date().toISOString(),
     config: {
@@ -234,5 +301,17 @@ export function handleHealth(req, res) {
     memory: memStats(),
     greetingReady: !!getGreetingUrl(),
     redis: !!process.env.REDIS_URL,
+=======
+    ok:            true,
+    timestamp:     new Date().toISOString(),
+    config: {
+      ttsProvider:    config.TTS_PROVIDER,
+      whisperBackend: config.WHISPER_BACKEND,
+      ollamaModel:    config.OLLAMA_MODEL,
+    },
+    memory:        memStats(),
+    greetingReady: !!getGreetingUrl(),
+    redis:         !!process.env.REDIS_URL,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 }

@@ -33,7 +33,10 @@ jest.unstable_mockModule('../utils/metrics.js', () => ({
   intentCounter: { inc: jest.fn() },
   errorCounter: { inc: jest.fn() },
   eventsStoredGauge: { set: jest.fn(), inc: jest.fn(), dec: jest.fn() },
+<<<<<<< HEAD
   auditLogFailures: { inc: jest.fn() },
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('../utils/redis.js', () => ({

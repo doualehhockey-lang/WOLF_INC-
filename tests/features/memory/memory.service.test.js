@@ -7,23 +7,36 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
+<<<<<<< HEAD
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+=======
+    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   }),
 }));
 
 // ── Mock Redis — simple in-memory Map to simulate both paths ─────────────────
 // We expose a mutable `_redisStore` Map and a flag `_failRedis`
 // so individual tests can simulate Redis unavailability or errors.
+<<<<<<< HEAD
 const _redisStore = new Map();
 let _failRedis = false;
+=======
+const _redisStore  = new Map();
+let   _failRedis   = false;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   redis: null,
   redisAvailable: false,
+<<<<<<< HEAD
   cacheGet: jest.fn(async key => {
+=======
+  cacheGet: jest.fn(async (key) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     if (_failRedis) throw new Error('Redis down');
     return _redisStore.has(key) ? _redisStore.get(key) : null;
   }),
@@ -31,7 +44,11 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
     if (_failRedis) throw new Error('Redis down');
     _redisStore.set(key, value);
   }),
+<<<<<<< HEAD
   cacheDel: jest.fn(async key => {
+=======
+  cacheDel: jest.fn(async (key) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     _redisStore.delete(key);
   }),
 }));
@@ -80,7 +97,11 @@ describe('getSession', () => {
 
   test('callSid is preserved in the returned session', async () => {
     const id = sid();
+<<<<<<< HEAD
     const s = await getSession(id);
+=======
+    const s  = await getSession(id);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(s.callSid).toBe(id);
   });
 
@@ -140,11 +161,15 @@ describe('addAgentTurn', () => {
 
   test('saves pendingIntent when intent is known', async () => {
     const id = sid();
+<<<<<<< HEAD
     await addAgentTurn(id, 'Votre rendez-vous est créé', {
       intent: 'create_event',
       isoDate: '2026-06-01',
       subject: 'médecin',
     });
+=======
+    await addAgentTurn(id, 'Votre rendez-vous est créé', { intent: 'create_event', isoDate: '2026-06-01', subject: 'médecin' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const s = await getSession(id);
     expect(s.pendingIntent).toBe('create_event');
     expect(s.pendingDate).toBe('2026-06-01');
@@ -220,11 +245,15 @@ describe('buildContext', () => {
 
   test('includes pending context when pendingDate or pendingSubject is set', async () => {
     const id = sid();
+<<<<<<< HEAD
     await addAgentTurn(id, 'Ok', {
       intent: 'create_event',
       isoDate: '2026-10-01',
       subject: 'dentiste',
     });
+=======
+    await addAgentTurn(id, 'Ok', { intent: 'create_event', isoDate: '2026-10-01', subject: 'dentiste' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const ctx = await buildContext(id);
     expect(ctx).toContain('date précédente: 2026-10-01');
     expect(ctx).toContain('sujet précédent: dentiste');
@@ -270,6 +299,7 @@ describe('getLastEntities', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('detectShortAnswer', () => {
+<<<<<<< HEAD
   const YES_INPUTS = [
     'oui',
     'yes',
@@ -290,6 +320,16 @@ describe('detectShortAnswer', () => {
   });
 
   test.each(NO_INPUTS)('"%s" → "deny"', input => {
+=======
+  const YES_INPUTS = ['oui', 'yes', 'ok', 'ouais', 'bien sur', 'parfait', 'confirme', 'valide', "d'accord", 'dac', 'exactement'];
+  const NO_INPUTS  = ['non', 'no', 'nan', 'pas du tout', 'annule', 'laisse tomber', 'jamais'];
+
+  test.each(YES_INPUTS)('"%s" → "confirm"', (input) => {
+    expect(detectShortAnswer(input)).toBe('confirm');
+  });
+
+  test.each(NO_INPUTS)('"%s" → "deny"', (input) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(detectShortAnswer(input)).toBe('deny');
   });
 

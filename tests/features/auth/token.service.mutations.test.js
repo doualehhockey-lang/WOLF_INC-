@@ -30,7 +30,11 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     JWT_SECRET: 'mut-access-secret-very-long-32ch-abc',
+=======
+    JWT_SECRET:         'mut-access-secret-very-long-32ch-abc',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     JWT_REFRESH_SECRET: 'mut-refresh-secret-very-long-32ch-abc',
   },
 }));
@@ -45,8 +49,11 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   cacheSet: mockCacheSet,
   cacheGet: mockCacheGet,
   cacheDel: mockCacheDel,
+<<<<<<< HEAD
   isRedisAvailable: jest.fn().mockReturnValue(false),
   evalScript: jest.fn(async () => null),
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Import under test ─────────────────────────────────────────────────────────
@@ -102,9 +109,17 @@ describe('issueTokens — access token jwt options (L24 ObjectLiteral killer)', 
 
   test('access token signed with HS256 — HS384 token is REJECTED (algorithm enforced)', async () => {
     // A token signed with HS384 should be rejected if { algorithms: ['HS256'] } is enforced
+<<<<<<< HEAD
     const hs384Token = jwt.sign({ sub: 'user-x', role: 'user' }, config.JWT_SECRET, {
       algorithm: 'HS384',
     });
+=======
+    const hs384Token = jwt.sign(
+      { sub: 'user-x', role: 'user' },
+      config.JWT_SECRET,
+      { algorithm: 'HS384' },
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     // With mutant {} options: HS384 token would be ACCEPTED → test fails → mutant killed
     expect(() => verifyAccess(hs384Token)).toThrow();
   });
@@ -139,9 +154,17 @@ describe('issueTokens — refresh token jwt options (L31 ObjectLiteral killer)',
   });
 
   test('refresh token signed with HS384 is rejected by refreshTokens (algorithm enforced)', async () => {
+<<<<<<< HEAD
     const hs384Refresh = jwt.sign({ sub: 'user-x', jti: 'test-jti' }, config.JWT_REFRESH_SECRET, {
       algorithm: 'HS384',
     });
+=======
+    const hs384Refresh = jwt.sign(
+      { sub: 'user-x', jti: 'test-jti' },
+      config.JWT_REFRESH_SECRET,
+      { algorithm: 'HS384' },
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     // refreshTokens verifies with { algorithms: ['HS256'] }
     await expect(refreshTokens(hs384Refresh)).rejects.toThrow();
   });
@@ -164,7 +187,11 @@ describe('issueTokens cacheSet failure logging (L38 BlockStatement killer)', () 
     await issueTokens({ sub: 'user-3' });
     expect(mockLog.warn).toHaveBeenCalledWith(
       expect.objectContaining({ err: 'Connection refused' }),
+<<<<<<< HEAD
       expect.any(String)
+=======
+      expect.any(String),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -185,20 +212,35 @@ describe('issueTokens success log.info (L43 killers)', () => {
     await issueTokens({ sub: 'user-info', role: 'manager' });
     expect(mockLog.info).toHaveBeenCalledWith(
       expect.objectContaining({ sub: 'user-info', role: 'manager' }),
+<<<<<<< HEAD
       expect.any(String)
+=======
+      expect.any(String),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
   test('log.info message is "Tokens issued" (L43 StringLiteral)', async () => {
     await issueTokens({ sub: 'user-info' });
+<<<<<<< HEAD
     expect(mockLog.info).toHaveBeenCalledWith(expect.any(Object), 'Tokens issued');
+=======
+    expect(mockLog.info).toHaveBeenCalledWith(
+      expect.any(Object),
+      'Tokens issued',
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('log.info role is "user" when not provided (L43 ObjectLiteral + default role)', async () => {
     await issueTokens({ sub: 'user-default' });
     expect(mockLog.info).toHaveBeenCalledWith(
       expect.objectContaining({ sub: 'user-default', role: 'user' }),
+<<<<<<< HEAD
       'Tokens issued'
+=======
+      'Tokens issued',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 });
@@ -231,6 +273,7 @@ describe('verifyAccess algorithm enforcement (L54 ObjectLiteral killer)', () => 
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('refreshTokens cache validation log.warn (L72 killers)', () => {
+<<<<<<< HEAD
   test('log.error includes { err } when cacheGet throws (L72 ObjectLiteral)', async () => {
     const { refreshToken } = await issueTokens({ sub: 'u-refresh' });
     mockCacheGet.mockRejectedValueOnce(new Error('Cache unavailable'));
@@ -249,6 +292,25 @@ describe('refreshTokens cache validation log.warn (L72 killers)', () => {
     expect(mockLog.error).toHaveBeenCalledWith(
       expect.any(Object),
       'Atomic refresh JTI get-del failed — aborting rotation'
+=======
+  test('log.warn includes { err } when cacheGet throws (L72 ObjectLiteral)', async () => {
+    const { refreshToken } = await issueTokens({ sub: 'u-refresh' });
+    mockCacheGet.mockRejectedValueOnce(new Error('Cache unavailable'));
+    await expect(refreshTokens(refreshToken)).rejects.toThrow('Cache unavailable');
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: 'Cache unavailable' }),
+      expect.any(String),
+    );
+  });
+
+  test('log.warn message on cache failure (L72 StringLiteral)', async () => {
+    const { refreshToken } = await issueTokens({ sub: 'u-refresh' });
+    mockCacheGet.mockRejectedValueOnce(new Error('ECONNRESET'));
+    await expect(refreshTokens(refreshToken)).rejects.toThrow();
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.any(Object),
+      'Refresh token validation failed',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -256,6 +318,13 @@ describe('refreshTokens cache validation log.warn (L72 killers)', () => {
     const { refreshToken } = await issueTokens({ sub: 'u-revoked' });
     mockCacheGet.mockResolvedValueOnce(null); // null → throws "Refresh token revoked"
     await expect(refreshTokens(refreshToken)).rejects.toThrow('Refresh token revoked');
+<<<<<<< HEAD
+=======
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: 'Refresh token revoked' }),
+      'Refresh token validation failed',
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 
@@ -291,28 +360,46 @@ describe('refreshTokens — new tokens contain original sub (L77 ObjectLiteral k
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+<<<<<<< HEAD
 // C5 FIX: cacheDel failure now aborts rotation (log.error + throw)
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('refreshTokens cacheDel failure logging (C5 killers)', () => {
   test('log.error called when cacheDel throws (C5: abort rotation)', async () => {
+=======
+// L82 BlockStatement — cacheDel failure catch body must call log.warn
+// L83 ObjectLiteral { err: err.message } + StringLiteral
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe('refreshTokens cacheDel failure logging (L82/L83 killers)', () => {
+  test('log.warn called when cacheDel throws (L82 BlockStatement)', async () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const { refreshToken } = await issueTokens({ sub: 'u-del' });
     jest.clearAllMocks();
     mockCacheGet.mockResolvedValue('1');
     mockCacheSet.mockResolvedValue(undefined);
     mockCacheDel.mockRejectedValueOnce(new Error('del failed'));
 
+<<<<<<< HEAD
     await expect(refreshTokens(refreshToken)).rejects.toThrow('Session rotation failed');
     expect(mockLog.error).toHaveBeenCalled();
   });
 
   test('log.error includes { err: err.message } on cacheDel failure', async () => {
+=======
+    await refreshTokens(refreshToken); // should not throw
+    expect(mockLog.warn).toHaveBeenCalled();
+  });
+
+  test('log.warn includes { err: err.message } on cacheDel failure (L83 ObjectLiteral)', async () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const { refreshToken } = await issueTokens({ sub: 'u-del2' });
     jest.clearAllMocks();
     mockCacheGet.mockResolvedValue('1');
     mockCacheSet.mockResolvedValue(undefined);
     mockCacheDel.mockRejectedValueOnce(new Error('ETIMEDOUT'));
 
+<<<<<<< HEAD
     await expect(refreshTokens(refreshToken)).rejects.toThrow('Session rotation failed');
     expect(mockLog.error).toHaveBeenCalledWith(
       expect.objectContaining({ err: 'ETIMEDOUT' }),
@@ -321,15 +408,31 @@ describe('refreshTokens cacheDel failure logging (C5 killers)', () => {
   });
 
   test('throws "Session rotation failed — please log in again" on cacheDel failure', async () => {
+=======
+    await refreshTokens(refreshToken);
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: 'ETIMEDOUT' }),
+      expect.any(String),
+    );
+  });
+
+  test('log.warn message is "Failed to delete old refresh jti" (L83 StringLiteral)', async () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const { refreshToken } = await issueTokens({ sub: 'u-del3' });
     jest.clearAllMocks();
     mockCacheGet.mockResolvedValue('1');
     mockCacheSet.mockResolvedValue(undefined);
     mockCacheDel.mockRejectedValueOnce(new Error('del err'));
 
+<<<<<<< HEAD
     await expect(refreshTokens(refreshToken)).rejects.toThrow(
       'Session rotation failed — please log in again'
     );
+=======
+    await refreshTokens(refreshToken);
+    const [, msg] = mockLog.warn.mock.calls[0];
+    expect(msg).toBe('Failed to delete old refresh jti');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 

@@ -6,6 +6,7 @@
 //   - Dark mode toggle
 //   - Page title / breadcrumb in the top bar
 
+<<<<<<< HEAD
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -14,6 +15,18 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+=======
+import { useState, useCallback }  from 'react';
+import Link                        from 'next/link';
+import { useRouter }               from 'next/router';
+import {
+  LayoutDashboard,
+  Activity,
+  Shield,
+  Rocket,
+  Server,
+  ScrollText,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   Sun,
   Moon,
   Menu,
@@ -24,10 +37,19 @@ import { useTheme } from '../lib/theme.js';
 
 /** @type {Array<{ href: string, label: string, icon: React.ComponentType }>} */
 const NAV_ITEMS = [
+<<<<<<< HEAD
   { href: '/dashboard', label: 'Rendez-vous', icon: CalendarDays },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/settings', label: 'Paramètres', icon: Settings },
   { href: '/gdpr', label: 'Données & RGPD', icon: ShieldCheck },
+=======
+  { href: '/dashboard', label: 'Dashboard',  icon: LayoutDashboard },
+  { href: '/traces',    label: 'Traces',      icon: Activity        },
+  { href: '/security',  label: 'Security',    icon: Shield          },
+  { href: '/deploy',    label: 'Deploy',      icon: Rocket          },
+  { href: '/cluster',   label: 'Cluster',     icon: Server          },
+  { href: '/logs',      label: 'Logs',        icon: ScrollText      },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 ];
 
 /**
@@ -38,7 +60,11 @@ const NAV_ITEMS = [
  * }} props
  */
 export default function Layout({ children, title = 'Wolf Engine', description }) {
+<<<<<<< HEAD
   const router = useRouter();
+=======
+  const router          = useRouter();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const { theme, toggle } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -46,6 +72,10 @@ export default function Layout({ children, title = 'Wolf Engine', description })
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface">
+<<<<<<< HEAD
+=======
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       {/* ── Mobile overlay ───────────────────────────────────────────── */}
       {sidebarOpen && (
         <div
@@ -70,7 +100,11 @@ export default function Layout({ children, title = 'Wolf Engine', description })
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-wolf-500">
             <Zap className="h-4 w-4 text-white" />
           </div>
+<<<<<<< HEAD
           <span className="text-base font-semibold text-text-base">Wolf Agenda</span>
+=======
+          <span className="text-base font-semibold text-text-base">Wolf Engine</span>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           {/* Close button — mobile only */}
           <button
             className="ml-auto lg:hidden text-text-muted hover:text-text-base"
@@ -114,11 +148,17 @@ export default function Layout({ children, title = 'Wolf Engine', description })
                        text-text-muted hover:bg-surface hover:text-text-base transition-colors"
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
+<<<<<<< HEAD
             {theme === 'dark' ? (
               <Sun className="h-4 w-4" aria-hidden="true" />
             ) : (
               <Moon className="h-4 w-4" aria-hidden="true" />
             )}
+=======
+            {theme === 'dark'
+              ? <Sun  className="h-4 w-4" aria-hidden="true" />
+              : <Moon className="h-4 w-4" aria-hidden="true" />}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
         </div>
@@ -126,11 +166,18 @@ export default function Layout({ children, title = 'Wolf Engine', description })
 
       {/* ── Main area ────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col overflow-hidden">
+<<<<<<< HEAD
         {/* Top bar */}
         <header
           className="flex h-16 shrink-0 items-center gap-4 border-b border-border
                            bg-surface-2 px-4 lg:px-6"
         >
+=======
+
+        {/* Top bar */}
+        <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border
+                           bg-surface-2 px-4 lg:px-6">
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           {/* Hamburger — mobile */}
           <button
             className="text-text-muted hover:text-text-base lg:hidden"
@@ -141,8 +188,17 @@ export default function Layout({ children, title = 'Wolf Engine', description })
           </button>
 
           <div className="flex flex-col">
+<<<<<<< HEAD
             <h1 className="text-base font-semibold text-text-base leading-tight">{title}</h1>
             {description && <p className="text-xs text-text-muted">{description}</p>}
+=======
+            <h1 className="text-base font-semibold text-text-base leading-tight">
+              {title}
+            </h1>
+            {description && (
+              <p className="text-xs text-text-muted">{description}</p>
+            )}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           </div>
 
           {/* Spacer + status dot */}
@@ -152,7 +208,13 @@ export default function Layout({ children, title = 'Wolf Engine', description })
         </header>
 
         {/* Page content */}
+<<<<<<< HEAD
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 animate-fade-in">{children}</main>
+=======
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 animate-fade-in">
+          {children}
+        </main>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       </div>
     </div>
   );

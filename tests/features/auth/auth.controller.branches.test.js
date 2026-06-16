@@ -10,14 +10,24 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   apiKeys: ['key-abc123'],
+<<<<<<< HEAD
   config: { JWT_REFRESH_SECRET: 'test-refresh-secret-very-long-32ch' },
+=======
+  config:  { JWT_REFRESH_SECRET: 'test-refresh-secret-very-long-32ch' },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const mockIssueTokens = jest.fn();
 jest.unstable_mockModule('../../../src/features/auth/token.service.js', () => ({
+<<<<<<< HEAD
   issueTokens: mockIssueTokens,
   refreshTokens: jest.fn(),
   verifyAccess: jest.fn(),
+=======
+  issueTokens:   mockIssueTokens,
+  refreshTokens: jest.fn(),
+  verifyAccess:  jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
@@ -28,9 +38,15 @@ const { handleIssue } = await import('../../../src/features/auth/auth.controller
 
 function mockRes() {
   const res = {};
+<<<<<<< HEAD
   res.status = jest.fn(() => res);
   res.json = jest.fn(() => res);
   res.cookie = jest.fn(() => res);
+=======
+  res.status      = jest.fn(() => res);
+  res.json        = jest.fn(() => res);
+  res.cookie      = jest.fn(() => res);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   res.clearCookie = jest.fn(() => res);
   return res;
 }
@@ -43,19 +59,33 @@ beforeEach(() => jest.clearAllMocks());
 
 describe('handleIssue — null/undefined body (line 29 right branch)', () => {
   test('returns 400 when req.body is null (triggers ?? {} right side)', async () => {
+<<<<<<< HEAD
     const req = { body: null, ip: '127.0.0.1' }; // null → ?? {} right side
+=======
+    const req = { body: null, ip: '127.0.0.1' };   // null → ?? {} right side
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const res = mockRes();
 
     await handleIssue(req, res);
 
     // apiKey = undefined → 400 VALIDATION_ERROR
     expect(res.status).toHaveBeenCalledWith(400);
+<<<<<<< HEAD
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'VALIDATION_ERROR' }));
+=======
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'VALIDATION_ERROR' }),
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(mockIssueTokens).not.toHaveBeenCalled();
   });
 
   test('returns 400 when req.body is undefined (triggers ?? {} right side)', async () => {
+<<<<<<< HEAD
     const req = { body: undefined, ip: '127.0.0.1' }; // undefined → ?? {} right side
+=======
+    const req = { body: undefined, ip: '127.0.0.1' };  // undefined → ?? {} right side
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const res = mockRes();
 
     await handleIssue(req, res);

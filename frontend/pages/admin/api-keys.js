@@ -1,14 +1,24 @@
 // frontend/pages/admin/api-keys.js — Admin API key management page.
 
 import { useCallback } from 'react';
+<<<<<<< HEAD
 import useSWR from 'swr';
 import AdminLayout from '../../components/admin/AdminLayout.js';
 import ApiKeyManager from '../../components/admin/ApiKeyManager.js';
 import { fetchApiKeys, createApiKey, revokeApiKey, rotateApiKey } from '../../lib/adminApi.js';
+=======
+import useSWR          from 'swr';
+import AdminLayout     from '../../components/admin/AdminLayout.js';
+import ApiKeyManager   from '../../components/admin/ApiKeyManager.js';
+import {
+  fetchApiKeys, createApiKey, revokeApiKey, rotateApiKey,
+} from '../../lib/adminApi.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 const SWR_OPTS = { refreshInterval: 60_000 };
 
 export default function AdminApiKeysPage() {
+<<<<<<< HEAD
   const { data, error, isLoading, mutate } = useSWR('/admin/api-keys', fetchApiKeys, SWR_OPTS);
 
   const keys = data?.keys ?? data ?? [];
@@ -38,6 +48,32 @@ export default function AdminApiKeysPage() {
     },
     [mutate]
   );
+=======
+  const { data, error, isLoading, mutate } = useSWR(
+    '/admin/api-keys',
+    fetchApiKeys,
+    SWR_OPTS,
+  );
+
+  const keys = data?.keys ?? data ?? [];
+
+  const handleCreate = useCallback(async formData => {
+    const result = await createApiKey(formData);
+    mutate();
+    return result; // { key: '...' } — passed back to KeyRevealModal
+  }, [mutate]);
+
+  const handleRevoke = useCallback(async id => {
+    await revokeApiKey(id);
+    mutate();
+  }, [mutate]);
+
+  const handleRotate = useCallback(async id => {
+    const result = await rotateApiKey(id);
+    mutate();
+    return result; // { key: '...' }
+  }, [mutate]);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <AdminLayout
@@ -46,6 +82,7 @@ export default function AdminApiKeysPage() {
     >
       <div className="space-y-4">
         {/* Security notice */}
+<<<<<<< HEAD
         <div
           className="card border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20
                         text-amber-800 dark:text-amber-300 text-sm flex items-start gap-3 py-3"
@@ -56,6 +93,15 @@ export default function AdminApiKeysPage() {
           <p>
             Full API keys are shown <strong>only once</strong> at creation or rotation. Store them
             immediately in a secrets manager. Only key prefixes are stored in Wolf Engine.
+=======
+        <div className="card border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20
+                        text-amber-800 dark:text-amber-300 text-sm flex items-start gap-3 py-3">
+          <span className="text-lg shrink-0" aria-hidden="true">⚠️</span>
+          <p>
+            Full API keys are shown <strong>only once</strong> at creation or rotation.
+            Store them immediately in a secrets manager.
+            Only key prefixes are stored in Wolf Engine.
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           </p>
         </div>
 

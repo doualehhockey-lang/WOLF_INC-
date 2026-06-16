@@ -7,7 +7,11 @@ import { jest } from '@jest/globals';
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     ELEVENLABS_API_KEY: 'el-test-key',
+=======
+    ELEVENLABS_API_KEY:  'el-test-key',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     ELEVENLABS_VOICE_ID: 'voice-abc123',
   },
 }));
@@ -19,6 +23,7 @@ jest.unstable_mockModule('../../../../src/infra/http/httpClient.js', () => ({
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
+<<<<<<< HEAD
 const { synthesizeElevenLabs } =
   await import('../../../../src/features/tts/providers/elevenlabs.js');
 const { TtsError } = await import('../../../../src/core/errors.js');
@@ -26,6 +31,14 @@ const { config } = await import('../../../../src/core/config.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fakeBuf = Buffer.alloc(24, 0xff);
+=======
+const { synthesizeElevenLabs } = await import('../../../../src/features/tts/providers/elevenlabs.js');
+const { TtsError }             = await import('../../../../src/core/errors.js');
+const { config }               = await import('../../../../src/core/config.js');
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fakeBuf = Buffer.alloc(24, 0xFF);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 function makeOkRes() {
   return { ok: true, status: 200, arrayBuffer: async () => fakeBuf.buffer };
 }
@@ -35,7 +48,11 @@ function makeErrRes(status = 422, detail = 'invalid voice') {
 
 beforeEach(() => {
   jest.clearAllMocks();
+<<<<<<< HEAD
   config.ELEVENLABS_API_KEY = 'el-test-key';
+=======
+  config.ELEVENLABS_API_KEY  = 'el-test-key';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   config.ELEVENLABS_VOICE_ID = 'voice-abc123';
   mockApiFetch.mockResolvedValue(makeOkRes());
 });
@@ -78,11 +95,16 @@ describe('synthesizeElevenLabs — API error', () => {
 
   test('TtsError message shows empty string when body.text() rejects', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: false,
       status: 500,
       text: async () => {
         throw new Error('body gone');
       },
+=======
+      ok: false, status: 500,
+      text: async () => { throw new Error('body gone'); },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     await expect(synthesizeElevenLabs('Bonjour')).rejects.toBeInstanceOf(TtsError);
   });
@@ -140,7 +162,11 @@ describe('synthesizeElevenLabs — success', () => {
     const [, opts] = mockApiFetch.mock.calls[0];
     const body = JSON.parse(opts.body);
     expect(body.voice_settings).toMatchObject({
+<<<<<<< HEAD
       stability: expect.any(Number),
+=======
+      stability:       expect.any(Number),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       similarity_boost: expect.any(Number),
     });
   });

@@ -13,6 +13,7 @@ if (defaultInterval && typeof defaultInterval.unref === 'function') {
 // ── Histograms (latency distributions) ───────────────────────────────────────
 
 export const pipelineLatency = new promClient.Histogram({
+<<<<<<< HEAD
   name: 'wolf_pipeline_duration_ms',
   help: 'End-to-end voice pipeline latency (NLU + Agent + TTS)',
   labelNames: ['intent', 'success'],
@@ -38,19 +39,56 @@ export const agentLatency = new promClient.Histogram({
   help: 'Agent dispatch latency (DB read/write)',
   labelNames: ['intent', 'success'],
   buckets: [1, 5, 10, 25, 50, 100, 500],
+=======
+  name:       'wolf_pipeline_duration_ms',
+  help:       'End-to-end voice pipeline latency (NLU + Agent + TTS)',
+  labelNames: ['intent', 'success'],
+  buckets:    [50, 100, 250, 500, 1000, 2500, 5000, 12000],
+});
+
+export const nluLatency = new promClient.Histogram({
+  name:       'wolf_nlu_duration_ms',
+  help:       'NLU (Claude/Ollama) processing time',
+  labelNames: ['provider', 'success'],
+  buckets:    [50, 100, 250, 500, 1000, 3000],
+});
+
+export const ttsLatency = new promClient.Histogram({
+  name:       'wolf_tts_duration_ms',
+  help:       'TTS synthesis latency',
+  labelNames: ['provider', 'success'],
+  buckets:    [100, 250, 500, 1000, 2500, 5000],
+});
+
+export const agentLatency = new promClient.Histogram({
+  name:       'wolf_agent_duration_ms',
+  help:       'Agent dispatch latency (DB read/write)',
+  labelNames: ['intent', 'success'],
+  buckets:    [1, 5, 10, 25, 50, 100, 500],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ── Counters (monotonically increasing totals) ────────────────────────────────
 
 export const intentCounter = new promClient.Counter({
+<<<<<<< HEAD
   name: 'wolf_intents_total',
   help: 'Total intents detected by NLU',
+=======
+  name:       'wolf_intents_total',
+  help:       'Total intents detected by NLU',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   labelNames: ['intent', 'resolved'],
 });
 
 export const errorCounter = new promClient.Counter({
+<<<<<<< HEAD
   name: 'wolf_errors_total',
   help: 'Total errors by service and type',
+=======
+  name:       'wolf_errors_total',
+  help:       'Total errors by service and type',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   labelNames: ['service', 'errorType'],
 });
 
@@ -60,8 +98,13 @@ export const rateLimitCounter = new promClient.Counter({
 });
 
 export const ttsCacheHits = new promClient.Counter({
+<<<<<<< HEAD
   name: 'wolf_tts_cache_hits_total',
   help: 'TTS cache hits',
+=======
+  name:       'wolf_tts_cache_hits_total',
+  help:       'TTS cache hits',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   labelNames: ['type'], // 'inflight' | 'memory' | 'redis'
 });
 
@@ -93,6 +136,7 @@ export const eventsStoredGauge = new promClient.Gauge({
 });
 
 export const circuitBreakerGauge = new promClient.Gauge({
+<<<<<<< HEAD
   name: 'wolf_circuit_breaker_state',
   help: 'Circuit breaker state: 0=closed (healthy), 1=open (failing)',
   labelNames: ['service'],
@@ -106,6 +150,13 @@ export const auditLogFailures = new promClient.Counter({
   labelNames: ['reason'], // 'db_unavailable' | 'insert_error' | 'flag_check_error'
 });
 
+=======
+  name:       'wolf_circuit_breaker_state',
+  help:       'Circuit breaker state: 0=closed (healthy), 1=open (failing)',
+  labelNames: ['service'],
+});
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const register = promClient.register;

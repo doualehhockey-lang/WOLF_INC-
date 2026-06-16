@@ -2,6 +2,7 @@
 // Access tokens expire in 15 min; refresh tokens in 7 days.
 // Tokens are signed with separate secrets (JWT_SECRET / JWT_REFRESH_SECRET).
 
+<<<<<<< HEAD
 import jwt from 'jsonwebtoken';
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
@@ -50,6 +51,17 @@ async function _atomicGetDel(key) {
 const log = childLogger('auth');
 
 const ACCESS_TTL = 15 * 60; // 15 min (seconds)
+=======
+import jwt             from 'jsonwebtoken';
+import { config }      from '../../core/config.js';
+import { childLogger } from '../../core/logger.js';
+import { cacheSet, cacheGet, cacheDel } from '../../infra/redis/redisClient.js';
+import crypto from 'crypto';
+
+const log = childLogger('auth');
+
+const ACCESS_TTL  = 15 * 60;       // 15 min (seconds)
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 const REFRESH_TTL = 7 * 24 * 3600; // 7 days
 
 /**
@@ -58,17 +70,22 @@ const REFRESH_TTL = 7 * 24 * 3600; // 7 days
  * @returns {{ accessToken: string, refreshToken: string, expiresIn: number }}
  */
 export async function issueTokens(payload) {
+<<<<<<< HEAD
   const base = {
     sub: payload.sub,
     role: payload.role ?? 'user',
     tenantId: payload.tenantId ?? 'default',
   };
+=======
+  const base = { sub: payload.sub, role: payload.role ?? 'user' };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   const accessToken = jwt.sign(base, config.JWT_SECRET, {
     expiresIn: ACCESS_TTL,
     algorithm: 'HS256',
   });
 
+<<<<<<< HEAD
   const jti = crypto.randomUUID();
   const refreshToken = jwt.sign(
     { sub: payload.sub, role: base.role, tenantId: base.tenantId, jti },
@@ -78,12 +95,24 @@ export async function issueTokens(payload) {
       algorithm: 'HS256',
     }
   );
+=======
+  // Create a refresh token with a jti and store the jti in Redis for revocation checks.
+  const jti = crypto.randomUUID();
+  const refreshToken = jwt.sign({ sub: payload.sub, jti }, config.JWT_REFRESH_SECRET, {
+    expiresIn: REFRESH_TTL,
+    algorithm: 'HS256',
+  });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   try {
     await cacheSet(`rt:${jti}`, '1', REFRESH_TTL);
   } catch (err) {
+<<<<<<< HEAD
     // Best-effort: if cache unavailable (in-memory fallback active), proceed.
     // In multi-instance deployments without Redis, JTI revocation is not distributed.
+=======
+    // Best-effort: if cache unavailable, proceed but log.
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     log.warn({ err: err.message }, 'Failed to persist refresh token jti');
   }
 
@@ -103,6 +132,7 @@ export function verifyAccess(token) {
 
 /**
  * Verify a refresh token and issue a new token pair.
+<<<<<<< HEAD
  *
  * Security contract:
  *   1. Verify JWT signature and expiry.
@@ -111,12 +141,15 @@ export function verifyAccess(token) {
  *      and no new tokens are issued. This prevents replay when cacheDel errors.
  *   4. Issue new token pair with a fresh JTI.
  *
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
  * @param {string} token
  * @returns {{ accessToken: string, refreshToken: string, expiresIn: number }}
  */
 export async function refreshTokens(token) {
   const payload = jwt.verify(token, config.JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
 
+<<<<<<< HEAD
   if (!payload.jti) throw new Error('Missing refresh token id');
 
   // Steps 2+3: atomically GET and DEL the JTI in a single Redis EVAL.
@@ -141,5 +174,28 @@ export async function refreshTokens(token) {
     role: payload.role,
     tenantId: payload.tenantId,
   });
+=======
+  // Verify jti still valid (not revoked)
+  if (!payload.jti) throw new Error('Missing refresh token id');
+
+  try {
+    const exists = await cacheGet(`rt:${payload.jti}`);
+    if (!exists) throw new Error('Refresh token revoked');
+  } catch (err) {
+    log.warn({ err: err.message }, 'Refresh token validation failed');
+    throw err;
+  }
+
+  // Rotate: issue new pair, persist new jti, remove old jti
+  const newTokens = await issueTokens({ sub: payload.sub });
+
+  try {
+    // Delete old jti
+    await cacheDel(`rt:${payload.jti}`);
+  } catch (err) {
+    log.warn({ err: err.message }, 'Failed to delete old refresh jti');
+  }
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return newTokens;
 }

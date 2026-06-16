@@ -1,8 +1,11 @@
 // src/features/voice/twiml.builder.js — Pure TwiML string builders.
 // No side-effects — each function returns a valid TwiML XML string.
 // Import these instead of hand-rolling XML in controllers.
+<<<<<<< HEAD
 // Default locale matches config.VOICE_DEFAULT_LOCALE default ('fr-FR').
 // Callers that need the configured locale should pass config.VOICE_DEFAULT_LOCALE explicitly.
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 export const TWIML_HEADERS = {
   'Content-Type': 'text/xml; charset=utf-8',
@@ -62,7 +65,11 @@ export function twimlGather(prompt, gatherUrl, opts = {}) {
  * Error response — says a generic message and optionally loops back to gather.
  */
 export function twimlError(gatherUrl = null, locale = 'fr-FR') {
+<<<<<<< HEAD
   const errorMsg = 'Excusez-moi, un petit problème est survenu. Pourriez-vous réessayer ?';
+=======
+  const errorMsg = "Une erreur est survenue. Veuillez réessayer.";
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   if (gatherUrl) return twimlSayThenGather(errorMsg, gatherUrl, { locale });
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -71,6 +78,7 @@ export function twimlError(gatherUrl = null, locale = 'fr-FR') {
 </Response>`;
 }
 
+<<<<<<< HEAD
 /**
  * Play a filler message ("Un instant...") then redirect to a processing URL.
  * This eliminates dead silence: the caller hears a natural acknowledgment
@@ -87,12 +95,19 @@ export function twimlFillerThenRedirect(fillerAudioUrl, fillerText, redirectUrl,
 </Response>`;
 }
 
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ── Private ───────────────────────────────────────────────────────────────────
 
 function _esc(s) {
   return String(s)
+<<<<<<< HEAD
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+=======
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }

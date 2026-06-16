@@ -1,0 +1,161 @@
+{
+  "title": "Wolf Engine",
+  "uid": "wolf-engine-v1",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Pipeline Latency (P50 / P95 / P99)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(wolf_pipeline_duration_seconds_bucket[5m]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(wolf_pipeline_duration_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(wolf_pipeline_duration_seconds_bucket[5m]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Intent Rate (req/min)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(wolf_intents_total[1m]) * 60",
+          "legendFormat": "{{ intent }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqpm" }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Error Rate (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 8, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * rate(wolf_errors_total[5m]) / (rate(wolf_calls_total[5m]) + 0.001)",
+          "legendFormat": "Error %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "thresholds": { "steps": [
+          { "value": 0, "color": "green" },
+          { "value": 2, "color": "yellow" },
+          { "value": 5, "color": "red" }
+        ]}}
+      }
+    },
+    {
+      "id": 4,
+      "title": "TTS Cache Hit Rate (%)",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 8, "w": 4, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * rate(wolf_tts_cache_hits_total[5m]) / (rate(wolf_tts_cache_hits_total[5m]) + rate(wolf_tts_duration_seconds_count[5m]) + 0.001)",
+          "legendFormat": "Cache Hit %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "thresholds": { "steps": [
+          { "value": 0, "color": "red" },
+          { "value": 50, "color": "yellow" },
+          { "value": 80, "color": "green" }
+        ]}}
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "colorMode": "background" }
+    },
+    {
+      "id": 5,
+      "title": "Active Sessions",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 4, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "wolf_active_sessions", "legendFormat": "Sessions" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "thresholds": { "steps": [
+          { "value": 0, "color": "green" },
+          { "value": 50, "color": "yellow" },
+          { "value": 100, "color": "red" }
+        ]}}
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
+    },
+    {
+      "id": 6,
+      "title": "Calls & SMS Total",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 8, "w": 8, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "increase(wolf_calls_total[1h])", "legendFormat": "Calls (1h)" },
+        { "expr": "increase(wolf_sms_total[1h])", "legendFormat": "SMS (1h)" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal" }
+    },
+    {
+      "id": 7,
+      "title": "Rate Limit Rejections",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 15, "w": 12, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(wolf_rate_limit_total[1m]) * 60",
+          "legendFormat": "Rejections/min"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqpm", "color": { "fixedColor": "orange", "mode": "fixed" } }
+      }
+    },
+    {
+      "id": 8,
+      "title": "NLU Latency P95",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 15, "w": 12, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(wolf_nlu_duration_seconds_bucket[5m]))",
+          "legendFormat": "NLU p95"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(wolf_tts_duration_seconds_bucket[5m]))",
+          "legendFormat": "TTS p95"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" }
+      }
+    }
+  ]
+}

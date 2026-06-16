@@ -11,17 +11,29 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 // No CLAUDE_API_KEY → forces _ruleBased fallback
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     CLAUDE_API_KEY: '', // empty → triggers _ruleBased fallback immediately
     CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
+=======
+    CLAUDE_API_KEY: '',   // empty → triggers _ruleBased fallback immediately
+    CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
+<<<<<<< HEAD
   recordRequest: jest.fn(),
   recordFailure: jest.fn(),
   recordLatency: jest.fn(),
   setCircuitState: jest.fn(),
   auditLogFailures: { inc: jest.fn() },
+=======
+  recordRequest:   jest.fn(),
+  recordFailure:   jest.fn(),
+  recordLatency:   jest.fn(),
+  setCircuitState: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // Mock apiFetch — should NOT be called when falling back to _ruleBased

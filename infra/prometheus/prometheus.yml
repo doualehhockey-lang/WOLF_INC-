@@ -4,7 +4,10 @@ global:
 
 rule_files:
   - alerts.yml
+<<<<<<< HEAD
   - alert_rules.yml
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 alerting:
   alertmanagers:

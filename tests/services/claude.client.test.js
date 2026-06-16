@@ -14,7 +14,11 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
     CLAUDE_API_KEY: 'sk-test',
+<<<<<<< HEAD
     CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
+=======
+    CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
@@ -26,16 +30,24 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 
 // ── Mock metrics helpers ──────────────────────────────────────────────────────
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
+<<<<<<< HEAD
   recordRequest: jest.fn(),
   recordFailure: jest.fn(),
   recordLatency: jest.fn(),
   setCircuitState: jest.fn(),
   auditLogFailures: { inc: jest.fn() },
+=======
+  recordRequest:   jest.fn(),
+  recordFailure:   jest.fn(),
+  recordLatency:   jest.fn(),
+  setCircuitState: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock circuit breaker ──────────────────────────────────────────────────────
 let _circuitState = 'CLOSED';
 const mockBreaker = {
+<<<<<<< HEAD
   exec: jest.fn(),
   getState: jest.fn(() => _circuitState),
 };
@@ -59,20 +71,44 @@ jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => ({
   },
   withRetry: jest.fn(async fn => fn()),
   STATE: { CLOSED: 'CLOSED', HALF_OPEN: 'HALF_OPEN', OPEN: 'OPEN' },
+=======
+  exec:     jest.fn(),
+  getState: jest.fn(() => _circuitState),
+};
+jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => ({
+  CircuitBreaker:   jest.fn(() => mockBreaker),
+  CircuitOpenError: class CircuitOpenError extends Error { constructor() { super('open'); } },
+  TimeoutError:     class TimeoutError     extends Error { constructor() { super('timeout'); } },
+  HttpError:        class HttpError        extends Error { constructor(s, m) { super(m); this.status = s; } },
+  withRetry:        jest.fn(async (fn) => fn()),
+  STATE:            { CLOSED: 'CLOSED', HALF_OPEN: 'HALF_OPEN', OPEN: 'OPEN' },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 const { analyze, translate } = await import('../../src/services/claude.client.js');
+<<<<<<< HEAD
 const { config } = await import('../../src/core/config.js');
 const { STATE } = await import('../../src/services/circuitBreaker.js');
+=======
+const { config }             = await import('../../src/core/config.js');
+const { STATE }              = await import('../../src/services/circuitBreaker.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function makeClaudeOkRes(text) {
   return {
+<<<<<<< HEAD
     ok: true,
     status: 200,
     json: async () => ({ content: [{ text }] }),
     text: async () => text,
+=======
+    ok:      true,
+    status:  200,
+    json:    async () => ({ content: [{ text }] }),
+    text:    async () => text,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
 }
 
@@ -84,6 +120,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   _circuitState = 'CLOSED';
   config.CLAUDE_API_KEY = 'sk-test';
+<<<<<<< HEAD
   config.CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
   mockBreaker.getState.mockReturnValue('CLOSED');
   // Default: exec delegates to fn
@@ -101,6 +138,15 @@ beforeEach(() => {
       })
     )
   );
+=======
+  config.CLAUDE_MODEL   = 'claude-haiku-4-5-20251001';
+  mockBreaker.getState.mockReturnValue('CLOSED');
+  // Default: exec delegates to fn
+  mockBreaker.exec.mockImplementation(async (fn) => fn(new AbortController().signal));
+  mockApiFetch.mockResolvedValue(makeClaudeOkRes(
+    claudeJson({ intent: 'list_events', subject: '', date: '', time: '', confidence: 0.9, errors: [], strategy: 'claude' })
+  ));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -135,9 +181,13 @@ describe('analyze — empty/null input', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('analyze — no API key → rule-based', () => {
+<<<<<<< HEAD
   beforeEach(() => {
     config.CLAUDE_API_KEY = '';
   });
+=======
+  beforeEach(() => { config.CLAUDE_API_KEY = ''; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   test('returns a result without calling apiFetch', async () => {
     await analyze('Créer un rendez-vous');
@@ -187,8 +237,12 @@ describe('analyze — no API key → rule-based', () => {
 
   test('extracts "demain" as tomorrow date', async () => {
     const result = await analyze('rendez-vous demain');
+<<<<<<< HEAD
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+=======
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(result.date).toBe(tomorrow.toISOString().slice(0, 10));
     expect(result.intent).toBeDefined();
   });
@@ -218,6 +272,7 @@ describe('analyze — circuit OPEN → rule-based', () => {
 
 describe('analyze — Claude API success', () => {
   test('returns parsed intent from Claude response', async () => {
+<<<<<<< HEAD
     mockApiFetch.mockResolvedValueOnce(
       makeClaudeOkRes(
         claudeJson({
@@ -231,6 +286,11 @@ describe('analyze — Claude API success', () => {
         })
       )
     );
+=======
+    mockApiFetch.mockResolvedValueOnce(makeClaudeOkRes(
+      claudeJson({ intent: 'create_event', subject: 'Dentiste', date: '2026-06-01', time: '09:00', confidence: 0.95, errors: [], strategy: 'claude' })
+    ));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const result = await analyze('Créer rendez-vous dentiste le 01/06');
     expect(result.intent).toBe('create_event');
     expect(result.subject).toBe('Dentiste');
@@ -238,12 +298,19 @@ describe('analyze — Claude API success', () => {
   });
 
   test('defaults confidence to 0.8 when missing from response', async () => {
+<<<<<<< HEAD
     mockApiFetch.mockResolvedValueOnce(makeClaudeOkRes(claudeJson({ intent: 'list_events' })));
+=======
+    mockApiFetch.mockResolvedValueOnce(makeClaudeOkRes(
+      claudeJson({ intent: 'list_events' })
+    ));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const result = await analyze('Mes rendez-vous');
     expect(result.confidence).toBe(0.8);
   });
 
   test('handles markdown code fence in response', async () => {
+<<<<<<< HEAD
     mockApiFetch.mockResolvedValueOnce(
       makeClaudeOkRes(
         '```json\n' +
@@ -251,11 +318,17 @@ describe('analyze — Claude API success', () => {
           '\n```'
       )
     );
+=======
+    mockApiFetch.mockResolvedValueOnce(makeClaudeOkRes(
+      '```json\n' + claudeJson({ intent: 'list_events', confidence: 0.9, errors: [], strategy: 'claude' }) + '\n```'
+    ));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const result = await analyze('Mes rendez-vous');
     expect(result.intent).toBe('list_events');
   });
 
   test('returns errors array from response', async () => {
+<<<<<<< HEAD
     mockApiFetch.mockResolvedValueOnce(
       makeClaudeOkRes(
         claudeJson({
@@ -266,6 +339,11 @@ describe('analyze — Claude API success', () => {
         })
       )
     );
+=======
+    mockApiFetch.mockResolvedValueOnce(makeClaudeOkRes(
+      claudeJson({ intent: 'unknown', errors: ['missing-date'], confidence: 0.5, strategy: 'claude' })
+    ));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const result = await analyze('Créer RDV');
     expect(result.errors).toContain('missing-date');
   });
@@ -352,9 +430,15 @@ describe('analyze — line 195 ?? "" right-side branch (no content in response)'
     // json.content is undefined → json.content?.[0]?.text evaluates to undefined
     // → ?? '' right-side branch fires → raw = '' → JSON.parse('') throws → rule-based
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: true,
       status: 200,
       json: async () => ({}), // no content field
+=======
+      ok:   true,
+      status: 200,
+      json: async () => ({}),   // no content field
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       text: async () => '',
     });
     const result = await analyze('Créer un rendez-vous demain');
@@ -364,9 +448,15 @@ describe('analyze — line 195 ?? "" right-side branch (no content in response)'
   test('falls back to rule-based when json.content[0] has no text field', async () => {
     // json.content[0].text is undefined → ?? '' right-side fires → JSON.parse('') throws
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: true,
       status: 200,
       json: async () => ({ content: [{}] }), // content[0] has no text
+=======
+      ok:   true,
+      status: 200,
+      json: async () => ({ content: [{}] }),  // content[0] has no text
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       text: async () => '',
     });
     const result = await analyze('Annuler mon rendez-vous');

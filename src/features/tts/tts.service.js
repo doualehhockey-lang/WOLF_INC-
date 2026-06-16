@@ -2,6 +2,7 @@
 // Selects provider from config.TTS_PROVIDER, checks cache, falls back to mock on error.
 // Inflight dedup prevents parallel synthesis of identical text+locale pairs.
 
+<<<<<<< HEAD
 import { childLogger } from '../../core/logger.js';
 import { config } from '../../core/config.js';
 import { ttsLatency, inflightTts } from '../../core/metrics.js';
@@ -11,6 +12,17 @@ import { cacheGet, cacheSet } from './tts.cache.js';
 import { synthesizeMock } from './providers/mock.js';
 
 const log = childLogger('tts');
+=======
+import { childLogger }                      from '../../core/logger.js';
+import { config }                           from '../../core/config.js';
+import { ttsLatency, inflightTts }          from '../../core/metrics.js';
+import { TtsError }                         from '../../core/errors.js';
+import { isEnabled, FLAGS }                 from '../../core/featureFlags.js';
+import { cacheGet, cacheSet }               from './tts.cache.js';
+import { synthesizeMock }                   from './providers/mock.js';
+
+const log      = childLogger('tts');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 /** @type {Map<string, Promise<TtsResult>>} */
 const _inflight = new Map();
 
@@ -33,7 +45,11 @@ export async function synthesize(text, locale = 'fr-FR') {
 
   const safeText = text.trim().slice(0, 500);
   const provider = config.TTS_PROVIDER;
+<<<<<<< HEAD
   const key = `${provider}:${locale}:${safeText}`;
+=======
+  const key      = `${provider}:${locale}:${safeText}`;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   // 1. Inflight dedup — register BEFORE any async work so concurrent calls join
   if (_inflight.has(key)) {
@@ -66,12 +82,18 @@ export async function synthesize(text, locale = 'fr-FR') {
 
 async function _synthesize(text, provider, locale) {
   const timer = ttsLatency.startTimer({ provider });
+<<<<<<< HEAD
   let buffer;
   let isAudio = false;
+=======
+  let   buffer;
+  let   isAudio = false;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   try {
     // Resolve effective provider — kill switch forces mock when provider is disabled
     let effectiveProvider = provider;
+<<<<<<< HEAD
     if (provider === 'elevenlabs' && !(await isEnabled(FLAGS.TTS_ELEVENLABS))) {
       log.warn({ provider }, 'TTS_ELEVENLABS flag disabled — falling back to mock');
       effectiveProvider = 'mock';
@@ -79,6 +101,15 @@ async function _synthesize(text, provider, locale) {
       log.warn({ provider }, 'TTS_AZURE flag disabled — falling back to mock');
       effectiveProvider = 'mock';
     } else if (provider === 'piper' && !(await isEnabled(FLAGS.TTS_PIPER))) {
+=======
+    if (provider === 'elevenlabs' && !await isEnabled(FLAGS.TTS_ELEVENLABS)) {
+      log.warn({ provider }, 'TTS_ELEVENLABS flag disabled — falling back to mock');
+      effectiveProvider = 'mock';
+    } else if (provider === 'azure' && !await isEnabled(FLAGS.TTS_AZURE)) {
+      log.warn({ provider }, 'TTS_AZURE flag disabled — falling back to mock');
+      effectiveProvider = 'mock';
+    } else if (provider === 'piper' && !await isEnabled(FLAGS.TTS_PIPER)) {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       log.warn({ provider }, 'TTS_PIPER flag disabled — falling back to mock');
       effectiveProvider = 'mock';
     }
@@ -91,14 +122,24 @@ async function _synthesize(text, provider, locale) {
       }
       case 'elevenlabs': {
         const { synthesizeElevenLabs } = await import('./providers/elevenlabs.js');
+<<<<<<< HEAD
         buffer = await synthesizeElevenLabs(text);
         isAudio = true;
+=======
+        buffer   = await synthesizeElevenLabs(text);
+        isAudio  = true;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         break;
       }
       case 'azure': {
         const { synthesizeAzure } = await import('./providers/azure.js');
+<<<<<<< HEAD
         buffer = await synthesizeAzure(text, locale);
         isAudio = true;
+=======
+        buffer   = await synthesizeAzure(text, locale);
+        isAudio  = true;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         break;
       }
       default: // 'mock'
@@ -108,7 +149,11 @@ async function _synthesize(text, provider, locale) {
     timer({ success: 'true' });
     const result = {
       buffer,
+<<<<<<< HEAD
       ext: isAudio ? '.mp3' : '.wav',
+=======
+      ext:      isAudio ? '.mp3' : '.wav',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       mimeType: isAudio ? 'audio/mpeg' : 'audio/wav',
       fallback: false,
     };

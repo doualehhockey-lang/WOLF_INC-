@@ -7,10 +7,14 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
+<<<<<<< HEAD
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+=======
+    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   }),
 }));
 
@@ -18,17 +22,27 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
     TTS_PROVIDER: 'mock',
+<<<<<<< HEAD
     BASE_URL: 'http://localhost:3000',
     AUDIO_DIR: '/tmp/audio',
+=======
+    BASE_URL:     'http://localhost:3000',
+    AUDIO_DIR:    '/tmp/audio',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 // ── Mock metrics ──────────────────────────────────────────────────────────────
 const mockTimer = jest.fn(); // returned by startTimer
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
+<<<<<<< HEAD
   ttsLatency: { startTimer: jest.fn(() => mockTimer) },
   inflightTts: { set: jest.fn() },
   auditLogFailures: { inc: jest.fn() },
+=======
+  ttsLatency:  { startTimer: jest.fn(() => mockTimer) },
+  inflightTts: { set: jest.fn() },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock errors (import real class — no mock needed) ─────────────────────────
@@ -43,10 +57,17 @@ jest.unstable_mockModule('../../../src/features/tts/tts.cache.js', () => ({
 }));
 
 // ── Mock providers ────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 const mockSynthesizeMock = jest.fn(async () => Buffer.alloc(44, 0x00));
 const mockSynthesizePiper = jest.fn(async () => Buffer.alloc(44, 0x01));
 const mockSynthesizeElevenLabs = jest.fn(async () => Buffer.alloc(48, 0x02));
 const mockSynthesizeAzure = jest.fn(async () => Buffer.alloc(48, 0x03));
+=======
+const mockSynthesizeMock      = jest.fn(async () => Buffer.alloc(44, 0x00));
+const mockSynthesizePiper     = jest.fn(async () => Buffer.alloc(44, 0x01));
+const mockSynthesizeElevenLabs = jest.fn(async () => Buffer.alloc(48, 0x02));
+const mockSynthesizeAzure     = jest.fn(async () => Buffer.alloc(48, 0x03));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 jest.unstable_mockModule('../../../src/features/tts/providers/mock.js', () => ({
   synthesizeMock: mockSynthesizeMock,
@@ -62,10 +83,17 @@ jest.unstable_mockModule('../../../src/features/tts/providers/azure.js', () => (
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
+<<<<<<< HEAD
 const { synthesize } = await import('../../../src/features/tts/tts.service.js');
 const { config } = await import('../../../src/core/config.js');
 const { TtsError } = await import('../../../src/core/errors.js');
 const metrics = await import('../../../src/core/metrics.js');
+=======
+const { synthesize }    = await import('../../../src/features/tts/tts.service.js');
+const { config }        = await import('../../../src/core/config.js');
+const { TtsError }      = await import('../../../src/core/errors.js');
+const metrics           = await import('../../../src/core/metrics.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
 beforeEach(() => {
@@ -114,7 +142,11 @@ describe('Input validation', () => {
 
 describe('Cache hit', () => {
   test('returns cached result without calling provider', async () => {
+<<<<<<< HEAD
     const cachedBuf = Buffer.alloc(20, 0xff);
+=======
+    const cachedBuf = Buffer.alloc(20, 0xFF);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     mockCacheGet.mockResolvedValueOnce({ buffer: cachedBuf, ext: '.wav', mimeType: 'audio/wav' });
     const result = await synthesize('Cached text');
     expect(result.buffer).toBe(cachedBuf);
@@ -123,21 +155,29 @@ describe('Cache hit', () => {
   });
 
   test('sets fallback:false on cache hit', async () => {
+<<<<<<< HEAD
     mockCacheGet.mockResolvedValueOnce({
       buffer: Buffer.alloc(10),
       ext: '.wav',
       mimeType: 'audio/wav',
     });
+=======
+    mockCacheGet.mockResolvedValueOnce({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const result = await synthesize('Cache fallback false');
     expect(result.fallback).toBe(false);
   });
 
   test('does not write to cache on a cache hit', async () => {
+<<<<<<< HEAD
     mockCacheGet.mockResolvedValueOnce({
       buffer: Buffer.alloc(10),
       ext: '.wav',
       mimeType: 'audio/wav',
     });
+=======
+    mockCacheGet.mockResolvedValueOnce({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await synthesize('Cache no rewrite');
     expect(mockCacheSet).not.toHaveBeenCalled();
   });
@@ -175,9 +215,13 @@ describe('Provider: mock', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Provider: piper', () => {
+<<<<<<< HEAD
   beforeEach(() => {
     config.TTS_PROVIDER = 'piper';
   });
+=======
+  beforeEach(() => { config.TTS_PROVIDER = 'piper'; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   test('calls synthesizePiper and returns .wav result', async () => {
     mockSynthesizePiper.mockResolvedValueOnce(Buffer.alloc(44, 0x01));
@@ -193,9 +237,13 @@ describe('Provider: piper', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Provider: elevenlabs', () => {
+<<<<<<< HEAD
   beforeEach(() => {
     config.TTS_PROVIDER = 'elevenlabs';
   });
+=======
+  beforeEach(() => { config.TTS_PROVIDER = 'elevenlabs'; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   test('calls synthesizeElevenLabs and returns .mp3 result', async () => {
     mockSynthesizeElevenLabs.mockResolvedValueOnce(Buffer.alloc(48, 0x02));
@@ -211,9 +259,13 @@ describe('Provider: elevenlabs', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Provider: azure', () => {
+<<<<<<< HEAD
   beforeEach(() => {
     config.TTS_PROVIDER = 'azure';
   });
+=======
+  beforeEach(() => { config.TTS_PROVIDER = 'azure'; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   test('calls synthesizeAzure and returns .mp3 result', async () => {
     mockSynthesizeAzure.mockResolvedValueOnce(Buffer.alloc(48, 0x03));
@@ -280,10 +332,14 @@ describe('Inflight deduplication', () => {
   test('two concurrent calls with same text+locale share a single provider call', async () => {
     let resolveProvider;
     mockSynthesizeMock.mockImplementationOnce(
+<<<<<<< HEAD
       () =>
         new Promise(r => {
           resolveProvider = () => r(Buffer.alloc(44, 0x00));
         })
+=======
+      () => new Promise(r => { resolveProvider = () => r(Buffer.alloc(44, 0x00)); }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
 
     const p1 = synthesize('Dedup text');

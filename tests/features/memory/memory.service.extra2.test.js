@@ -14,6 +14,7 @@ const mockCacheSet = jest.fn(async () => {});
 const mockCacheDel = jest.fn(async () => {});
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
+<<<<<<< HEAD
   cacheGet: mockCacheGet,
   cacheSet: mockCacheSet,
   cacheDel: mockCacheDel,
@@ -38,6 +39,28 @@ jest.unstable_mockModule('../../../src/features/memory/session.schema.js', () =>
 
 const { addAgentTurn, buildContext, getLang, clearSession, getStats, setLang } =
   await import('../../../src/features/memory/memory.service.js');
+=======
+  cacheGet:    mockCacheGet,
+  cacheSet:    mockCacheSet,
+  cacheDel:    mockCacheDel,
+  cacheIncr:   jest.fn(async () => 1),
+  cacheExpire: jest.fn(async () => {}),
+  cacheTtl:    jest.fn(async () => -1),
+}));
+
+jest.unstable_mockModule('../../../src/features/memory/session.schema.js', () => ({
+  parseSession:   (s) => s,
+  defaultSession: (callSid) => ({
+    callSid, turns: [],
+    pendingIntent: null, pendingDate: null, pendingTime: null, pendingSubject: null,
+    lang: null, lastActivity: Date.now(),
+  }),
+}));
+
+const {
+  addAgentTurn, buildContext, getLang, clearSession, getStats, setLang,
+} = await import('../../../src/features/memory/memory.service.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -51,7 +74,11 @@ describe('buildContext — pendingIntent and pendingSubject TRUE branches (lines
 
     // Add an agent turn with intent AND subject so both pending fields are set
     await addAgentTurn(sid, 'Rendez-vous créé', {
+<<<<<<< HEAD
       intent: 'create_event',
+=======
+      intent:  'create_event',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       isoDate: '2026-09-01',
       isoTime: '10:00',
       subject: 'médecin',
@@ -60,15 +87,22 @@ describe('buildContext — pendingIntent and pendingSubject TRUE branches (lines
     const ctx = await buildContext(sid);
 
     // Should contain the pending context section
+<<<<<<< HEAD
     expect(ctx).toContain('intent précédent: create_event'); // line 104 TRUE
     expect(ctx).toContain('sujet précédent: médecin'); // line 107 TRUE
     expect(ctx).toContain('date précédente: 2026-09-01'); // line 105 TRUE (bonus)
+=======
+    expect(ctx).toContain('intent précédent: create_event');   // line 104 TRUE
+    expect(ctx).toContain('sujet précédent: médecin');          // line 107 TRUE
+    expect(ctx).toContain('date précédente: 2026-09-01');       // line 105 TRUE (bonus)
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('line 104 FALSE and 107 FALSE: pendingDate set but no pendingIntent or pendingSubject', async () => {
     // Mock cacheGet to return a pre-crafted session: pendingDate set, no intent/subject
     // This triggers the outer if (true), but pendingIntent (false) and pendingSubject (false)
     const fakeSession = JSON.stringify({
+<<<<<<< HEAD
       callSid: 'ctx-false-sid',
       turns: [{ role: 'user', content: 'test' }],
       pendingIntent: null, // line 104 FALSE branch
@@ -77,18 +111,32 @@ describe('buildContext — pendingIntent and pendingSubject TRUE branches (lines
       pendingSubject: null, // line 107 FALSE branch
       lang: null,
       lastActivity: Date.now(),
+=======
+      callSid: 'ctx-false-sid', turns: [{ role: 'user', content: 'test' }],
+      pendingIntent: null,         // line 104 FALSE branch
+      pendingDate:   '2026-10-01', // outer if TRUE (pendingDate truthy)
+      pendingTime:   null,
+      pendingSubject: null,        // line 107 FALSE branch
+      lang: null, lastActivity: Date.now(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     mockCacheGet.mockResolvedValueOnce(fakeSession);
 
     const ctx = await buildContext('ctx-false-sid');
     expect(ctx).toContain('date précédente: 2026-10-01'); // pendingDate IS included
+<<<<<<< HEAD
     expect(ctx).not.toContain('intent précédent'); // pendingIntent NOT included (FALSE branch)
     expect(ctx).not.toContain('sujet précédent'); // pendingSubject NOT included (FALSE branch)
+=======
+    expect(ctx).not.toContain('intent précédent');         // pendingIntent NOT included (FALSE branch)
+    expect(ctx).not.toContain('sujet précédent');          // pendingSubject NOT included (FALSE branch)
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('line 105 FALSE: pendingSubject set but no pendingDate', async () => {
     // Triggers outer if (pendingSubject truthy), but pendingDate is null → line 105 FALSE
     const fakeSession = JSON.stringify({
+<<<<<<< HEAD
       callSid: 'ctx-nodate-sid',
       turns: [{ role: 'user', content: 'test2' }],
       pendingIntent: null,
@@ -97,12 +145,25 @@ describe('buildContext — pendingIntent and pendingSubject TRUE branches (lines
       pendingSubject: 'kiné', // outer if TRUE (pendingSubject truthy)
       lang: null,
       lastActivity: Date.now(),
+=======
+      callSid: 'ctx-nodate-sid', turns: [{ role: 'user', content: 'test2' }],
+      pendingIntent: null,
+      pendingDate:   null,         // line 105 FALSE branch (pendingDate falsy)
+      pendingTime:   null,
+      pendingSubject: 'kiné',      // outer if TRUE (pendingSubject truthy)
+      lang: null, lastActivity: Date.now(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     mockCacheGet.mockResolvedValueOnce(fakeSession);
 
     const ctx = await buildContext('ctx-nodate-sid');
+<<<<<<< HEAD
     expect(ctx).toContain('sujet précédent: kiné'); // pendingSubject IS included
     expect(ctx).not.toContain('date précédente'); // pendingDate NOT included (FALSE branch)
+=======
+    expect(ctx).toContain('sujet précédent: kiné');  // pendingSubject IS included
+    expect(ctx).not.toContain('date précédente');     // pendingDate NOT included (FALSE branch)
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 

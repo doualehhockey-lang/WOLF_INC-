@@ -12,6 +12,7 @@ jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => ({
 
 // ── Import — metrics.js uses prom-client, NO network calls ────────────────────
 const {
+<<<<<<< HEAD
   recordRequest,
   recordFailure,
   recordLatency,
@@ -21,6 +22,11 @@ const {
   recordAgentStageFailure,
   recordPipelineSuccess,
   providerRegistry,
+=======
+  recordRequest, recordFailure, recordLatency, setCircuitState,
+  recordAgentRequest, recordAgentLatency, recordAgentStageFailure,
+  recordPipelineSuccess, providerRegistry,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 } = await import('../../src/services/metrics.js');
 
 const { STATE } = await import('../../src/services/circuitBreaker.js');
@@ -35,7 +41,11 @@ describe('recordRequest', () => {
   });
 
   test('does not throw for error status', () => {
+<<<<<<< HEAD
     expect(() => recordRequest('claude', 'error')).not.toThrow();
+=======
+    expect(() => recordRequest('ollama', 'error')).not.toThrow();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('does not throw for timeout status', () => {
@@ -51,6 +61,7 @@ describe('recordRequest', () => {
   });
 
   test('increments counter (metric value increases)', async () => {
+<<<<<<< HEAD
     const before = await getCounterValue('provider_requests_total', {
       provider: 'test-req',
       status: 'success',
@@ -60,6 +71,11 @@ describe('recordRequest', () => {
       provider: 'test-req',
       status: 'success',
     });
+=======
+    const before = await getCounterValue('provider_requests_total', { provider: 'test-req', status: 'success' });
+    recordRequest('test-req', 'success');
+    const after  = await getCounterValue('provider_requests_total', { provider: 'test-req', status: 'success' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(after).toBe(before + 1);
   });
 });
@@ -80,6 +96,7 @@ describe('recordFailure', () => {
   });
 
   test('increments failures counter', async () => {
+<<<<<<< HEAD
     const before = await getCounterValue('provider_failures_total', {
       provider: 'test-fail',
       reason: 'network',
@@ -89,6 +106,11 @@ describe('recordFailure', () => {
       provider: 'test-fail',
       reason: 'network',
     });
+=======
+    const before = await getCounterValue('provider_failures_total', { provider: 'test-fail', reason: 'network' });
+    recordFailure('test-fail', 'network');
+    const after  = await getCounterValue('provider_failures_total', { provider: 'test-fail', reason: 'network' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(after).toBe(before + 1);
   });
 });
@@ -154,7 +176,11 @@ describe('recordAgentLatency', () => {
 
 describe('recordAgentStageFailure', () => {
   test('does not throw for known stages and reasons', () => {
+<<<<<<< HEAD
     ['whisper', 'claude', 'tts'].forEach(stage => {
+=======
+    ['whisper', 'claude', 'ollama', 'tts'].forEach(stage => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       ['circuit_open', 'timeout', 'error'].forEach(reason => {
         expect(() => recordAgentStageFailure(stage, reason)).not.toThrow();
       });
@@ -174,7 +200,11 @@ describe('recordPipelineSuccess', () => {
   test('increments counter', async () => {
     const before = await getCounterValue('agent_pipeline_success_total', {});
     recordPipelineSuccess();
+<<<<<<< HEAD
     const after = await getCounterValue('agent_pipeline_success_total', {});
+=======
+    const after  = await getCounterValue('agent_pipeline_success_total', {});
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(after).toBe(before + 1);
   });
 });
@@ -198,7 +228,11 @@ describe('providerRegistry', () => {
 // ── Helper — read counter value from registry ─────────────────────────────────
 async function getCounterValue(name, labels) {
   const metrics = await providerRegistry.getMetricsAsJSON();
+<<<<<<< HEAD
   const metric = metrics.find(m => m.name === name);
+=======
+  const metric  = metrics.find(m => m.name === name);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   if (!metric) return 0;
   const value = metric.values.find(v => {
     return Object.entries(labels).every(([k, lv]) => v.labels[k] === lv);

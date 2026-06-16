@@ -45,12 +45,17 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
           </div>
         </div>
         <div className="flex justify-end gap-2">
+<<<<<<< HEAD
           <button className="btn-ghost" onClick={onCancel}>
             Cancel
           </button>
           <button className="btn-danger" onClick={onConfirm}>
             Confirm
           </button>
+=======
+          <button className="btn-ghost" onClick={onCancel}>Cancel</button>
+          <button className="btn-danger" onClick={onConfirm}>Confirm</button>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         </div>
       </div>
     </div>
@@ -72,8 +77,13 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
  */
 function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disabled, onExecute }) {
   const [confirming, setConfirming] = useState(false);
+<<<<<<< HEAD
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null); // 'ok' | 'error'
+=======
+  const [loading,    setLoading]    = useState(false);
+  const [result,     setResult]     = useState(null); // 'ok' | 'error'
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   const handleClick = () => {
     if (disabled) return;
@@ -97,7 +107,12 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
   }, [onExecute]);
 
   const btnClass =
+<<<<<<< HEAD
     variant === 'danger' ? 'btn-danger' : variant === 'primary' ? 'btn-primary' : 'btn-ghost';
+=======
+    variant === 'danger'  ? 'btn-danger'  :
+    variant === 'primary' ? 'btn-primary' : 'btn-ghost';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <>
@@ -111,6 +126,7 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
 
       <article className="card flex flex-col gap-4" aria-label={label}>
         <div className="flex items-start gap-3">
+<<<<<<< HEAD
           <div
             className={clsx(
               'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
@@ -121,6 +137,14 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
                   : 'bg-surface       text-text-muted'
             )}
           >
+=======
+          <div className={clsx(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+            variant === 'danger'  ? 'bg-red-500/10   text-red-500'   :
+            variant === 'primary' ? 'bg-wolf-500/10  text-wolf-500'  :
+                                    'bg-surface       text-text-muted',
+          )}>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             <Icon className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
@@ -129,7 +153,11 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
           </div>
 
           {/* Result badge */}
+<<<<<<< HEAD
           {result === 'ok' && <span className="badge-green">Done</span>}
+=======
+          {result === 'ok'    && <span className="badge-green">Done</span>}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           {result === 'error' && <span className="badge-red">Failed</span>}
         </div>
 
@@ -139,11 +167,17 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
           disabled={disabled || loading}
           aria-busy={loading}
         >
+<<<<<<< HEAD
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
             <Icon className="h-4 w-4" aria-hidden="true" />
           )}
+=======
+          {loading
+            ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            : <Icon    className="h-4 w-4" aria-hidden="true" />}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           {loading ? 'Working…' : label}
         </button>
       </article>
@@ -210,7 +244,11 @@ export default function DeployControls({
   onTriggerCanary,
   onPromote,
   onRollback,
+<<<<<<< HEAD
   lastStable = null,
+=======
+  lastStable   = null,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   canaryActive = false,
 }) {
   const [tag, setTag] = useState('');

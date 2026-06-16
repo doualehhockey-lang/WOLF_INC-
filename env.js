@@ -112,7 +112,11 @@ export const config = {
   },
 
   // ── Auth ─────────────────────────────────────────────────
+<<<<<<< HEAD
   // JWT_SECRET:         openssl rand -hex 64
+=======
+    // JWT_SECRET:         openssl rand -hex 64
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   // JWT_REFRESH_SECRET: openssl rand -hex 64
   // API_KEYS:           comma-separated list of valid API keys
   auth: {

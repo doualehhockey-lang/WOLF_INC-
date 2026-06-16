@@ -8,17 +8,22 @@ import { CircuitBreaker, CircuitOpenError, STATE } from '../../src/services/circ
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 function makeBreaker({
   failureThreshold = 5,
   openDurationMs = 1_000,
   errorRateThreshold = 0.6,
   minCalls = 10,
 } = {}) {
+=======
+function makeBreaker({ failureThreshold = 5, openDurationMs = 1_000, errorRateThreshold = 0.6, minCalls = 10 } = {}) {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   let t = 0;
   const b = new CircuitBreaker('test', {
     failureThreshold,
     errorRateThreshold,
     minCalls,
+<<<<<<< HEAD
     windowMs: 60_000,
     openDurationMs,
     now: () => t,
@@ -26,15 +31,26 @@ function makeBreaker({
   b._tick = ms => {
     t += ms;
   };
+=======
+    windowMs:      60_000,
+    openDurationMs,
+    now: () => t,
+  });
+  b._tick = (ms) => { t += ms; };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return b;
 }
 
 async function fail(b) {
+<<<<<<< HEAD
   return b
     .exec(() => {
       throw new Error('fail');
     })
     .catch(() => {});
+=======
+  return b.exec(() => { throw new Error('fail'); }).catch(() => {});
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 async function succeed(b) {
@@ -111,8 +127,13 @@ describe('INVARIANT: OPEN always throws CircuitOpenError before timer expires', 
   });
 
   test('OPEN breaker never silently passes requests through', async () => {
+<<<<<<< HEAD
     const b = makeBreaker({ failureThreshold: 3 });
     const fnSpy = jest.fn(async () => 'called');
+=======
+    const b      = makeBreaker({ failureThreshold: 3 });
+    const fnSpy  = jest.fn(async () => 'called');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     for (let i = 0; i < 3; i++) await fail(b);
     expect(b.getState()).toBe(STATE.OPEN);
@@ -162,12 +183,16 @@ describe('INVARIANT: HALF_OPEN allows exactly one concurrent probe', () => {
     b._tick(1_001);
 
     let resolveProbe;
+<<<<<<< HEAD
     const probe = b.exec(
       () =>
         new Promise(r => {
           resolveProbe = r;
         })
     );
+=======
+    const probe = b.exec(() => new Promise(r => { resolveProbe = r; }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     // Second concurrent call must be rejected
     await expect(b.exec(() => Promise.resolve('ok'))).rejects.toBeInstanceOf(CircuitOpenError);

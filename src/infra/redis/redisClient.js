@@ -3,14 +3,23 @@
 // Instruments hit/miss via Prometheus and logs connection lifecycle with Pino.
 // All helpers are safe to await in any context — real Redis or fallback.
 
+<<<<<<< HEAD
 import { childLogger } from '../../core/logger.js';
 import { rateLimitCounter as _rateLimitCounter } from '../../core/metrics.js';
+=======
+import { childLogger }      from '../../core/logger.js';
+import { rateLimitCounter } from '../../core/metrics.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 const log = childLogger('redis');
 
 // ── Real Redis client ─────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 let _redis = null;
+=======
+let _redis     = null;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 let _available = false;
 
 if (process.env.REDIS_URL) {
@@ -19,11 +28,18 @@ if (process.env.REDIS_URL) {
 
     _redis = new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: 3,
+<<<<<<< HEAD
       retryStrategy: times => Math.min(times * 100, 3_000),
       lazyConnect: true,
       enableReadyCheck: true,
       connectTimeout: 5_000,
       commandTimeout: 2_000, // individual command timeout — prevents slow Redis blocking pipelines
+=======
+      retryStrategy:        times => Math.min(times * 100, 3_000),
+      lazyConnect:          true,
+      enableReadyCheck:     true,
+      connectTimeout:       5_000,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     await _redis.connect();
@@ -33,6 +49,7 @@ if (process.env.REDIS_URL) {
     const safeUrl = process.env.REDIS_URL.replace(/:\/\/[^@]*@/, '://***@');
     log.info({ url: safeUrl }, 'Redis connected');
 
+<<<<<<< HEAD
     _redis.on('error', err => log.error({ err: err.message }, 'Redis error'));
     _redis.on('reconnecting', () => log.warn('Redis reconnecting…'));
     _redis.on('ready', () => {
@@ -46,6 +63,15 @@ if (process.env.REDIS_URL) {
   } catch (err) {
     log.warn({ err: err.message }, 'Redis unavailable — falling back to in-memory');
     _redis = null;
+=======
+    _redis.on('error',       err => log.error({ err: err.message }, 'Redis error'));
+    _redis.on('reconnecting',    () => log.warn('Redis reconnecting…'));
+    _redis.on('ready',           () => { _available = true;  log.info('Redis ready'); });
+    _redis.on('close',           () => { _available = false; log.warn('Redis connection closed'); });
+  } catch (err) {
+    log.warn({ err: err.message }, 'Redis unavailable — falling back to in-memory');
+    _redis     = null;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     _available = false;
   }
 } else {
@@ -53,6 +79,7 @@ if (process.env.REDIS_URL) {
 }
 
 /** Raw ioredis instance — null when running in fallback mode. */
+<<<<<<< HEAD
 export const redis = _redis;
 
 /**
@@ -76,6 +103,10 @@ export function isRedisAvailable() {
  * @deprecated Use isRedisAvailable() — this constant is frozen at startup and
  * does not update when Redis disconnects or reconnects.
  */
+=======
+export const redis          = _redis;
+/** True when a real Redis connection is active. */
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 export const redisAvailable = _available;
 
 // ── In-memory fallback ────────────────────────────────────────────────────────
@@ -90,10 +121,14 @@ function _expired(entry) {
 
 function _memGet(key) {
   const e = _store.get(key);
+<<<<<<< HEAD
   if (!e || _expired(e)) {
     _store.delete(key);
     return null;
   }
+=======
+  if (!e || _expired(e)) { _store.delete(key); return null; }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return e.value;
 }
 
@@ -120,7 +155,11 @@ export async function cacheGet(key) {
 export async function cacheGetBuffer(key) {
   if (_available) return _redis.getBuffer(key);
   const v = _memGet(key);
+<<<<<<< HEAD
   return v !== null && v !== undefined ? Buffer.from(v) : null;
+=======
+  return v != null ? Buffer.from(v) : null;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 export async function cacheSet(key, value, ttlSec = null) {
@@ -140,7 +179,11 @@ export async function cacheDel(key) {
 
 export async function cacheIncr(key) {
   if (_available) return _redis.incr(key);
+<<<<<<< HEAD
   const current = Number(_memGet(key) ?? 0) + 1;
+=======
+  const current  = Number(_memGet(key) ?? 0) + 1;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const existing = _store.get(key);
   _store.set(key, { value: String(current), expiresAt: existing?.expiresAt ?? null });
   return current;

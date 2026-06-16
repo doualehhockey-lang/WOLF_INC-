@@ -11,6 +11,7 @@ import { initTracing, shutdownTracing } from './src/core/tracing.js';
 await initTracing(); // no-op unless OTEL_ENABLED=true
 
 import { fileURLToPath } from 'url';
+<<<<<<< HEAD
 import { createApp } from './src/api/server.js';
 import { config } from './src/core/config.js';
 import { logger } from './src/core/logger.js';
@@ -23,10 +24,22 @@ import { flushUsageEvents } from './src/features/usage/usage.service.js';
 import { startReminderScheduler } from './src/features/reminders/reminder.scheduler.js';
 
 const app = createApp();
+=======
+import { createApp }     from './src/api/server.js';
+import { config }        from './src/core/config.js';
+import { logger }        from './src/core/logger.js';
+import { destroyDb }     from './src/infra/db/dbClient.js';
+import { redis }         from './src/infra/redis/redisClient.js';
+import { prewarmGreeting } from './src/features/voice/greeting.js';
+import { saveAudio }     from './src/services/audio.utils.js';
+
+const app  = createApp();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 const PORT = config.PORT;
 
 // ── Process-level error guards ────────────────────────────────────────────────
 
+<<<<<<< HEAD
 process.on('uncaughtException', err => {
   logger.fatal(
     { err: err.message, stack: err.stack, type: 'uncaughtException' },
@@ -44,14 +57,32 @@ process.on('unhandledRejection', reason => {
     },
     'Unhandled promise rejection — process will exit'
   );
+=======
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err: err.message, stack: err.stack, type: 'uncaughtException' },
+    'Uncaught synchronous exception — process will exit');
+  setTimeout(() => process.exit(1), 500).unref();
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.fatal({
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack:  reason instanceof Error ? reason.stack  : undefined,
+    type:   'unhandledRejection',
+  }, 'Unhandled promise rejection — process will exit');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   setTimeout(() => process.exit(1), 500).unref();
 });
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
 
 const GRACEFUL_TIMEOUT_MS = 15_000;
+<<<<<<< HEAD
 let _server = null;
 let _flagSubscriber = null;
+=======
+let   _server = null;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 async function shutdown(signal) {
   logger.info({ signal }, 'Shutdown signal received — draining connections');
@@ -65,6 +96,7 @@ async function shutdown(signal) {
 
   // Stop accepting new connections; wait for in-flight requests to finish
   if (_server) {
+<<<<<<< HEAD
     await new Promise(resolve => _server.close(resolve));
   }
 
@@ -74,6 +106,13 @@ async function shutdown(signal) {
   await shutdownTracing().catch(err => logger.warn({ err: err.message }, 'OTel flush failed'));
   await destroyDb().catch(err => logger.warn({ err: err.message }, 'DB pool drain failed'));
   if (_flagSubscriber) await _flagSubscriber.quit().catch(() => {});
+=======
+    await new Promise((resolve) => _server.close(resolve));
+  }
+
+  await shutdownTracing().catch((err) => logger.warn({ err: err.message }, 'OTel flush failed'));
+  await destroyDb().catch((err) => logger.warn({ err: err.message }, 'DB pool drain failed'));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   if (redis) await redis.quit().catch(() => {});
 
   logger.info('Wolf Engine stopped — exiting 0');
@@ -81,15 +120,26 @@ async function shutdown(signal) {
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+<<<<<<< HEAD
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ── Start (only when run directly, not when imported by tests) ────────────────
 
 const _isMain = process.argv[1] !== null && fileURLToPath(import.meta.url) === process.argv[1];
+=======
+process.on('SIGINT',  () => shutdown('SIGINT'));
+
+// ── Start (only when run directly, not when imported by tests) ────────────────
+
+const _isMain =
+  process.argv[1] != null &&
+  fileURLToPath(import.meta.url) === process.argv[1];
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 if (_isMain) {
   _server = app.listen(PORT, async () => {
     logger.info(
+<<<<<<< HEAD
       {
         port: PORT,
         env: config.NODE_ENV,
@@ -124,6 +174,12 @@ if (_isMain) {
     // Start the SMS reminder scheduler (checks every 60s for upcoming events).
     // Guards inside ensure it is a no-op in test mode or without Twilio credentials.
     startReminderScheduler();
+=======
+      { port: PORT, env: config.NODE_ENV, redis: !!process.env.REDIS_URL, db: !!process.env.DB_HOST },
+      'Wolf Engine started'
+    );
+    await prewarmGreeting(saveAudio);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 }
 

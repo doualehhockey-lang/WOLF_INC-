@@ -3,6 +3,7 @@
 // Returns 'unknown' for anything that does not match — never throws.
 
 const PATTERNS = [
+<<<<<<< HEAD
   {
     intent: 'create_event',
     re: /creat|creer|new|ajout|ajouter|nouveau|nouvel|planif|book|schedul/,
@@ -10,6 +11,12 @@ const PATTERNS = [
   { intent: 'cancel_event', re: /cancel|annul|supprim|delet|supprimer|efface|retir/ },
   { intent: 'update_event', re: /update|modif|change|déplace|deplace|repousse|reschedul|déplacer/ },
   { intent: 'list_events', re: /list|agenda|lister|affich|show|display|voir|quels|choix/ },
+=======
+  { intent: 'create_event', re: /creat|creer|new|ajout|ajouter|nouveau|nouvel|planif|book|schedul/ },
+  { intent: 'cancel_event', re: /cancel|annul|supprim|delet|supprimer|efface|retir/ },
+  { intent: 'update_event', re: /update|modif|change|déplace|deplace|repousse|reschedul|déplacer/ },
+  { intent: 'list_events',  re: /list|agenda|lister|affich|show|display|voir|quels|choix/ },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 ];
 
 /**

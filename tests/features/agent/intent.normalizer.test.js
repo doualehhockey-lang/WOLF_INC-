@@ -4,6 +4,7 @@ import { normalizeIntent } from '../../../src/features/agent/intent.normalizer.j
 
 describe('normalizeIntent', () => {
   test.each([
+<<<<<<< HEAD
     ['create', 'create_event'],
     ['créer', 'create_event'],
     ['ajouter', 'create_event'],
@@ -20,6 +21,24 @@ describe('normalizeIntent', () => {
     ['agenda', 'list_events'],
     ['afficher', 'list_events'],
     ['lister', 'list_events'],
+=======
+    ['create',          'create_event'],
+    ['créer',           'create_event'],
+    ['ajouter',         'create_event'],
+    ['new appointment', 'create_event'],
+    ['book a meeting',  'create_event'],
+    ['cancel',          'cancel_event'],
+    ['annuler',         'cancel_event'],
+    ['supprimer',       'cancel_event'],
+    ['delete event',    'cancel_event'],
+    ['update',          'update_event'],
+    ['modifier',        'update_event'],
+    ['déplacer rdv',    'update_event'],
+    ['list',            'list_events'],
+    ['agenda',          'list_events'],
+    ['afficher',        'list_events'],
+    ['lister',          'list_events'],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   ])('"%s" → %s', (input, expected) => {
     expect(normalizeIntent(input)).toBe(expected);
   });

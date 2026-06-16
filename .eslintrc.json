@@ -8,13 +8,18 @@
     "sourceType": "module"
   },
   "rules": {
+<<<<<<< HEAD
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+=======
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     "no-console": "warn",
     "eqeqeq": ["error", "always"],
     "no-var": "error",
     "prefer-const": "error",
     "no-throw-literal": "error",
     "no-return-await": "error"
+<<<<<<< HEAD
   },
   "overrides": [
     {
@@ -25,4 +30,7 @@
       }
     }
   ]
+=======
+  }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }

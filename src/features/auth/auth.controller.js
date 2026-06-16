@@ -6,12 +6,19 @@
 //                                   (reads wolf_rt cookie, rotates it)
 // POST /auth/logout              → clears cookie
 
+<<<<<<< HEAD
 import crypto from 'crypto';
 import { childLogger } from '../../core/logger.js';
 import { apiKeys, config } from '../../core/config.js';
 import { issueTokens, refreshTokens } from './token.service.js';
 import { cacheDel } from '../../infra/redis/redisClient.js';
 import { db, dbAvailable } from '../../infra/db/dbClient.js';
+=======
+import { childLogger }            from '../../core/logger.js';
+import { apiKeys, config }        from '../../core/config.js';
+import { issueTokens, refreshTokens, verifyAccess } from './token.service.js';
+import { cacheDel } from '../../infra/redis/redisClient.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 import jwt from 'jsonwebtoken';
 
 const log = childLogger('auth');
@@ -19,6 +26,7 @@ const log = childLogger('auth');
 const COOKIE_NAME = 'wolf_rt';
 const COOKIE_OPTS = {
   httpOnly: true,
+<<<<<<< HEAD
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict',
   maxAge: 7 * 24 * 3600 * 1_000, // 7 days in ms
@@ -43,6 +51,14 @@ function _safeCompareKey(candidate) {
   return matched;
 }
 
+=======
+  secure:   process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge:   7 * 24 * 3600 * 1_000, // 7 days in ms
+  path:     '/auth',
+};
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ── POST /auth/token ──────────────────────────────────────────────────────────
 
 export async function handleIssue(req, res) {
@@ -51,24 +67,38 @@ export async function handleIssue(req, res) {
   if (!apiKey || typeof apiKey !== 'string') {
     return res.status(400).json({ error: 'VALIDATION_ERROR', message: '"apiKey" is required' });
   }
+<<<<<<< HEAD
 
   if (!_safeCompareKey(apiKey)) {
+=======
+  if (!apiKeys.includes(apiKey)) {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     log.warn({ ip: req.ip }, 'Invalid API key attempt');
     return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Invalid API key' });
   }
 
+<<<<<<< HEAD
   // API key holders are operators / admin users — not anonymous end-users.
   // They need the 'admin' role to access GDPR endpoints and admin controls.
   const sub = apiKey.slice(-8);
   const tokens = await issueTokens({ sub, role: 'admin' });
+=======
+  const sub    = apiKey.slice(-8);
+  const tokens = await issueTokens({ sub, role: 'user' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   res.cookie(COOKIE_NAME, tokens.refreshToken, COOKIE_OPTS);
   log.info({ sub, ip: req.ip }, 'Token issued');
 
   res.json({
     accessToken: tokens.accessToken,
+<<<<<<< HEAD
     expiresIn: '15m',
     tokenType: 'Bearer',
+=======
+    expiresIn:   '15m',
+    tokenType:   'Bearer',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 }
 
@@ -91,6 +121,7 @@ export async function handleRefresh(req, res) {
   }
 }
 
+<<<<<<< HEAD
 // ── POST /auth/signup ─────────────────────────────────────────────────────────
 
 async function _hashPassword(password) {
@@ -165,6 +196,8 @@ export async function handleSignup(req, res, next) {
   }
 }
 
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ── POST /auth/logout ─────────────────────────────────────────────────────────
 
 export async function handleLogout(req, res) {
@@ -174,8 +207,12 @@ export async function handleLogout(req, res) {
       const payload = jwt.verify(rt, config.JWT_REFRESH_SECRET);
       if (payload?.jti) await cacheDel(`rt:${payload.jti}`);
     } catch (err) {
+<<<<<<< HEAD
       // ignore — token may already be invalid or expired
       log.debug({ err: err.message }, 'Logout: refresh token already invalid');
+=======
+      // ignore — token may already be invalid
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     }
   }
 

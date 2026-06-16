@@ -14,25 +14,41 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
+<<<<<<< HEAD
   config: { CLAUDE_API_KEY: 'test-key', CLAUDE_MODEL: 'claude-haiku-4-5-20251001' },
+=======
+  config: { CLAUDE_API_KEY: 'test-key', CLAUDE_MODEL: 'claude-haiku-4-5-20251001', OLLAMA_MODEL: 'llama3' },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const mockTimer = jest.fn();
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   nluLatency: { startTimer: jest.fn(() => mockTimer) },
+<<<<<<< HEAD
   auditLogFailures: { inc: jest.fn() },
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('../../../src/features/agent/intent.normalizer.js', () => ({
   normalizeIntent: jest.fn(i => i),
 }));
 
+<<<<<<< HEAD
 const mockBuildContext = jest.fn(async () => '');
 const mockGetLastEntities = jest.fn(async () => null);
 const mockDetectShortAnswer = jest.fn(() => null);
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
   buildContext: mockBuildContext,
   getLastEntities: mockGetLastEntities,
+=======
+const mockBuildContext      = jest.fn(async () => '');
+const mockGetLastEntities   = jest.fn(async () => null);
+const mockDetectShortAnswer = jest.fn(() => null);
+jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
+  buildContext:      mockBuildContext,
+  getLastEntities:   mockGetLastEntities,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   detectShortAnswer: mockDetectShortAnswer,
 }));
 
@@ -41,12 +57,21 @@ jest.unstable_mockModule('../../../src/services/claude.client.js', () => ({
   analyze: mockAnalyzeClaude,
 }));
 
+<<<<<<< HEAD
 const mockResolveDate = jest.fn(async () => ({
   date: null,
   time: null,
   iso: null,
   hasDate: false,
   hasTime: false,
+=======
+jest.unstable_mockModule('../../../src/services/ollama.client.js', () => ({
+  analyze: jest.fn(),
+}));
+
+const mockResolveDate = jest.fn(async () => ({
+  date: null, time: null, iso: null, hasDate: false, hasTime: false,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 jest.unstable_mockModule('../../../src/services/dateparser.js', () => ({
   resolve: mockResolveDate,
@@ -60,6 +85,7 @@ const { understand } = await import('../../../src/features/nlu/nlu.service.js');
 
 function llmOk(overrides = {}) {
   return {
+<<<<<<< HEAD
     intent: 'list_events',
     subject: '',
     date: '',
@@ -67,6 +93,10 @@ function llmOk(overrides = {}) {
     confidence: 0.9,
     errors: [],
     strategy: 'claude',
+=======
+    intent: 'list_events', subject: '', date: '', time: '',
+    confidence: 0.9, errors: [], strategy: 'claude',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     ...overrides,
   };
 }
@@ -76,6 +106,7 @@ beforeEach(() => {
   mockBuildContext.mockResolvedValue('');
   mockGetLastEntities.mockResolvedValue(null);
   mockDetectShortAnswer.mockReturnValue(null);
+<<<<<<< HEAD
   mockResolveDate.mockResolvedValue({
     date: null,
     time: null,
@@ -83,6 +114,9 @@ beforeEach(() => {
     hasDate: false,
     hasTime: false,
   });
+=======
+  mockResolveDate.mockResolvedValue({ date: null, time: null, iso: null, hasDate: false, hasTime: false });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   mockAnalyzeClaude.mockResolvedValue(llmOk());
 });
 
@@ -94,6 +128,7 @@ describe('_resolveImplicit — confirm ?? branches (lines 52-54)', () => {
   test('falls back to nlu.date when lastEntities.isoDate is null (line 52 right branch)', async () => {
     mockDetectShortAnswer.mockReturnValue('confirm');
     mockGetLastEntities.mockResolvedValueOnce({
+<<<<<<< HEAD
       intent: 'create_event',
       isoDate: null, // null → ?? nlu.date
       isoTime: null, // null → ?? nlu.time
@@ -108,6 +143,17 @@ describe('_resolveImplicit — confirm ?? branches (lines 52-54)', () => {
         subject: 'réunion',
       })
     );
+=======
+      intent:  'create_event',
+      isoDate: null,        // null → ?? nlu.date
+      isoTime: null,        // null → ?? nlu.time
+      subject: null,        // null → ?? nlu.subject
+    });
+    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
+      intent: 'unknown', confidence: 0.9,
+      date: 'demain', time: '10:00', subject: 'réunion',
+    }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     const result = await understand('oui', 'CA-confirm-null-entities');
     expect(result._resolved).toBe('confirm');
@@ -120,11 +166,16 @@ describe('_resolveImplicit — confirm ?? branches (lines 52-54)', () => {
   test('uses lastEntities values when they are non-null (line 52 left branch)', async () => {
     mockDetectShortAnswer.mockReturnValue('confirm');
     mockGetLastEntities.mockResolvedValueOnce({
+<<<<<<< HEAD
       intent: 'create_event',
+=======
+      intent:  'create_event',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       isoDate: '2026-09-15',
       isoTime: '14:30',
       subject: 'dentiste',
     });
+<<<<<<< HEAD
     mockAnalyzeClaude.mockResolvedValueOnce(
       llmOk({
         intent: 'unknown',
@@ -134,6 +185,12 @@ describe('_resolveImplicit — confirm ?? branches (lines 52-54)', () => {
         subject: 'réunion',
       })
     );
+=======
+    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
+      intent: 'unknown', confidence: 0.9,
+      date: 'demain', time: '10:00', subject: 'réunion',
+    }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     const result = await understand('oui', 'CA-confirm-entities');
     expect(result._resolved).toBe('confirm');
@@ -150,6 +207,7 @@ describe('_resolveImplicit — confirm ?? branches (lines 52-54)', () => {
 
 describe('_getMissing — update_event missing date (line 90)', () => {
   test('adds "date" to missing when update_event has no date', async () => {
+<<<<<<< HEAD
     mockAnalyzeClaude.mockResolvedValueOnce(
       llmOk({
         intent: 'update_event',
@@ -164,6 +222,16 @@ describe('_getMissing — update_event missing date (line 90)', () => {
       iso: null,
       hasDate: false,
       hasTime: false,
+=======
+    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
+      intent:     'update_event',
+      date:       '',
+      time:       '',
+      confidence: 0.9,
+    }));
+    mockResolveDate.mockResolvedValueOnce({
+      date: null, time: null, iso: null, hasDate: false, hasTime: false,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     const result = await understand('modifier mon rendez-vous', null);
@@ -173,6 +241,7 @@ describe('_getMissing — update_event missing date (line 90)', () => {
   });
 
   test('no missing for update_event when date is provided', async () => {
+<<<<<<< HEAD
     mockAnalyzeClaude.mockResolvedValueOnce(
       llmOk({
         intent: 'update_event',
@@ -186,6 +255,15 @@ describe('_getMissing — update_event missing date (line 90)', () => {
       iso: null,
       hasDate: true,
       hasTime: false,
+=======
+    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
+      intent:     'update_event',
+      date:       '2026-10-15',
+      confidence: 0.9,
+    }));
+    mockResolveDate.mockResolvedValueOnce({
+      date: '2026-10-15', time: null, iso: null, hasDate: true, hasTime: false,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     const result = await understand('modifier mon rendez-vous du 15 octobre', null);
@@ -201,6 +279,7 @@ describe('_getMissing — update_event missing date (line 90)', () => {
 describe('understand() — ?? null defaults in return (lines 168-169, 177)', () => {
   test('returns empty string for subject when nlu.subject is null (line 168)', async () => {
     mockAnalyzeClaude.mockResolvedValueOnce({
+<<<<<<< HEAD
       intent: 'list_events',
       subject: null, // null → ?? '' right side
       date: null, // null → ?? '' right side (line 169)
@@ -208,6 +287,15 @@ describe('understand() — ?? null defaults in return (lines 168-169, 177)', () 
       confidence: 0.9,
       errors: null, // null → ?? [] right side (line 177)
       strategy: 'claude',
+=======
+      intent:     'list_events',
+      subject:    null,        // null → ?? '' right side
+      date:       null,        // null → ?? '' right side (line 169)
+      time:       null,
+      confidence: 0.9,
+      errors:     null,        // null → ?? [] right side (line 177)
+      strategy:   'claude',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     const result = await understand('quels sont mes rendez-vous', null);
@@ -218,6 +306,7 @@ describe('understand() — ?? null defaults in return (lines 168-169, 177)', () 
 
   test('returns empty string for date when nlu.date is undefined (line 169)', async () => {
     mockAnalyzeClaude.mockResolvedValueOnce({
+<<<<<<< HEAD
       intent: 'list_events',
       subject: undefined, // undefined → ?? '' right side
       date: undefined, // undefined → ?? '' right side
@@ -225,6 +314,15 @@ describe('understand() — ?? null defaults in return (lines 168-169, 177)', () 
       confidence: 0.9,
       errors: undefined, // undefined → ?? [] right side
       strategy: 'claude',
+=======
+      intent:     'list_events',
+      subject:    undefined,   // undefined → ?? '' right side
+      date:       undefined,   // undefined → ?? '' right side
+      time:       undefined,
+      confidence: 0.9,
+      errors:     undefined,   // undefined → ?? [] right side
+      strategy:   'claude',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     const result = await understand('liste mes événements', null);
@@ -234,11 +332,17 @@ describe('understand() — ?? null defaults in return (lines 168-169, 177)', () 
   });
 
   test('returns errors array when nlu.errors is non-empty', async () => {
+<<<<<<< HEAD
     mockAnalyzeClaude.mockResolvedValueOnce(
       llmOk({
         errors: ['validation-error'],
       })
     );
+=======
+    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
+      errors: ['validation-error'],
+    }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     const result = await understand('test message', null);
     // nlu.errors is non-null → ?? left side taken

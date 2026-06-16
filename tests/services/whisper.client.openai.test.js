@@ -14,10 +14,17 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     WHISPER_BACKEND: 'openai',
     WHISPER_SERVER_URL: 'http://localhost:9000/transcribe',
     WHISPER_TIMEOUT: 15_000,
     OPENAI_API_KEY: 'sk-test-openai',
+=======
+    WHISPER_BACKEND:    'openai',
+    WHISPER_SERVER_URL: 'http://localhost:9000/transcribe',
+    WHISPER_TIMEOUT:    15_000,
+    OPENAI_API_KEY:     'sk-test-openai',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
@@ -26,6 +33,7 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
   apiFetch: mockApiFetch,
 }));
 
+<<<<<<< HEAD
 const mockRecordRequest = jest.fn();
 const mockRecordFailure = jest.fn();
 const mockRecordLatency = jest.fn();
@@ -36,6 +44,17 @@ jest.unstable_mockModule('../../src/services/metrics.js', () => ({
   recordLatency: mockRecordLatency,
   setCircuitState: mockSetCircuitState,
   auditLogFailures: { inc: jest.fn() },
+=======
+const mockRecordRequest   = jest.fn();
+const mockRecordFailure   = jest.fn();
+const mockRecordLatency   = jest.fn();
+const mockSetCircuitState = jest.fn();
+jest.unstable_mockModule('../../src/services/metrics.js', () => ({
+  recordRequest:   mockRecordRequest,
+  recordFailure:   mockRecordFailure,
+  recordLatency:   mockRecordLatency,
+  setCircuitState: mockSetCircuitState,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
@@ -54,10 +73,17 @@ beforeEach(() => {
 describe('whisper.client — OpenAI error path (lines 100-101)', () => {
   test('throws HttpError when OpenAI returns 4xx (no retry)', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: false,
       status: 401,
       text: async () => 'Unauthorized',
       json: async () => ({}),
+=======
+      ok:     false,
+      status: 401,
+      text:   async () => 'Unauthorized',
+      json:   async () => ({}),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     const { HttpError } = await import('../../src/services/circuitBreaker.js');
@@ -66,10 +92,17 @@ describe('whisper.client — OpenAI error path (lines 100-101)', () => {
 
   test('records http_4xx failure on OpenAI 4xx response', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: false,
       status: 403,
       text: async () => 'Forbidden',
       json: async () => ({}),
+=======
+      ok:     false,
+      status: 403,
+      text:   async () => 'Forbidden',
+      json:   async () => ({}),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     await expect(transcribeWav(validWav)).rejects.toThrow();
@@ -78,12 +111,19 @@ describe('whisper.client — OpenAI error path (lines 100-101)', () => {
 
   test('res.text() error in OpenAI error path does not crash (catch → empty string)', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: false,
       status: 422,
       text: async () => {
         throw new Error('text() failed');
       },
       json: async () => ({}),
+=======
+      ok:     false,
+      status: 422,
+      text:   async () => { throw new Error('text() failed'); },
+      json:   async () => ({}),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     // Should still throw HttpError, not crash with unhandled rejection
@@ -101,10 +141,17 @@ describe('whisper.client — onStateChange callback (lines 233-234)', () => {
     // failureThreshold=5 → circuit opens after 5 consecutive failures
     // Use 5xx to enable retry (3 attempts per call)
     mockApiFetch.mockResolvedValue({
+<<<<<<< HEAD
       ok: false,
       status: 503,
       text: async () => 'Service Unavailable',
       json: async () => ({}),
+=======
+      ok:     false,
+      status: 503,
+      text:   async () => 'Service Unavailable',
+      json:   async () => ({}),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
 
     for (let i = 0; i < 3; i++) {
@@ -112,7 +159,11 @@ describe('whisper.client — onStateChange callback (lines 233-234)', () => {
     }
 
     const openCalls = mockSetCircuitState.mock.calls.filter(
+<<<<<<< HEAD
       ([_name, state]) => typeof state === 'string' && state.toLowerCase().includes('open')
+=======
+      ([_name, state]) => typeof state === 'string' && state.toLowerCase().includes('open'),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     expect(openCalls.length).toBeGreaterThan(0);
   });

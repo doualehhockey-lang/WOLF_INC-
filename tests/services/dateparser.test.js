@@ -32,7 +32,11 @@ describe('resolve — date: empty / null / undefined', () => {
 });
 
 describe("resolve — date: aujourd'hui", () => {
+<<<<<<< HEAD
   test('recognises "aujourd\'hui"', () => {
+=======
+  test("recognises \"aujourd'hui\"", () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const r = resolve("aujourd'hui", '', REF);
     expect(r.date).toBe('2026-06-03');
     expect(r.hasDate).toBe(true);

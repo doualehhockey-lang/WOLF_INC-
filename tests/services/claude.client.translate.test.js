@@ -13,7 +13,11 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 const cfg = {
   CLAUDE_API_KEY: 'sk-translate-key',
+<<<<<<< HEAD
   CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
+=======
+  CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 
 jest.unstable_mockModule('../../src/core/config.js', () => ({ config: cfg }));
@@ -24,21 +28,34 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
+<<<<<<< HEAD
   recordRequest: jest.fn(),
   recordFailure: jest.fn(),
   recordLatency: jest.fn(),
   setCircuitState: jest.fn(),
   auditLogFailures: { inc: jest.fn() },
+=======
+  recordRequest:   jest.fn(),
+  recordFailure:   jest.fn(),
+  recordLatency:   jest.fn(),
+  setCircuitState: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const { analyze, translate } = await import('../../src/services/claude.client.js');
 
 function makeOkRes(text) {
   return {
+<<<<<<< HEAD
     ok: true,
     status: 200,
     json: async () => ({ content: [{ text }] }),
     text: async () => text,
+=======
+    ok: true, status: 200,
+    json:  async () => ({ content: [{ text }] }),
+    text:  async () => text,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
 }
 
@@ -104,7 +121,11 @@ describe('analyze — JSON parse failure (lines 199-203)', () => {
     // API returns plain text, not parseable JSON
     mockApiFetch.mockResolvedValueOnce(makeOkRes('Je ne peux pas analyser cela.'));
 
+<<<<<<< HEAD
     const result = await analyze('créer un rendez-vous demain');
+=======
+    const result = await analyze("créer un rendez-vous demain");
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     // Falls back to _ruleBased → strategy should be 'rule-based'
     expect(result.strategy).toBe('rule-based');
   });
@@ -125,6 +146,7 @@ describe('analyze — JSON parse failure (lines 199-203)', () => {
 describe('analyze — parsed field ?? fallbacks (lines 207-213)', () => {
   test('uses "unknown" when parsed.intent is null/undefined', async () => {
     // Return JSON with no intent field → ?? 'unknown' right side (line 207)
+<<<<<<< HEAD
     mockApiFetch.mockResolvedValueOnce(
       makeOkRes(
         JSON.stringify({
@@ -154,12 +176,32 @@ describe('analyze — parsed field ?? fallbacks (lines 207-213)', () => {
         })
       )
     );
+=======
+    mockApiFetch.mockResolvedValueOnce(makeOkRes(JSON.stringify({
+      confidence: 0.5, errors: [], strategy: 'claude',
+      // no intent, subject, date, time
+    })));
+
+    const result = await analyze('bonjour');
+    expect(result.intent).toBe('unknown');      // ?? 'unknown' right side
+    expect(result.subject).toBe('');             // ?? '' right side
+    expect(result.date).toBe('');                // ?? '' right side
+    expect(result.time).toBe('');                // ?? '' right side
+  });
+
+  test('uses 0.8 when parsed.confidence is not a number', async () => {
+    mockApiFetch.mockResolvedValueOnce(makeOkRes(JSON.stringify({
+      intent: 'list_events', errors: [], strategy: 'claude',
+      confidence: 'high',   // not a number → uses 0.8 default (line 211)
+    })));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     const result = await analyze('mes rendez-vous');
     expect(result.confidence).toBe(0.8);
   });
 
   test('uses empty array when parsed.errors is null', async () => {
+<<<<<<< HEAD
     mockApiFetch.mockResolvedValueOnce(
       makeOkRes(
         JSON.stringify({
@@ -190,5 +232,25 @@ describe('analyze — parsed field ?? fallbacks (lines 207-213)', () => {
 
     const result = await analyze('afficher rendez-vous');
     expect(result.strategy).toBe('claude'); // ?? 'claude' right side (line 213)
+=======
+    mockApiFetch.mockResolvedValueOnce(makeOkRes(JSON.stringify({
+      intent: 'list_events', confidence: 0.9, strategy: 'claude',
+      // no errors field
+    })));
+
+    const result = await analyze('liste rendez-vous');
+    expect(Array.isArray(result.errors)).toBe(true);
+    expect(result.errors).toHaveLength(0);   // ?? [] right side
+  });
+
+  test('uses "claude" when parsed.strategy is null', async () => {
+    mockApiFetch.mockResolvedValueOnce(makeOkRes(JSON.stringify({
+      intent: 'list_events', confidence: 0.9, errors: [],
+      // no strategy field → ?? 'claude' right side
+    })));
+
+    const result = await analyze('afficher rendez-vous');
+    expect(result.strategy).toBe('claude');   // ?? 'claude' right side (line 213)
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });

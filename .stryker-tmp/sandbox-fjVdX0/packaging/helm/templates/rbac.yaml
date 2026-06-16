@@ -1,0 +1,144 @@
+{{/*
+packaging/helm/templates/rbac.yaml — ServiceAccount, Role, RoleBinding per component.
+
+Each component gets:
+  - A dedicated ServiceAccount (automountServiceAccountToken: false)
+  - A Role scoped to minimum necessary permissions
+  - A RoleBinding linking the SA to its Role
+*/}}
+
+{{- $root := . -}}
+
+{{- range $name, $comp := .Values.components }}
+{{- if $comp.enabled }}
+---
+# ── ServiceAccount ─────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "wolf.serviceAccountName" (dict "component" $name "root" $root) }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 4 }}
+automountServiceAccountToken: false
+---
+# ── Role ──────────────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}-role
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 4 }}
+rules:
+  # All components: read ConfigMaps (app config, feature flags).
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+  # Agent: needs pod info + event creation for observability.
+  {{- if eq $name "agent" }}
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  {{- end }}
+---
+# ── RoleBinding ───────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}-rb
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "wolf.serviceAccountName" (dict "component" $name "root" $root) }}
+    namespace: {{ $root.Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}-role
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
+{{- end }}
+
+{{- if .Values.networkPolicy.enabled }}
+---
+# ── NetworkPolicy: default-deny-all ───────────────────────────────────────────
+# Blocks all ingress and egress unless explicitly allowed below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" "network" "root" .) | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+{{- range $name, $comp := .Values.components }}
+{{- if $comp.enabled }}
+---
+# ── NetworkPolicy: {{ $name }} ─────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}-netpol
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "wolf.selectorLabels" (dict "component" $name "root" $root) | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow ingress from agent (internal mesh) and NGINX ingress controller.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: agent
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: {{ $comp.service.port }}
+  egress:
+    # Allow DNS resolution.
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Allow outbound to Redis.
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - port: 6379
+    # Allow HTTPS (Anthropic API, Twilio, etc.).
+    - ports:
+        - port: 443
+    # Agent: allow calling all internal services.
+    {{- if eq $name "agent" }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: wolf-engine
+    {{- end }}
+    # Ollama: allow model download from internet (only if PVC not pre-populated).
+    {{- if eq $name "ollama" }}
+    - ports:
+        - port: 80
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

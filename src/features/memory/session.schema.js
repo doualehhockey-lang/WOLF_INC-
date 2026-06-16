@@ -5,16 +5,24 @@
 import { z } from 'zod';
 
 const TurnSchema = z.object({
+<<<<<<< HEAD
   role: z.enum(['user', 'agent']),
   content: z.string(),
   ts: z.number().int().positive(),
   intent: z.string().optional(),
+=======
+  role:    z.enum(['user', 'agent']),
+  content: z.string(),
+  ts:      z.number().int().positive(),
+  intent:  z.string().optional(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   isoDate: z.string().nullable().optional(),
   isoTime: z.string().nullable().optional(),
   subject: z.string().optional(),
 });
 
 export const SessionSchema = z.object({
+<<<<<<< HEAD
   callSid: z.string().min(1),
   turns: z.array(TurnSchema).default([]),
   lang: z.string().default('fr'),
@@ -27,6 +35,16 @@ export const SessionSchema = z.object({
     .int()
     .positive()
     .default(() => Date.now()),
+=======
+  callSid:        z.string().min(1),
+  turns:          z.array(TurnSchema).default([]),
+  lang:           z.string().default('fr'),
+  pendingIntent:  z.string().nullable().default(null),
+  pendingDate:    z.string().nullable().default(null),
+  pendingTime:    z.string().nullable().default(null),
+  pendingSubject: z.string().nullable().default(null),
+  lastActivity:   z.number().int().positive().default(() => Date.now()),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 /** @typedef {z.infer<typeof SessionSchema>} Session */

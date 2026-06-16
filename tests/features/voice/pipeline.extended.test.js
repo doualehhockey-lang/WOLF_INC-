@@ -18,9 +18,14 @@ jest.unstable_mockModule('../../../src/core/config.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   pipelineLatency: { startTimer: jest.fn(() => jest.fn()) },
+<<<<<<< HEAD
   errorCounter: { inc: jest.fn() },
   activeSessions: { set: jest.fn() },
   auditLogFailures: { inc: jest.fn() },
+=======
+  errorCounter:    { inc: jest.fn() },
+  activeSessions:  { set: jest.fn() },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const mockUnderstand = jest.fn();
@@ -39,6 +44,7 @@ jest.unstable_mockModule('../../../src/features/tts/tts.service.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
+<<<<<<< HEAD
   addUserTurn: jest.fn(async () => {}),
   addAgentTurn: jest.fn(async () => {}),
   getSession: jest.fn(async () => ({ turns: [] })),
@@ -49,25 +55,44 @@ jest.unstable_mockModule('../../../src/features/voice/conversation.service.js', 
   converse: jest.fn(async () => {
     throw new Error('converse-disabled');
   }),
+=======
+  addUserTurn:  jest.fn(async () => {}),
+  addAgentTurn: jest.fn(async () => {}),
+  getStats:     jest.fn(() => ({ activeSessions: 1 })),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock lang to return non-French (to trigger line 80 and translation path) ─
 const mockDetectLang = jest.fn(() => 'en');
 jest.unstable_mockModule('../../../src/features/lang/lang.service.js', () => ({
+<<<<<<< HEAD
   detectLang: mockDetectLang,
+=======
+  detectLang:   mockDetectLang,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   twilioLocale: jest.fn(() => 'en-US'),
 }));
 
 jest.unstable_mockModule('../../../src/features/voice/twiml.builder.js', () => ({
+<<<<<<< HEAD
   twimlSayThenGather: jest.fn(msg => `<Say>${msg}</Say>`),
   twimlPlayThenGather: jest.fn(url => `<Play>${url}</Play>`),
   twimlError: jest.fn(() => '<Error/>'),
+=======
+  twimlSayThenGather:  jest.fn((msg) => `<Say>${msg}</Say>`),
+  twimlPlayThenGather: jest.fn((url) => `<Play>${url}</Play>`),
+  twimlError:          jest.fn(() => '<Error/>'),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock claude.client.js — translate throws to test line 125 ─────────────────
 const mockTranslate = jest.fn(async (text, _lang) => `[translated] ${text}`);
 jest.unstable_mockModule('../../../src/services/claude.client.js', () => ({
+<<<<<<< HEAD
   analyze: jest.fn(),
+=======
+  analyze:   jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   translate: mockTranslate,
 }));
 
@@ -79,6 +104,7 @@ const saveAudio = jest.fn(async () => ({ filename: 'test.wav' }));
 
 function nluOk(overrides = {}) {
   return {
+<<<<<<< HEAD
     ok: true,
     intent: 'unknown',
     rawIntent: 'unknown',
@@ -93,12 +119,29 @@ function nluOk(overrides = {}) {
     missing: [],
     errors: [],
     strategy: 'claude',
+=======
+    ok:                 true,
+    intent:             'unknown',
+    rawIntent:          'unknown',
+    subject:            '',
+    date:               '',
+    time:               '',
+    isoDate:            null,
+    isoTime:            null,
+    iso:                null,
+    confidence:         0.9,
+    needsClarification: false,
+    missing:            [],
+    errors:             [],
+    strategy:           'claude',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     ...overrides,
   };
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
+<<<<<<< HEAD
   mockSynthesize.mockResolvedValue({
     buffer: Buffer.alloc(10),
     ext: '.wav',
@@ -106,6 +149,11 @@ beforeEach(() => {
   });
   mockDispatch.mockResolvedValue({ ok: true, message: 'Done.' });
   mockTranslate.mockImplementation(async text => `[en] ${text}`);
+=======
+  mockSynthesize.mockResolvedValue({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav' });
+  mockDispatch.mockResolvedValue({ ok: true, message: 'Done.' });
+  mockTranslate.mockImplementation(async (text) => `[en] ${text}`);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   mockDetectLang.mockReturnValue('en');
 });
 
@@ -116,6 +164,7 @@ beforeEach(() => {
 describe('_buildMissingQuestion — fallback case (line 141)', () => {
   test('calls addAgentTurn with generic question for list_events intent with missing date', async () => {
     const { addAgentTurn } = await import('../../../src/features/memory/memory.service.js');
+<<<<<<< HEAD
     mockUnderstand.mockResolvedValueOnce(
       nluOk({
         intent: 'list_events',
@@ -123,6 +172,13 @@ describe('_buildMissingQuestion — fallback case (line 141)', () => {
         needsClarification: true,
       })
     );
+=======
+    mockUnderstand.mockResolvedValueOnce(nluOk({
+      intent:             'list_events',
+      missing:            ['date'],
+      needsClarification: true,
+    }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     await runPipeline(CTX, saveAudio);
 
@@ -136,6 +192,7 @@ describe('_buildMissingQuestion — fallback case (line 141)', () => {
   });
 
   test('returns generic question for unknown intent with missing fields', async () => {
+<<<<<<< HEAD
     mockUnderstand.mockResolvedValueOnce(
       nluOk({
         intent: 'unknown',
@@ -143,6 +200,13 @@ describe('_buildMissingQuestion — fallback case (line 141)', () => {
         needsClarification: true,
       })
     );
+=======
+    mockUnderstand.mockResolvedValueOnce(nluOk({
+      intent:             'unknown',
+      missing:            ['date'],
+      needsClarification: true,
+    }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     const result = await runPipeline(CTX, saveAudio);
     expect(typeof result).toBe('string');
@@ -157,6 +221,7 @@ describe('_translate — catch path (line 125)', () => {
   test('falls back to original message when translate() throws synchronously', async () => {
     // The _translate function's catch only catches synchronous throws.
     // Use mockImplementationOnce to throw synchronously.
+<<<<<<< HEAD
     mockTranslate.mockImplementationOnce(() => {
       throw new Error('sync translate error');
     });
@@ -168,6 +233,15 @@ describe('_translate — catch path (line 125)', () => {
         missing: [],
       })
     );
+=======
+    mockTranslate.mockImplementationOnce(() => { throw new Error('sync translate error'); });
+    mockUnderstand.mockResolvedValueOnce(nluOk({
+      ok:     true,
+      intent: 'unknown',
+      needsClarification: false,
+      missing: [],
+    }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     mockDispatch.mockResolvedValueOnce({ ok: true, message: 'Response en français.' });
 
     // translate throws → catch returns the original text → pipeline continues
@@ -178,6 +252,7 @@ describe('_translate — catch path (line 125)', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+<<<<<<< HEAD
 // Line 80: translate when userLang != 'en'
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -186,13 +261,27 @@ describe('pipeline — translate for non-English user (line 80)', () => {
     mockDetectLang.mockReturnValue('de');
     mockUnderstand.mockResolvedValueOnce(nluOk({ ok: true, intent: 'list_events' }));
     mockDispatch.mockResolvedValueOnce({ ok: true, message: 'Here are your appointments.' });
+=======
+// Line 80: translate when userLang != 'fr'
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe('pipeline — translate for non-French user (line 80)', () => {
+  test('calls translate on the agent response when lang is English', async () => {
+    mockDetectLang.mockReturnValue('en');
+    mockUnderstand.mockResolvedValueOnce(nluOk({ ok: true, intent: 'list_events' }));
+    mockDispatch.mockResolvedValueOnce({ ok: true, message: 'Voici vos rendez-vous.' });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     await runPipeline(CTX, saveAudio);
 
     // mockTranslate should have been called with the agent response
     const translateCalls = mockTranslate.mock.calls;
     expect(translateCalls.length).toBeGreaterThan(0);
+<<<<<<< HEAD
     const calledWithMsg = translateCalls.some(([msg]) => msg.includes('appointments'));
+=======
+    const calledWithMsg = translateCalls.some(([msg]) => msg.includes('rendez-vous'));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(calledWithMsg).toBe(true);
   });
 });

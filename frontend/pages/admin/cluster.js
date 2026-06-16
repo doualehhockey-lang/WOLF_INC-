@@ -1,5 +1,6 @@
 // frontend/pages/admin/cluster.js — Admin cluster state page.
 
+<<<<<<< HEAD
 import { useCallback } from 'react';
 import useSWR from 'swr';
 import { RefreshCw } from 'lucide-react';
@@ -12,11 +13,22 @@ import {
   fetchNamespaceQuota,
   deletePod,
   fetchGrafanaPanels,
+=======
+import { useCallback }     from 'react';
+import useSWR              from 'swr';
+import { RefreshCw }       from 'lucide-react';
+import AdminLayout         from '../../components/admin/AdminLayout.js';
+import ClusterAdminView    from '../../components/admin/ClusterAdminView.js';
+import {
+  fetchAdminPods, fetchAdminHpa, fetchNodes,
+  fetchNamespaceQuota, deletePod, fetchGrafanaPanels,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 } from '../../lib/adminApi.js';
 
 const SWR_OPTS = { refreshInterval: 15_000 };
 
 export default function AdminClusterPage() {
+<<<<<<< HEAD
   const {
     data: podsData,
     error: podsError,
@@ -60,6 +72,34 @@ export default function AdminClusterPage() {
     },
     [mutatePods]
   );
+=======
+  const { data: podsData,  error: podsError,  isLoading: podsLoading,  mutate: mutatePods }
+    = useSWR('/admin/k8s/pods',  fetchAdminPods,  SWR_OPTS);
+
+  const { data: hpaData,   error: hpaError,   isLoading: hpaLoading,   mutate: mutateHpa }
+    = useSWR('/admin/k8s/hpa',   fetchAdminHpa,   SWR_OPTS);
+
+  const { data: nodesData, error: nodesError, isLoading: nodesLoading, mutate: mutateNodes }
+    = useSWR('/admin/k8s/nodes', fetchNodes,      SWR_OPTS);
+
+  const { data: quotaData }
+    = useSWR('/admin/k8s/quota', fetchNamespaceQuota, SWR_OPTS);
+
+  const { data: grafanaData }
+    = useSWR('/admin/observability/grafana/panels', fetchGrafanaPanels, { refreshInterval: 120_000 });
+
+  const loading = podsLoading || hpaLoading || nodesLoading;
+  const error   = podsError  ?? hpaError  ?? nodesError;
+
+  const refresh = useCallback(() => {
+    mutatePods(); mutateHpa(); mutateNodes();
+  }, [mutatePods, mutateHpa, mutateNodes]);
+
+  const handleDeletePod = useCallback(async name => {
+    await deletePod(name);
+    mutatePods();
+  }, [mutatePods]);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <AdminLayout
@@ -85,7 +125,11 @@ export default function AdminClusterPage() {
 
         <ClusterAdminView
           pods={podsData?.pods ?? podsData ?? []}
+<<<<<<< HEAD
           hpa={hpaData?.hpa ?? hpaData ?? []}
+=======
+          hpa={hpaData?.hpa   ?? hpaData  ?? []}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           nodes={nodesData?.nodes ?? nodesData ?? []}
           quota={quotaData?.quota ?? quotaData ?? null}
           loading={loading}

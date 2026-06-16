@@ -1,3 +1,28 @@
+<<<<<<< HEAD
+=======
+# ──────────────────────────────────────────────────────────────────────────────
+# Wolf Engine — CI/CD Pipeline
+#
+# Flow (push to master/main):
+#   lint ──┐
+#           ├──▶ build ──▶ deploy-canary ──▶ smoke-test ──▶ deploy-full ──▶ notify
+#   test ──┘                                     │(fail)        │(fail)
+#                                                └──────────────┘
+#                                                       │
+#                                                   rollback ──▶ notify
+#
+# Flow (pull request):
+#   lint + test run in parallel; build validates the Docker image (no push).
+#
+# Required GitHub Secrets (Settings → Secrets and variables → Actions):
+#   DEPLOY_HOST           SSH hostname or IP of the production server
+#   DEPLOY_USER           SSH username (e.g. deploy)
+#   DEPLOY_KEY            SSH private key (PEM format, no passphrase)
+#   CANARY_URL            Base URL for canary smoke tests (e.g. http://host:3001)
+#   NOTIFICATION_WEBHOOK  Slack or Discord incoming-webhook URL
+# ──────────────────────────────────────────────────────────────────────────────
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 name: CI/CD — Wolf Engine
 
 on:
@@ -7,20 +32,38 @@ on:
   pull_request:
     branches: [master, main]
 
+<<<<<<< HEAD
+=======
+# Cancel in-flight runs on the same ref — pushes don't pile up.
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 concurrency:
   group: cicd-${{ github.ref }}
   cancel-in-progress: true
 
+<<<<<<< HEAD
 env:
   NODE_VERSION: '20'
   REGISTRY: ghcr.io
   IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
+=======
+# ── Shared environment ────────────────────────────────────────────────────────
+env:
+  NODE_VERSION: '20'
+  REGISTRY:     ghcr.io
+  IMAGE:        ghcr.io/${{ github.repository }}
+
+# ──────────────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ── 1. LINT — ESLint + Prettier (parallel with test) ─────────────────────────
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
     timeout-minutes: 10
+<<<<<<< HEAD
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -81,6 +124,161 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+=======
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier format check
+        run: npm run format:check
+
+      - name: npm audit — prod deps (HIGH/CRITICAL hard gate)
+        run: npm audit --audit-level=high --omit=dev
+
+      - name: Secrets scan — trufflehog (git history)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+      - name: Check for plaintext K8s secrets
+        run: |
+          if ls k8s/*.yaml k8s/*.yml 2>/dev/null | xargs grep -l "kind: Secret" 2>/dev/null \
+             | xargs grep -L "encrypted" 2>/dev/null | grep -q .; then
+            echo "ERROR: plaintext K8s Secrets found — encrypt with kubeseal"
+            exit 1
+          fi
+          echo "K8s secret check passed"
+
+  # ── 2. TEST — Jest + coverage report + security audit (parallel with lint) ───
+  test:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        env:
+          NODE_ENV:           test
+          BASE_URL:           http://localhost:3000
+          PHONE_SALT:         ci_phone_salt__padding__1234567890
+          JWT_SECRET:         ci_jwt_secret__padding__1234567890abcdef
+          JWT_REFRESH_SECRET: ci_refresh_secret__padding__1234567890abcdef
+          API_KEYS:           ci-test-api-key-12345
+
+      - name: Enforce coverage thresholds (99/90/98/99)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p  = './coverage/coverage-summary.json';
+            if (!fs.existsSync(p)) { console.warn('No coverage-summary.json — skipping'); process.exit(0); }
+            const s  = JSON.parse(fs.readFileSync(p)).total;
+            const t  = { statements: 99, branches: 90, functions: 98, lines: 99 };
+            const f  = Object.entries(t).filter(([k, min]) => (s[k]?.pct ?? 0) < min)
+                              .map(([k, min]) => k + ' ' + s[k].pct + '% < ' + min + '%');
+            if (f.length) { console.error('Coverage thresholds FAILED:\n  ' + f.join('\n  ')); process.exit(1); }
+            console.log('All coverage thresholds passed ✓');
+          "
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-${{ github.run_id }}
+          path: coverage/
+          retention-days: 14
+
+  # ── Frontend checks (lint, test, build) ───────────────────────────────────
+  frontend:
+    name: Frontend Lint/Test/Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend tests
+        working-directory: frontend
+        run: npm run test
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build
+
+  # ── 3. BUILD — Docker image built and pushed to GHCR (needs: lint + test) ────
+  build:
+    name: Docker Build & Push
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      # Propagated to downstream deploy/rollback jobs.
+      image-tag:    ${{ steps.meta.outputs.version }}
+      full-tag:     ${{ env.IMAGE }}:${{ steps.meta.outputs.version }}
+      rollback-tag: ${{ steps.rollback.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth 2 gives us HEAD~1 for the rollback tag computation.
+          fetch-depth: 2
+
+      - name: Compute rollback tag (previous commit SHA)
+        id: rollback
+        # Production was last deployed from HEAD~1. Its image is sha-<prev-short-sha>.
+        # This gives us a deterministic rollback target without querying the server.
+        run: |
+          PREV=$(git rev-parse HEAD~1 | cut -c1-7)
+          echo "tag=sha-$PREV" >> "$GITHUB_OUTPUT"
+          echo "Rollback target → sha-$PREV"
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -95,6 +293,7 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           tags: |
+<<<<<<< HEAD
             type=sha,prefix=sha-,format=short
             type=ref,event=branch
 
@@ -123,3 +322,415 @@ jobs:
             cd /opt/wolf-engine
             IMAGE_TAG="$IMAGE" docker compose up -d --no-deps --remove-orphans app
             echo "Deploy done ✓"
+=======
+            # Short commit SHA — primary addressable tag used by all deploy jobs
+            type=sha,prefix=sha-,format=short
+            # Branch name (master, main)
+            type=ref,event=branch
+            # Semver (from git tags: v1.2.3 → 1.2.3 and 1.2)
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push:       ${{ github.event_name != 'pull_request' }}
+          load:       ${{ github.event_name == 'pull_request' }}
+          tags:       ${{ steps.meta.outputs.tags }}
+          labels:     ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      - name: Trivy CVE scan — CRITICAL/HIGH (hard gate)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.version != '' && format('{0}:{1}', env.IMAGE, steps.meta.outputs.version) || format('{0}:pr-{1}', env.IMAGE, github.event.number) }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Write build metadata artifact
+        run: |
+          mkdir -p build-meta
+          cat > build-meta/build.json << JSONEOF
+          {
+            "sha":        "${{ github.sha }}",
+            "short_sha":  "$(echo '${{ github.sha }}' | cut -c1-7)",
+            "ref":        "${{ github.ref }}",
+            "actor":      "${{ github.actor }}",
+            "run_id":     "${{ github.run_id }}",
+            "image_tag":  "${{ steps.meta.outputs.version }}",
+            "digest":     "${{ steps.build.outputs.digest }}",
+            "built_at":   "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          JSONEOF
+
+      - name: Upload build metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-metadata-${{ github.run_id }}
+          path: build-meta/
+          retention-days: 30
+
+  # ── 4. DEPLOY CANARY — Start a single canary container on port 3001 (10%) ────
+  deploy-canary:
+    name: Deploy Canary (10%)
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only on actual pushes to master/main — not PRs, not tag-only pipelines.
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    environment: canary
+
+    steps:
+      - name: Start canary container via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:        ${{ secrets.DEPLOY_HOST }}
+          username:    ${{ secrets.DEPLOY_USER }}
+          key:         ${{ secrets.DEPLOY_KEY }}
+          # script_stop: true → exit immediately on first error.
+          script_stop: true
+          script: |
+            set -euo pipefail
+            IMAGE="${{ needs.build.outputs.full-tag }}"
+
+            echo "=== [Canary] Pulling image: $IMAGE"
+            docker pull "$IMAGE"
+
+            echo "=== [Canary] Removing stale canary container (if any)"
+            docker rm -f wolf-canary 2>/dev/null || true
+
+            echo "=== [Canary] Starting canary on port 3001"
+            docker run -d \
+              --name        wolf-canary \
+              --network     wolf-net \
+              -p            3001:3000 \
+              --env-file    /opt/wolf-engine/.env \
+              -e            NODE_ENV=production \
+              --restart     no \
+              --label       "wolf.role=canary" \
+              --label       "wolf.sha=${{ github.sha }}" \
+              "$IMAGE"
+
+            echo "=== [Canary] Waiting for canary to become healthy (30s timeout)"
+            for i in $(seq 1 30); do
+              if docker exec wolf-canary wget -qO- http://localhost:3000/health/live >/dev/null 2>&1; then
+                echo "Canary healthy after ${i}s ✓"
+                exit 0
+              fi
+              sleep 1
+            done
+            echo "ERROR: canary did not become healthy within 30s"
+            exit 1
+
+      - name: Write canary deploy log
+        if: always()
+        run: |
+          mkdir -p deploy-logs
+          cat > deploy-logs/canary.json << JSONEOF
+          {
+            "stage":       "canary",
+            "image":       "${{ needs.build.outputs.full-tag }}",
+            "sha":         "${{ github.sha }}",
+            "actor":       "${{ github.actor }}",
+            "status":      "${{ job.status }}",
+            "run_id":      "${{ github.run_id }}",
+            "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          JSONEOF
+
+      - name: Upload canary deploy log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deploy-log-canary-${{ github.run_id }}
+          path: deploy-logs/
+          retention-days: 30
+
+  # ── 5. SMOKE TEST — External HTTP check against the canary container ──────────
+  smoke-test:
+    name: Smoke Test (Canary)
+    needs: [build, deploy-canary]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+
+    steps:
+      - name: Liveness probe — /health/live
+        env:
+          CANARY_URL: ${{ secrets.CANARY_URL }}
+        run: |
+          if [ -z "$CANARY_URL" ]; then
+            echo "CANARY_URL not configured — internal health check was done in deploy-canary"
+            exit 0
+          fi
+
+          echo "=== Smoke test: $CANARY_URL/health/live (3 attempts)"
+          for i in 1 2 3; do
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+              --max-time 10 "$CANARY_URL/health/live" || echo "000")
+            echo "Attempt $i → HTTP $STATUS"
+            [ "$STATUS" = "200" ] && { echo "Liveness OK ✓"; exit 0; }
+            sleep 5
+          done
+          echo "ERROR: liveness probe failed after 3 attempts"
+          exit 1
+
+      - name: Metrics endpoint check — /metrics
+        env:
+          CANARY_URL: ${{ secrets.CANARY_URL }}
+        run: |
+          if [ -z "$CANARY_URL" ]; then exit 0; fi
+          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+            --max-time 10 "$CANARY_URL/metrics" || echo "000")
+          echo "Metrics → HTTP $STATUS"
+          # 200/401/403 are all acceptable (auth may be required in prod).
+          case "$STATUS" in
+            200|401|403) echo "Metrics endpoint OK ✓" ;;
+            *) echo "WARNING: unexpected metrics status $STATUS" ;;
+          esac
+
+  # ── 6. DEPLOY FULL — 100% rollout after successful smoke test ────────────────
+  deploy-full:
+    name: Deploy Full (100%)
+    needs: [build, smoke-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
+      needs.smoke-test.result == 'success'
+    environment: production
+
+    steps:
+      - name: Rolling deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:        ${{ secrets.DEPLOY_HOST }}
+          username:    ${{ secrets.DEPLOY_USER }}
+          key:         ${{ secrets.DEPLOY_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            IMAGE="${{ needs.build.outputs.full-tag }}"
+            DEPLOY_DIR="/opt/wolf-engine"
+
+            echo "=== [Full] Pulling $IMAGE"
+            docker pull "$IMAGE"
+
+            echo "=== [Full] Rolling update (zero-downtime)"
+            cd "$DEPLOY_DIR"
+            # Override the image for the app service and restart it.
+            IMAGE_TAG="$IMAGE" docker compose up -d --no-deps --remove-orphans app
+
+            echo "=== [Full] Waiting for production service to be healthy (60s timeout)"
+            for i in $(seq 1 60); do
+              CONTAINER=$(docker compose ps -q app | head -1)
+              if [ -n "$CONTAINER" ] && \
+                 docker exec "$CONTAINER" wget -qO- http://localhost:3000/health/live >/dev/null 2>&1; then
+                echo "Production healthy after ${i}s ✓"
+                break
+              fi
+              [ "$i" -eq 60 ] && { echo "ERROR: production not healthy after 60s"; exit 1; }
+              sleep 1
+            done
+
+            echo "=== [Full] Removing canary container"
+            docker rm -f wolf-canary 2>/dev/null || true
+
+            echo "=== [Full] Pruning dangling images"
+            docker image prune -f
+
+      - name: Write full deploy log
+        if: always()
+        run: |
+          mkdir -p deploy-logs
+          cat > deploy-logs/full.json << JSONEOF
+          {
+            "stage":       "full",
+            "image":       "${{ needs.build.outputs.full-tag }}",
+            "sha":         "${{ github.sha }}",
+            "actor":       "${{ github.actor }}",
+            "status":      "${{ job.status }}",
+            "run_id":      "${{ github.run_id }}",
+            "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          JSONEOF
+
+      - name: Upload full deploy log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deploy-log-full-${{ github.run_id }}
+          path: deploy-logs/
+          retention-days: 30
+
+  # ── 7. ROLLBACK — Re-deploy previous image when smoke-test or full-deploy fails
+  rollback:
+    name: Rollback
+    needs: [build, smoke-test, deploy-full]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Trigger only when a real failure occurred, not when jobs were simply skipped.
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
+      (needs.smoke-test.result == 'failure' || needs.deploy-full.result == 'failure')
+
+    steps:
+      - name: Re-deploy previous image via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:        ${{ secrets.DEPLOY_HOST }}
+          username:    ${{ secrets.DEPLOY_USER }}
+          key:         ${{ secrets.DEPLOY_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            ROLLBACK_IMAGE="${{ env.IMAGE }}:${{ needs.build.outputs.rollback-tag }}"
+            DEPLOY_DIR="/opt/wolf-engine"
+
+            echo "=== [Rollback] Target: $ROLLBACK_IMAGE"
+
+            echo "=== [Rollback] Removing failed canary"
+            docker rm -f wolf-canary 2>/dev/null || true
+
+            echo "=== [Rollback] Pulling rollback image"
+            docker pull "$ROLLBACK_IMAGE" || {
+              echo "WARNING: rollback image not found in registry — production unchanged"
+              exit 0
+            }
+
+            echo "=== [Rollback] Verifying rollback image health before promoting"
+            docker run -d --name wolf-rollback-probe \
+              --env-file /opt/wolf-engine/.env -e NODE_ENV=production \
+              -p 3002:3000 "$ROLLBACK_IMAGE"
+            PROBE_OK=0
+            for i in $(seq 1 20); do
+              if docker exec wolf-rollback-probe \
+                  wget -qO- http://localhost:3000/health/live >/dev/null 2>&1; then
+                PROBE_OK=1; break
+              fi
+              sleep 1
+            done
+            docker rm -f wolf-rollback-probe 2>/dev/null || true
+            [ "$PROBE_OK" -eq 0 ] && { echo "ERROR: rollback image not healthy — aborting"; exit 1; }
+
+            echo "=== [Rollback] Promoting rollback image to production"
+            cd "$DEPLOY_DIR"
+            IMAGE_TAG="$ROLLBACK_IMAGE" docker compose up -d --no-deps app
+
+            echo "=== [Rollback] COMPLETE ✓"
+
+      - name: Write rollback log
+        if: always()
+        run: |
+          mkdir -p deploy-logs
+          cat > deploy-logs/rollback.json << JSONEOF
+          {
+            "stage":          "rollback",
+            "rolled_back_to": "${{ needs.build.outputs.rollback-tag }}",
+            "failed_image":   "${{ needs.build.outputs.full-tag }}",
+            "sha":            "${{ github.sha }}",
+            "actor":          "${{ github.actor }}",
+            "status":         "${{ job.status }}",
+            "run_id":         "${{ github.run_id }}",
+            "rolled_back_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          JSONEOF
+
+      - name: Upload rollback log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deploy-log-rollback-${{ github.run_id }}
+          path: deploy-logs/
+          retention-days: 30
+
+  # ── 8. NOTIFY — Slack / Discord webhook (always, after deploy jobs) ───────────
+  notify:
+    name: Notify
+    needs: [build, deploy-full, rollback]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+
+    steps:
+      - name: Determine pipeline outcome
+        id: outcome
+        run: |
+          FULL="${{ needs.deploy-full.result }}"
+          ROLL="${{ needs.rollback.result }}"
+
+          if   [ "$FULL" = "success" ]; then
+            echo "emoji=✅"  >> "$GITHUB_OUTPUT"
+            echo "color=3066993"  >> "$GITHUB_OUTPUT"
+            echo "title=Deployment Successful" >> "$GITHUB_OUTPUT"
+          elif [ "$ROLL" = "success" ]; then
+            echo "emoji=🔄"  >> "$GITHUB_OUTPUT"
+            echo "color=15844367" >> "$GITHUB_OUTPUT"
+            echo "title=Rollback Completed" >> "$GITHUB_OUTPUT"
+          elif [ "$ROLL" = "failure" ]; then
+            echo "emoji=🚨"  >> "$GITHUB_OUTPUT"
+            echo "color=10038562" >> "$GITHUB_OUTPUT"
+            echo "title=Rollback FAILED — Manual Intervention Required" >> "$GITHUB_OUTPUT"
+          else
+            echo "emoji=❌"  >> "$GITHUB_OUTPUT"
+            echo "color=15158332" >> "$GITHUB_OUTPUT"
+            echo "title=Deployment Failed" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send notification
+        env:
+          WEBHOOK: ${{ secrets.NOTIFICATION_WEBHOOK }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "NOTIFICATION_WEBHOOK not set — skipping"
+            exit 0
+          fi
+
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          TITLE="${{ steps.outcome.outputs.title }}"
+          EMOJI="${{ steps.outcome.outputs.emoji }}"
+          COLOR=${{ steps.outcome.outputs.color }}
+
+          # Payload is compatible with Slack incoming webhooks AND Discord webhooks.
+          # Slack uses "attachments"; Discord uses "embeds". Both keys are sent; each
+          # platform ignores the one it does not understand.
+          curl -sf -X POST "$WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"username\": \"Wolf Engine CI/CD\",
+              \"content\":  \"$EMOJI **$TITLE**\",
+              \"embeds\": [{
+                \"title\":       \"$TITLE\",
+                \"color\":       $COLOR,
+                \"description\": \"Branch \`${{ github.ref_name }}\` · commit \`$SHORT_SHA\`\",
+                \"fields\": [
+                  {\"name\":\"Author\",  \"value\":\"${{ github.actor }}\", \"inline\":true},
+                  {\"name\":\"Run\",     \"value\":\"[Logs]($RUN_URL)\",    \"inline\":true}
+                ],
+                \"footer\": {\"text\": \"Wolf Engine · ${{ github.repository }}\"}
+              }],
+              \"attachments\": [{
+                \"color\": \"#$(printf '%06x' $COLOR)\",
+                \"text\":  \"$EMOJI *$TITLE*\nAuthor: ${{ github.actor }} · Commit: \`$SHORT_SHA\`\n<$RUN_URL|View logs>\"
+              }]
+            }" \
+          && echo "Notification sent ✓" \
+          || echo "WARNING: notification failed (non-blocking)"
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b

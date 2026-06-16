@@ -2,6 +2,7 @@
 // Converts raw strings like "demain", "lundi", "14h30" to ISO format.
 // No external dependencies — pure string + Date logic.
 
+<<<<<<< HEAD
 const WEEKDAYS = { lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6, dimanche: 0 };
 
 function _nextWeekday(name, ref) {
@@ -9,6 +10,15 @@ function _nextWeekday(name, ref) {
   if (target === undefined) return null;
   const diff = (target - ref.getDay() + 7) % 7 || 7;
   const d = new Date(ref);
+=======
+const WEEKDAYS = { lundi:1, mardi:2, mercredi:3, jeudi:4, vendredi:5, samedi:6, dimanche:0 };
+
+function _nextWeekday(name, ref) {
+  const target  = WEEKDAYS[name.toLowerCase()];
+  if (target === undefined) return null;
+  const diff    = ((target - ref.getDay() + 7) % 7) || 7;
+  const d       = new Date(ref);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   d.setDate(ref.getDate() + diff);
   return d;
 }
@@ -25,15 +35,23 @@ export function resolve(rawDate, rawTime, referenceDate = new Date()) {
   let time = null;
 
   // ── Date ──────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
   const ds = String(rawDate ?? '')
     .trim()
     .toLowerCase();
+=======
+  const ds = String(rawDate ?? '').trim().toLowerCase();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   if (ds) {
     if (ds === "aujourd'hui" || ds === 'aujourd hui') {
       date = referenceDate.toISOString().slice(0, 10);
     } else if (ds === 'demain') {
+<<<<<<< HEAD
       const d = new Date(referenceDate);
       d.setDate(d.getDate() + 1);
+=======
+      const d = new Date(referenceDate); d.setDate(d.getDate() + 1);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       date = d.toISOString().slice(0, 10);
     } else if (WEEKDAYS[ds] !== undefined) {
       const d = _nextWeekday(ds, referenceDate);
@@ -49,9 +67,13 @@ export function resolve(rawDate, rawTime, referenceDate = new Date()) {
   }
 
   // ── Time ──────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
   const ts = String(rawTime ?? '')
     .trim()
     .toLowerCase();
+=======
+  const ts = String(rawTime ?? '').trim().toLowerCase();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   if (ts) {
     const m = ts.match(/^(\d{1,2})(?:h|:)?(\d{0,2})$/);
     if (m) {

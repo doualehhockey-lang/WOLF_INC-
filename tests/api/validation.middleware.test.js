@@ -19,7 +19,11 @@ import {
 function mockRes() {
   const res = {};
   res.status = jest.fn(() => res);
+<<<<<<< HEAD
   res.json = jest.fn(() => res);
+=======
+  res.json   = jest.fn(() => res);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return res;
 }
 
@@ -32,8 +36,13 @@ describe('validateBody — valid input', () => {
     const schema = TwilioVoiceSchema;
     const middleware = validateBody(schema);
 
+<<<<<<< HEAD
     const req = { body: { CallSid: 'CA123456789', From: '+33600000001' } };
     const res = mockRes();
+=======
+    const req  = { body: { CallSid: 'CA123456789', From: '+33600000001' } };
+    const res  = mockRes();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const next = jest.fn();
 
     middleware(req, res, next);
@@ -46,8 +55,13 @@ describe('validateBody — valid input', () => {
 
   test('applies schema defaults when optional fields are missing', () => {
     const middleware = validateBody(TwilioVoiceSchema);
+<<<<<<< HEAD
     const req = { body: {} };
     const res = mockRes();
+=======
+    const req  = { body: {} };
+    const res  = mockRes();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const next = jest.fn();
 
     middleware(req, res, next);
@@ -59,8 +73,13 @@ describe('validateBody — valid input', () => {
 
   test('handles undefined req.body gracefully (uses {})', () => {
     const middleware = validateBody(TwilioVoiceSchema);
+<<<<<<< HEAD
     const req = {};
     const res = mockRes();
+=======
+    const req  = {};
+    const res  = mockRes();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const next = jest.fn();
 
     middleware(req, res, next);
@@ -72,21 +91,37 @@ describe('validateBody — valid input', () => {
 describe('validateBody — invalid input', () => {
   test('returns 400 for ReplyBodySchema with missing content', () => {
     const middleware = validateBody(ReplyBodySchema);
+<<<<<<< HEAD
     const req = { body: {} };
     const res = mockRes();
+=======
+    const req  = { body: {} };
+    const res  = mockRes();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const next = jest.fn();
 
     middleware(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(400);
+<<<<<<< HEAD
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'VALIDATION_ERROR' }));
+=======
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'VALIDATION_ERROR' }),
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(next).not.toHaveBeenCalled();
   });
 
   test('returns 400 for ReplyBodySchema with invalid tone', () => {
     const middleware = validateBody(ReplyBodySchema);
+<<<<<<< HEAD
     const req = { body: { content: 'Hello', tone: 'invalid-tone' } };
     const res = mockRes();
+=======
+    const req  = { body: { content: 'Hello', tone: 'invalid-tone' } };
+    const res  = mockRes();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const next = jest.fn();
 
     middleware(req, res, next);
@@ -97,8 +132,13 @@ describe('validateBody — invalid input', () => {
 
   test('includes error details array in 400 response', () => {
     const middleware = validateBody(ReplyBodySchema);
+<<<<<<< HEAD
     const req = { body: {} };
     const res = mockRes();
+=======
+    const req  = { body: {} };
+    const res  = mockRes();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const next = jest.fn();
 
     middleware(req, res, next);
@@ -112,8 +152,13 @@ describe('validateBody — invalid input', () => {
 
   test('returns 400 for TwilioStatusSchema with missing CallSid', () => {
     const middleware = validateBody(TwilioStatusSchema);
+<<<<<<< HEAD
     const req = { body: { CallStatus: 'completed' } };
     const res = mockRes();
+=======
+    const req  = { body: { CallStatus: 'completed' } };
+    const res  = mockRes();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const next = jest.fn();
 
     middleware(req, res, next);
@@ -198,9 +243,13 @@ describe('sanitizeText — trimming and truncation', () => {
 describe('TwilioVoiceSchema', () => {
   test('parses valid voice webhook body', () => {
     const result = TwilioVoiceSchema.safeParse({
+<<<<<<< HEAD
       CallSid: 'CA123',
       From: '+33600000001',
       To: '+33900000001',
+=======
+      CallSid: 'CA123', From: '+33600000001', To: '+33900000001',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     expect(result.success).toBe(true);
   });
@@ -214,9 +263,13 @@ describe('TwilioVoiceSchema', () => {
 describe('TwilioGatherSchema', () => {
   test('parses with optional SpeechResult', () => {
     const result = TwilioGatherSchema.safeParse({
+<<<<<<< HEAD
       SpeechResult: 'Bonjour',
       CallSid: 'CA999',
       From: '+33600000002',
+=======
+      SpeechResult: 'Bonjour', CallSid: 'CA999', From: '+33600000002',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     expect(result.success).toBe(true);
     expect(result.data.SpeechResult).toBe('Bonjour');

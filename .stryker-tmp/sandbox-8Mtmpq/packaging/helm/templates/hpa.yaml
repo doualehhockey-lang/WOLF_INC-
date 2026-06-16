@@ -1,0 +1,59 @@
+{{/*
+packaging/helm/templates/hpa.yaml — HorizontalPodAutoscaler (autoscaling/v2) per component.
+
+Skips components where autoscaling.enabled is false (e.g. Ollama by default).
+Supports CPU and optional memory metric targets.
+*/}}
+
+{{- $root := . -}}
+
+{{- range $name, $comp := .Values.components }}
+{{- if and $comp.enabled $comp.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "wolf.labels" (dict "component" $name "root" $root) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "wolf.componentName" (dict "component" $name "root" $root) }}
+  minReplicas: {{ $comp.autoscaling.minReplicas }}
+  maxReplicas: {{ $comp.autoscaling.maxReplicas }}
+  metrics:
+    # CPU metric — always present.
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $comp.autoscaling.targetCPUUtilizationPercentage }}
+    # Memory metric — only when targetMemoryUtilizationPercentage is set.
+    {{- if $comp.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $comp.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+  # Scale-down stabilisation: wait 5 min before removing pods to avoid flapping.
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+{{- end }}
+{{- end }}

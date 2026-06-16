@@ -11,15 +11,25 @@
 // Thresholds:
 //   P95 < 2000ms, P99 < 3000ms, error rate < 2%
 
+<<<<<<< HEAD
 import http from 'k6/http';
+=======
+import http   from 'k6/http';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
 // ── Custom metrics ────────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 const errorRate = new Rate('wolf_errors');
 const nluLatency = new Trend('wolf_nlu_latency_ms');
 const pipelineLatency = new Trend('wolf_pipeline_latency_ms');
+=======
+const errorRate        = new Rate('wolf_errors');
+const nluLatency       = new Trend('wolf_nlu_latency_ms');
+const pipelineLatency  = new Trend('wolf_pipeline_latency_ms');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Test config ───────────────────────────────────────────────────────────────
 
@@ -28,6 +38,7 @@ const JWT_TOKEN = __ENV.K6_JWT_TOKEN || '';
 
 export const options = {
   stages: [
+<<<<<<< HEAD
     { duration: '2m', target: 20 }, // ramp up
     { duration: '5m', target: 50 }, // sustained load
     { duration: '2m', target: 100 }, // peak
@@ -38,17 +49,33 @@ export const options = {
     wolf_errors: ['rate<0.02'],
     wolf_pipeline_latency_ms: ['p(95)<2000', 'p(99)<3000'],
     http_req_failed: ['rate<0.02'],
+=======
+    { duration: '2m',  target: 20  }, // ramp up
+    { duration: '5m',  target: 50  }, // sustained load
+    { duration: '2m',  target: 100 }, // peak
+    { duration: '1m',  target: 0   }, // ramp down
+  ],
+  thresholds: {
+    'http_req_duration':    ['p(95)<2000', 'p(99)<3000'],
+    'wolf_errors':          ['rate<0.02'],
+    'wolf_pipeline_latency_ms': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_failed':      ['rate<0.02'],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 };
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const TWILIO_PARAMS = [
+<<<<<<< HEAD
   {
     CallSid: 'CA000001',
     From: '+33611111111',
     SpeechResult: 'Créer un rendez-vous demain à 14h30',
   },
+=======
+  { CallSid: 'CA000001', From: '+33611111111', SpeechResult: 'Créer un rendez-vous demain à 14h30' },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   { CallSid: 'CA000002', From: '+33622222222', SpeechResult: 'Annuler mon rendez-vous de lundi' },
   { CallSid: 'CA000003', From: '+33633333333', SpeechResult: 'Modifier mon rendez-vous' },
   { CallSid: 'CA000004', From: '+33644444444', SpeechResult: 'Lister mes rendez-vous' },
@@ -61,14 +88,22 @@ function randomParam() {
 
 function twilioHeaders() {
   return {
+<<<<<<< HEAD
     'Content-Type': 'application/x-www-form-urlencoded',
+=======
+    'Content-Type':       'application/x-www-form-urlencoded',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     'X-Twilio-Signature': 'bypass-in-dev', // dev mode skips HMAC
   };
 }
 
 function authHeaders() {
   if (!JWT_TOKEN) return {};
+<<<<<<< HEAD
   return { Authorization: `Bearer ${JWT_TOKEN}` };
+=======
+  return { 'Authorization': `Bearer ${JWT_TOKEN}` };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 function encodeForm(params) {
@@ -102,6 +137,7 @@ export default function () {
 // ── Individual scenario functions ─────────────────────────────────────────────
 
 function _testGather() {
+<<<<<<< HEAD
   const p = randomParam();
   const params = {
     CallSid: p.CallSid,
@@ -122,12 +158,36 @@ function _testGather() {
     'gather: returns XML': r => r.headers['Content-Type']?.includes('text/xml') ?? false,
     'gather: has <Response>': r => r.body?.includes('<Response>') ?? false,
     'gather: response not empty': r => r.body?.length > 0 ?? false,
+=======
+  const p      = randomParam();
+  const params = {
+    CallSid:      p.CallSid,
+    From:         p.From,
+    SpeechResult: p.SpeechResult,
+    Confidence:   '0.92',
+  };
+
+  const start = Date.now();
+  const res   = http.post(
+    `${BASE_URL}/twilio/gather`,
+    encodeForm(params),
+    { headers: twilioHeaders(), tags: { endpoint: 'gather' } }
+  );
+  pipelineLatency.add(Date.now() - start);
+
+  const ok = check(res, {
+    'gather: status 200':         (r) => r.status === 200,
+    'gather: returns XML':        (r) => r.headers['Content-Type']?.includes('text/xml') ?? false,
+    'gather: has <Response>':     (r) => r.body?.includes('<Response>') ?? false,
+    'gather: response not empty': (r) => r.body?.length > 0 ?? false,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   errorRate.add(!ok);
 }
 
 function _testVoiceWebhook() {
+<<<<<<< HEAD
   const p = randomParam();
   const params = {
     CallSid: p.CallSid,
@@ -144,6 +204,25 @@ function _testVoiceWebhook() {
   const ok = check(res, {
     'voice: status 200': r => r.status === 200,
     'voice: has <Response>': r => r.body?.includes('<Response>') ?? false,
+=======
+  const p      = randomParam();
+  const params = {
+    CallSid:    p.CallSid,
+    From:       p.From,
+    CallStatus: 'ringing',
+    Direction:  'inbound',
+  };
+
+  const res = http.post(
+    `${BASE_URL}/twilio/voice`,
+    encodeForm(params),
+    { headers: twilioHeaders(), tags: { endpoint: 'voice' } }
+  );
+
+  const ok = check(res, {
+    'voice: status 200':     (r) => r.status === 200,
+    'voice: has <Response>': (r) => r.body?.includes('<Response>') ?? false,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   errorRate.add(!ok);
@@ -155,9 +234,15 @@ function _testHealth() {
   });
 
   const ok = check(res, {
+<<<<<<< HEAD
     'health: status 200': r => r.status === 200,
     'health: ok in body': r => r.json('status') === 'ok',
     'health: fast (<200ms)': r => r.timings.duration < 200,
+=======
+    'health: status 200':   (r) => r.status === 200,
+    'health: ok in body':   (r) => r.json('status') === 'ok',
+    'health: fast (<200ms)':(r) => r.timings.duration < 200,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   errorRate.add(!ok);
@@ -170,7 +255,11 @@ function _testMetrics() {
   });
 
   check(res, {
+<<<<<<< HEAD
     'metrics: status 200 or 401': r => r.status === 200 || r.status === 401,
+=======
+    'metrics: status 200 or 401': (r) => r.status === 200 || r.status === 401,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 }
 

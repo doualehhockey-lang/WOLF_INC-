@@ -7,12 +7,16 @@
 
 import { jest } from '@jest/globals';
 import {
+<<<<<<< HEAD
   CircuitBreaker,
   CircuitOpenError,
   TimeoutError,
   HttpError,
   withRetry,
   STATE,
+=======
+  CircuitBreaker, CircuitOpenError, TimeoutError, HttpError, withRetry, STATE,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 } from '../../src/services/circuitBreaker.js';
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -26,9 +30,13 @@ describe('_isAbortError — via exec catch branch', () => {
 
   test('non-abort Error is re-thrown (not converted to TimeoutError)', async () => {
     const cb = new CircuitBreaker('test', { failureThreshold: 5 });
+<<<<<<< HEAD
     const nonAbort = async () => {
       throw new Error('network error');
     };
+=======
+    const nonAbort = async () => { throw new Error('network error'); };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await expect(cb.exec(nonAbort)).rejects.toThrow('network error');
     // NOT a TimeoutError — _isAbortError returned false
     const err = await cb.exec(nonAbort).catch(e => e);
@@ -49,9 +57,13 @@ describe('_isAbortError — via exec catch branch', () => {
 
   test('DOMException with non-AbortError name is not treated as abort', async () => {
     const cb = new CircuitBreaker('test', { failureThreshold: 5 });
+<<<<<<< HEAD
     const nonAbortDom = async () => {
       throw new DOMException('cancelled', 'NotFoundError');
     };
+=======
+    const nonAbortDom = async () => { throw new DOMException('cancelled', 'NotFoundError'); };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     // DOMException with name 'NotFoundError' — first: 'NotFoundError' !== 'AbortError' → false
     // second: instanceof DOMException → true, but name !== 'AbortError' → false
     const result = await cb.exec(nonAbortDom).catch(e => e);
@@ -114,6 +126,7 @@ describe('_shouldOpen — error rate triggered by success (lines 162-165)', () =
     // failureThreshold high so consecutive check never fires
     // minCalls = 4: need 4 calls to trigger rate check
     // First 3 calls fail, 4th succeeds → 3/4 = 75% > 50% → OPEN
+<<<<<<< HEAD
     const fakeNow = 1_000_000;
     const cb = new CircuitBreaker('rate-test', {
       failureThreshold: 100,
@@ -127,6 +140,19 @@ describe('_shouldOpen — error rate triggered by success (lines 162-165)', () =
     const fail = async () => {
       throw new Error('boom');
     };
+=======
+    let fakeNow = 1_000_000;
+    const cb = new CircuitBreaker('rate-test', {
+      failureThreshold:   100,
+      errorRateThreshold: 0.5,
+      minCalls:           4,
+      windowMs:           60_000,
+      openDurationMs:     10_000,
+      now: () => fakeNow,
+    });
+
+    const fail    = async () => { throw new Error('boom'); };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const succeed = async () => 'ok';
 
     await expect(cb.exec(fail)).rejects.toThrow();

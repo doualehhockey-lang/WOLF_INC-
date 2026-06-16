@@ -1,0 +1,152 @@
+# k8s/deployments/ollama.yaml — Ollama local LLM server.
+#
+# Runs the official ollama/ollama image which serves a REST API at port 11434.
+# The wolf-engine agent calls this at:
+#   http://ollama.wolf-engine.svc.cluster.local:11434
+#
+# Model is pre-pulled via an init container so pods start hot.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: ollama
+    stage:                       stable
+    version:                     "0.1.44"
+  annotations:
+    kubernetes.io/change-cause: "initial deployment"
+spec:
+  # Ollama state is kept in a PVC — scale to 1 for single-GPU nodes;
+  # scale to N if your cluster has N GPU nodes (each gets its own model copy).
+  replicas: 1
+
+  strategy:
+    type: Recreate   # Recreate avoids two pods sharing the same GPU PVC
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: ollama
+      stage:                       stable
+
+  template:
+    metadata:
+      labels:
+        app:                         wolf-engine
+        app.kubernetes.io/name:      wolf-engine
+        app.kubernetes.io/component: ollama
+        stage:                       stable
+        version:                     "0.1.44"
+      annotations:
+        prometheus.io/scrape: "false"
+
+    spec:
+      terminationGracePeriodSeconds: 60
+
+      # ── Init container: pull model before the server starts ─────────────────
+      initContainers:
+        - name: model-puller
+          image: ollama/ollama:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              ollama serve &
+              SERVER_PID=$!
+              sleep 5
+              echo "Pulling llama3.2:3b ..."
+              ollama pull llama3.2:3b
+              echo "Model ready."
+              kill $SERVER_PID
+          env:
+            - name: OLLAMA_MODELS
+              value: "/ollama/models"
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /ollama/models
+          resources:
+            requests:
+              cpu:    "500m"
+              memory: "1Gi"
+            limits:
+              cpu:    "2000m"
+              memory: "4Gi"
+
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 11434
+              protocol: TCP
+
+          env:
+            - name: OLLAMA_MODELS
+              value: "/ollama/models"
+            - name: OLLAMA_HOST
+              value: "0.0.0.0"
+            # Keep models loaded in memory between requests
+            - name: OLLAMA_KEEP_ALIVE
+              value: "5m"
+
+          resources:
+            requests:
+              cpu:    "1000m"
+              memory: "4Gi"
+            limits:
+              cpu:    "4000m"
+              memory: "8Gi"
+            # Uncomment for GPU-enabled nodes:
+            # limits:
+            #   nvidia.com/gpu: "1"
+
+          readinessProbe:
+            httpGet:
+              path: /api/tags   # lists available models — proves server + model are ready
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds:       10
+            failureThreshold:    6
+            timeoutSeconds:      5
+
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds:       30
+            failureThreshold:    3
+            timeoutSeconds:      10
+
+          startupProbe:
+            httpGet:
+              path: /api/tags
+              port: http
+            failureThreshold: 30    # 30 × 10s = 5 min for first-boot model load
+            periodSeconds:    10
+
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /ollama/models
+
+      volumes:
+        - name: ollama-data
+          persistentVolumeClaim:
+            claimName: ollama-models-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models-pvc
+  namespace: wolf-engine
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: "standard"
+  resources:
+    requests:
+      storage: 20Gi   # llama3.2:3b ≈ 2GB; large-v models need 20–40 GB

@@ -4,17 +4,27 @@
 
 import { jest } from '@jest/globals';
 
+<<<<<<< HEAD
 process.env.REDIS_URL = 'redis://localhost:6379';
 process.env.BASE_URL = 'http://localhost:3000';
 process.env.PHONE_SALT = 'testsalt1234567890';
 process.env.JWT_SECRET = 'testjwtsecret1234567890testjwtsecret1234567890';
 process.env.JWT_REFRESH_SECRET = 'testrefreshsecret1234567890testrefreshsecret';
 process.env.API_KEYS = 'test-key';
+=======
+process.env.REDIS_URL          = 'redis://localhost:6379';
+process.env.BASE_URL           = 'http://localhost:3000';
+process.env.PHONE_SALT         = 'testsalt1234567890';
+process.env.JWT_SECRET         = 'testjwtsecret1234567890testjwtsecret1234567890';
+process.env.JWT_REFRESH_SECRET = 'testrefreshsecret1234567890testrefreshsecret';
+process.env.API_KEYS           = 'test-key';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // Capture the Redis constructor call options
 let capturedOptions = null;
 
 const mockRedisInstance = {
+<<<<<<< HEAD
   connect: jest.fn(async () => {}),
   ping: jest.fn(async () => 'PONG'),
   get: jest.fn(async () => null),
@@ -27,6 +37,20 @@ const mockRedisInstance = {
   getBuffer: jest.fn(async () => null),
   eval: jest.fn(async () => 42),
   on: jest.fn(),
+=======
+  connect:   jest.fn(async () => {}),
+  ping:      jest.fn(async () => 'PONG'),
+  get:       jest.fn(async () => null),
+  set:       jest.fn(async () => 'OK'),
+  setex:     jest.fn(async () => 'OK'),
+  del:       jest.fn(async () => 1),
+  incr:      jest.fn(async () => 1),
+  expire:    jest.fn(async () => 1),
+  ttl:       jest.fn(async () => -1),
+  getBuffer: jest.fn(async () => null),
+  eval:      jest.fn(async () => 42),
+  on:        jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 
 jest.unstable_mockModule('ioredis', () => ({
@@ -42,7 +66,10 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: { inc: jest.fn() },
+<<<<<<< HEAD
   auditLogFailures: { inc: jest.fn() },
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 await import('../../../src/infra/redis/redisClient.js');

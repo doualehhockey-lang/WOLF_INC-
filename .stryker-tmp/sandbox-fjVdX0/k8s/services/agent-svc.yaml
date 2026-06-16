@@ -1,0 +1,27 @@
+# k8s/services/agent-svc.yaml — ClusterIP service for wolf-engine agent pods.
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: agent
+  annotations:
+    # Prometheus will scrape via the pod annotations, not the service.
+    prometheus.io/scrape: "false"
+spec:
+  type: ClusterIP
+  # No session affinity — round-robin load balancing across all healthy pods.
+  sessionAffinity: None
+  selector:
+    app:   wolf-engine
+    stage: stable
+  ports:
+    - name:       http
+      port:       80
+      targetPort: http
+      protocol:   TCP

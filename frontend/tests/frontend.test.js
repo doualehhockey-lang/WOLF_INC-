@@ -29,6 +29,7 @@ jest.mock('swr', () => ({
 // ── Mock lib/api.js ───────────────────────────────────────────────────────────
 
 jest.mock('../lib/api.js', () => ({
+<<<<<<< HEAD
   apiFetcher: jest.fn(),
   apiPost: jest.fn().mockResolvedValue({ ok: true }),
   apiDelete: jest.fn().mockResolvedValue(null),
@@ -42,6 +43,21 @@ jest.mock('../lib/api.js', () => ({
   fetchPods: jest.fn().mockResolvedValue([]),
   fetchHpa: jest.fn().mockResolvedValue([]),
   fetchTraces: jest.fn().mockResolvedValue([]),
+=======
+  apiFetcher:     jest.fn(),
+  apiPost:        jest.fn().mockResolvedValue({ ok: true }),
+  apiDelete:      jest.fn().mockResolvedValue(null),
+  getToken:       jest.fn().mockReturnValue(null),
+  storeToken:     jest.fn(),
+  clearToken:     jest.fn(),
+  streamLogs:     jest.fn(),
+  triggerCanary:  jest.fn().mockResolvedValue({}),
+  promoteCanary:  jest.fn().mockResolvedValue({}),
+  rollbackDeploy: jest.fn().mockResolvedValue({}),
+  fetchPods:      jest.fn().mockResolvedValue([]),
+  fetchHpa:       jest.fn().mockResolvedValue([]),
+  fetchTraces:    jest.fn().mockResolvedValue([]),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   fetchSecurityEvents: jest.fn().mockResolvedValue([]),
 }));
 
@@ -49,7 +65,11 @@ jest.mock('../lib/api.js', () => ({
 
 jest.mock('../lib/theme.js', () => ({
   ThemeProvider: ({ children }) => children,
+<<<<<<< HEAD
   useTheme: () => ({ theme: 'light', toggle: jest.fn() }),
+=======
+  useTheme:      () => ({ theme: 'light', toggle: jest.fn() }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock recharts ─────────────────────────────────────────────────────────────
@@ -57,6 +77,7 @@ jest.mock('../lib/theme.js', () => ({
 
 jest.mock('recharts', () => {
   const React = require('react');
+<<<<<<< HEAD
   const stub =
     name =>
     ({ children, ...rest }) =>
@@ -72,6 +93,21 @@ jest.mock('recharts', () => {
     CartesianGrid: stub('cartesian-grid'),
     Tooltip: stub('tooltip'),
     ReferenceLine: stub('reference-line'),
+=======
+  const stub  = (name) => ({ children, ...rest }) =>
+    React.createElement('div', { 'data-testid': `recharts-${name}`, ...rest }, children);
+  return {
+    ResponsiveContainer:        stub('responsive-container'),
+    LineChart:                  stub('line-chart'),
+    BarChart:                   stub('bar-chart'),
+    Line:                       stub('line'),
+    Bar:                        stub('bar'),
+    XAxis:                      stub('x-axis'),
+    YAxis:                      stub('y-axis'),
+    CartesianGrid:              stub('cartesian-grid'),
+    Tooltip:                    stub('tooltip'),
+    ReferenceLine:              stub('reference-line'),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
 });
 
@@ -79,16 +115,26 @@ jest.mock('recharts', () => {
 
 import useSWR from 'swr';
 
+<<<<<<< HEAD
 import ChartPanel from '../components/ChartPanel.js';
 import TraceViewer from '../components/TraceViewer.js';
 import SecurityManager from '../components/SecurityManager.js';
 import DeployControls from '../components/DeployControls.js';
 import ClusterView from '../components/ClusterView.js';
 import LogViewer from '../components/LogViewer.js';
+=======
+import ChartPanel      from '../components/ChartPanel.js';
+import TraceViewer     from '../components/TraceViewer.js';
+import SecurityManager from '../components/SecurityManager.js';
+import DeployControls  from '../components/DeployControls.js';
+import ClusterView     from '../components/ClusterView.js';
+import LogViewer       from '../components/LogViewer.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const MOCK_TRACE = {
+<<<<<<< HEAD
   traceId: 'abc123def456789012345678',
   rootName: 'wolf.pipeline.agent',
   startMs: 1_000,
@@ -98,10 +144,22 @@ const MOCK_TRACE = {
     { spanId: 's1', name: 'whisper', startMs: 1_000, durationMs: 80, status: 'OK', depth: 0 },
     { spanId: 's2', name: 'claude', startMs: 1_080, durationMs: 200, status: 'OK', depth: 1 },
     { spanId: 's3', name: 'tts', startMs: 1_280, durationMs: 40, status: 'ERROR', depth: 0 },
+=======
+  traceId:    'abc123def456789012345678',
+  rootName:   'wolf.pipeline.agent',
+  startMs:    1_000,
+  durationMs: 320,
+  status:     'OK',
+  spans: [
+    { spanId: 's1', name: 'whisper', startMs: 1_000, durationMs: 80,  status: 'OK',    depth: 0 },
+    { spanId: 's2', name: 'claude',  startMs: 1_080, durationMs: 200, status: 'OK',    depth: 1 },
+    { spanId: 's3', name: 'tts',     startMs: 1_280, durationMs: 40,  status: 'ERROR', depth: 0 },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   ],
 };
 
 const MOCK_EVENTS = [
+<<<<<<< HEAD
   {
     id: 1,
     type: 'jwt_ok',
@@ -213,6 +271,25 @@ const MOCK_HPA = [
     cpuUtilization: 85,
     targetCpuUtilization: 70,
   },
+=======
+  { id: 1, type: 'jwt_ok',      sub: 'alice', resource: 'agent',   ip: '1.2.3.4',   ts: Date.now(), detail: 'Access granted' },
+  { id: 2, type: 'jwt_expired', sub: 'bob',   resource: 'agent',   ip: '5.6.7.8',   ts: Date.now(), detail: 'Token expired'  },
+  { id: 3, type: 'rate_limited',sub: 'alice', resource: null,       ip: '1.2.3.4',   ts: Date.now(), detail: null            },
+  { id: 4, type: 'rbac_deny',   sub: 'carol', resource: 'metrics',  ip: '9.10.11.12',ts: Date.now(), detail: 'RBAC deny'     },
+  { id: 5, type: 'apikey_ok',   sub: null,    resource: 'whisper',  ip: '1.1.1.1',   ts: Date.now(), detail: null            },
+];
+
+const MOCK_PODS = [
+  { name: 'agent-6d9c7-xv2k', component: 'agent', phase: 'Running', ready: true,  restarts: 0, cpuM: 120, memMi: 240, cpuRequestM: 200 },
+  { name: 'agent-6d9c7-mn3p', component: 'agent', phase: 'Running', ready: true,  restarts: 1, cpuM: 95,  memMi: 210, cpuRequestM: 200 },
+  { name: 'whisper-7f8b-q4rt', component: 'whisper',phase: 'Pending',ready: false, restarts: 0, cpuM: 0,   memMi: 0,   cpuRequestM: 100 },
+  { name: 'ollama-9a2b-zz1x',  component: 'ollama', phase: 'Running', ready: true,  restarts: 4, cpuM: 800, memMi: 3072,cpuRequestM: 1000 },
+];
+
+const MOCK_HPA = [
+  { name: 'agent-hpa',   component: 'agent',   currentReplicas: 2, desiredReplicas: 2, minReplicas: 2, maxReplicas: 10, cpuUtilization: 60,  targetCpuUtilization: 70 },
+  { name: 'whisper-hpa', component: 'whisper', currentReplicas: 1, desiredReplicas: 2, minReplicas: 1, maxReplicas: 5,  cpuUtilization: 85,  targetCpuUtilization: 70 },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 ];
 
 // Silence act() warnings from async state updates.
@@ -256,10 +333,14 @@ describe('ChartPanel', () => {
   });
 
   it('renders line variant with recharts stub', () => {
+<<<<<<< HEAD
     const data = [
       { ts: '-1m', value: 100 },
       { ts: '0m', value: 120 },
     ];
+=======
+    const data = [{ ts: '-1m', value: 100 }, { ts: '0m', value: 120 }];
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     render(<ChartPanel variant="line" title="Latency" data={data} dataKey="value" />);
     expect(screen.getByTestId('recharts-responsive-container')).toBeInTheDocument();
   });
@@ -343,7 +424,13 @@ describe('TraceViewer', () => {
   it('calls onSelect with traceId when Tempo button clicked', async () => {
     const onSelect = jest.fn();
     render(<TraceViewer traces={[MOCK_TRACE]} loading={false} error={null} onSelect={onSelect} />);
+<<<<<<< HEAD
     const tempoBtn = screen.getByRole('button', { name: /open in tempo/i });
+=======
+    const toggle = screen.getByRole('button', { expanded: false });
+    fireEvent.click(toggle); // expand first to reveal Tempo button... actually it's in the summary
+    const tempoBtn = screen.getByRole('button', { name: /tempo/i });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     fireEvent.click(tempoBtn);
     expect(onSelect).toHaveBeenCalledWith(MOCK_TRACE.traceId);
   });
@@ -362,12 +449,20 @@ describe('TraceViewer', () => {
 describe('SecurityManager', () => {
   it('renders events table', () => {
     render(<SecurityManager events={MOCK_EVENTS} loading={false} error={null} />);
+<<<<<<< HEAD
     expect(screen.getAllByText('alice').length).toBeGreaterThan(0);
+=======
+    expect(screen.getByText('alice')).toBeInTheDocument();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   it('shows JWT OK badge', () => {
     render(<SecurityManager events={MOCK_EVENTS} loading={false} error={null} />);
+<<<<<<< HEAD
     expect(screen.getAllByText('JWT OK').length).toBeGreaterThan(0);
+=======
+    expect(screen.getByText('JWT OK')).toBeInTheDocument();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   it('shows rate-limit hot-spots section', () => {
@@ -401,9 +496,13 @@ describe('SecurityManager', () => {
   it('Clear filter button resets selection', async () => {
     render(<SecurityManager events={MOCK_EVENTS} loading={false} error={null} />);
     fireEvent.click(screen.getByRole('button', { name: /filter: rate limited/i }));
+<<<<<<< HEAD
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /clear filters/i })).toBeInTheDocument()
     );
+=======
+    await waitFor(() => expect(screen.getByRole('button', { name: /clear filters/i })).toBeInTheDocument());
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     fireEvent.click(screen.getByRole('button', { name: /clear filters/i }));
     await waitFor(() => expect(screen.getByText('bob')).toBeInTheDocument());
   });
@@ -433,6 +532,7 @@ describe('DeployControls', () => {
   const noop = jest.fn().mockResolvedValue(undefined);
 
   it('renders three action cards', () => {
+<<<<<<< HEAD
     render(<DeployControls onTriggerCanary={noop} onPromote={noop} onRollback={noop} />);
     expect(screen.getAllByText('Deploy Canary').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Promote to Stable').length).toBeGreaterThan(0);
@@ -441,12 +541,38 @@ describe('DeployControls', () => {
 
   it('Deploy Canary button is disabled when tag is empty', () => {
     render(<DeployControls onTriggerCanary={noop} onPromote={noop} onRollback={noop} />);
+=======
+    render(
+      <DeployControls
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+      />,
+    );
+    expect(screen.getByText('Deploy Canary')).toBeInTheDocument();
+    expect(screen.getByText('Promote to Stable')).toBeInTheDocument();
+    expect(screen.getByText('Rollback')).toBeInTheDocument();
+  });
+
+  it('Deploy Canary button is disabled when tag is empty', () => {
+    render(
+      <DeployControls
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+      />,
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const btn = screen.getAllByRole('button', { name: /deploy canary/i })[0];
     expect(btn).toBeDisabled();
   });
 
   it('Deploy Canary button enabled after tag is entered', async () => {
+<<<<<<< HEAD
     render(<DeployControls onTriggerCanary={noop} onPromote={noop} onRollback={noop} />);
+=======
+    render(
+      <DeployControls
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+      />,
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const input = screen.getByLabelText(/canary image tag/i);
     await userEvent.type(input, 'sha-abc123');
     const btn = screen.getAllByRole('button', { name: /deploy canary/i })[0];
@@ -454,7 +580,15 @@ describe('DeployControls', () => {
   });
 
   it('shows confirm dialog when Deploy Canary clicked', async () => {
+<<<<<<< HEAD
     render(<DeployControls onTriggerCanary={noop} onPromote={noop} onRollback={noop} />);
+=======
+    render(
+      <DeployControls
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+      />,
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await userEvent.type(screen.getByLabelText(/canary image tag/i), 'sha-test');
     const btn = screen.getAllByRole('button', { name: /deploy canary/i })[0];
     fireEvent.click(btn);
@@ -464,7 +598,15 @@ describe('DeployControls', () => {
 
   it('cancels confirm dialog without calling handler', async () => {
     const handler = jest.fn();
+<<<<<<< HEAD
     render(<DeployControls onTriggerCanary={handler} onPromote={noop} onRollback={noop} />);
+=======
+    render(
+      <DeployControls
+        onTriggerCanary={handler} onPromote={noop} onRollback={noop}
+      />,
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await userEvent.type(screen.getByLabelText(/canary image tag/i), 'sha-test');
     fireEvent.click(screen.getAllByRole('button', { name: /deploy canary/i })[0]);
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
@@ -474,7 +616,15 @@ describe('DeployControls', () => {
 
   it('calls onTriggerCanary after confirm', async () => {
     const handler = jest.fn().mockResolvedValue(undefined);
+<<<<<<< HEAD
     render(<DeployControls onTriggerCanary={handler} onPromote={noop} onRollback={noop} />);
+=======
+    render(
+      <DeployControls
+        onTriggerCanary={handler} onPromote={noop} onRollback={noop}
+      />,
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await userEvent.type(screen.getByLabelText(/canary image tag/i), 'sha-xyz');
     fireEvent.click(screen.getAllByRole('button', { name: /deploy canary/i })[0]);
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
@@ -485,11 +635,17 @@ describe('DeployControls', () => {
   it('Promote button is disabled when canaryActive=false', () => {
     render(
       <DeployControls
+<<<<<<< HEAD
         onTriggerCanary={noop}
         onPromote={noop}
         onRollback={noop}
         canaryActive={false}
       />
+=======
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+        canaryActive={false}
+      />,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     const btn = screen.getAllByRole('button', { name: /promote to stable/i })[0];
     expect(btn).toBeDisabled();
@@ -498,12 +654,18 @@ describe('DeployControls', () => {
   it('Promote button is enabled when canaryActive=true', () => {
     render(
       <DeployControls
+<<<<<<< HEAD
         onTriggerCanary={noop}
         onPromote={noop}
         onRollback={noop}
         canaryActive={true}
         lastStable="sha-prev"
       />
+=======
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+        canaryActive={true} lastStable="sha-prev"
+      />,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     const btn = screen.getAllByRole('button', { name: /promote to stable/i })[0];
     expect(btn).not.toBeDisabled();
@@ -511,25 +673,46 @@ describe('DeployControls', () => {
 
   it('Rollback button is disabled when lastStable is null', () => {
     render(
+<<<<<<< HEAD
       <DeployControls onTriggerCanary={noop} onPromote={noop} onRollback={noop} lastStable={null} />
+=======
+      <DeployControls
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+        lastStable={null}
+      />,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     const btn = screen.getAllByRole('button', { name: /rollback/i })[0];
     expect(btn).toBeDisabled();
   });
 
   it('status strip shows canary as Inactive by default', () => {
+<<<<<<< HEAD
     render(<DeployControls onTriggerCanary={noop} onPromote={noop} onRollback={noop} />);
+=======
+    render(
+      <DeployControls
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+      />,
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(screen.getByText('Inactive')).toBeInTheDocument();
   });
 
   it('status strip shows canary as Active when canaryActive=true', () => {
     render(
       <DeployControls
+<<<<<<< HEAD
         onTriggerCanary={noop}
         onPromote={noop}
         onRollback={noop}
         canaryActive={true}
       />
+=======
+        onTriggerCanary={noop} onPromote={noop} onRollback={noop}
+        canaryActive={true}
+      />,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     expect(screen.getByText('Active (10%)')).toBeInTheDocument();
   });
@@ -553,12 +736,20 @@ describe('ClusterView', () => {
 
   it('renders Pending badge for whisper pod', () => {
     render(<ClusterView pods={MOCK_PODS} hpa={[]} loading={false} error={null} />);
+<<<<<<< HEAD
     expect(screen.getAllByText('Pending').length).toBeGreaterThan(0);
+=======
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   it('renders summary counts', () => {
     render(<ClusterView pods={MOCK_PODS} hpa={[]} loading={false} error={null} />);
+<<<<<<< HEAD
     expect(screen.getAllByText('4').length).toBeGreaterThan(0); // total pods
+=======
+    expect(screen.getByText('4')).toBeInTheDocument(); // total pods
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   it('renders HPA table', () => {
@@ -644,7 +835,11 @@ describe('LogViewer', () => {
     const btn = screen.getByRole('button', { name: /pause streaming/i });
     fireEvent.click(btn);
     await waitFor(() =>
+<<<<<<< HEAD
       expect(screen.getByRole('button', { name: /resume streaming/i })).toBeInTheDocument()
+=======
+      expect(screen.getByRole('button', { name: /resume streaming/i })).toBeInTheDocument(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -661,10 +856,14 @@ describe('LogViewer', () => {
 
 describe('Pages — smoke tests', () => {
   const mockSwr = (data, loading = false, error = null) => ({
+<<<<<<< HEAD
     data,
     error,
     isLoading: loading,
     mutate: jest.fn(),
+=======
+    data, error, isLoading: loading, mutate: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   beforeEach(() => {
@@ -674,7 +873,41 @@ describe('Pages — smoke tests', () => {
   it('DashboardPage renders title', async () => {
     const { default: DashboardPage } = await import('../pages/dashboard.js');
     render(<DashboardPage />);
+<<<<<<< HEAD
     expect(screen.getAllByText('Rendez-vous du jour').length).toBeGreaterThan(0);
+=======
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+  });
+
+  it('TracesPage renders title', async () => {
+    const { default: TracesPage } = await import('../pages/traces.js');
+    render(<TracesPage />);
+    expect(screen.getByText('Traces')).toBeInTheDocument();
+  });
+
+  it('SecurityPage renders title', async () => {
+    const { default: SecurityPage } = await import('../pages/security.js');
+    render(<SecurityPage />);
+    expect(screen.getByText('Security')).toBeInTheDocument();
+  });
+
+  it('DeployPage renders title', async () => {
+    const { default: DeployPage } = await import('../pages/deploy.js');
+    render(<DeployPage />);
+    expect(screen.getByText('Deploy')).toBeInTheDocument();
+  });
+
+  it('ClusterPage renders title', async () => {
+    const { default: ClusterPage } = await import('../pages/cluster.js');
+    render(<ClusterPage />);
+    expect(screen.getByText('Cluster')).toBeInTheDocument();
+  });
+
+  it('LogsPage renders title', async () => {
+    const { default: LogsPage } = await import('../pages/logs.js');
+    render(<LogsPage />);
+    expect(screen.getByText('Logs')).toBeInTheDocument();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 

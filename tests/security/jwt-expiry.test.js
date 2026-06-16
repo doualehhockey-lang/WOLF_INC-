@@ -3,13 +3,18 @@
 // Attacks: expired, wrong secret, alg:none, missing header, no Bearer prefix.
 
 import { jest } from '@jest/globals';
+<<<<<<< HEAD
 import jwt from 'jsonwebtoken';
+=======
+import jwt       from 'jsonwebtoken';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 jest.unstable_mockModule('../../src/core/logger.js', () => ({
   childLogger: () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
 jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
+<<<<<<< HEAD
   cacheSet: jest.fn(async () => 'OK'),
   cacheGet: jest.fn(async () => null),
   cacheDel: jest.fn(async () => 1),
@@ -21,6 +26,18 @@ jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
   evalScript: jest.fn(async () => null),
   isRedisAvailable: jest.fn().mockReturnValue(false),
   redis: null,
+=======
+  cacheSet:       jest.fn(async () => 'OK'),
+  cacheGet:       jest.fn(async () => null),
+  cacheDel:       jest.fn(async () => 1),
+  cacheIncr:      jest.fn(async () => 1),
+  cacheExpire:    jest.fn(async () => true),
+  cacheGetBuffer: jest.fn(async () => null),
+  cacheSetBuffer: jest.fn(async () => 'OK'),
+  cacheTtl:       jest.fn(async () => -1),
+  evalScript:     jest.fn(async () => null),
+  redis:          null,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   redisAvailable: false,
 }));
 
@@ -36,11 +53,16 @@ jest.unstable_mockModule('../../src/core/config.js', () => ({
 }));
 
 const { verifyAccess } = await import('../../src/features/auth/token.service.js');
+<<<<<<< HEAD
 const { requireJwt } = await import('../../src/features/auth/auth.middleware.js');
+=======
+const { requireJwt }   = await import('../../src/features/auth/auth.middleware.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function mkMiddlewareEnv(rawHeader) {
+<<<<<<< HEAD
   const req = { headers: { authorization: rawHeader } };
   const res = { _status: null, _body: null };
   res.status = s => {
@@ -51,14 +73,24 @@ function mkMiddlewareEnv(rawHeader) {
     res._body = b;
     return res;
   };
+=======
+  const req  = { headers: { authorization: rawHeader } };
+  const res  = { _status: null, _body: null };
+  res.status = (s) => { res._status = s; return res; };
+  res.json   = (b) => { res._body   = b; return res; };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const next = jest.fn();
   requireJwt(req, res, next);
   return { req, res, next };
 }
 
+<<<<<<< HEAD
 function bearer(token) {
   return `Bearer ${token}`;
 }
+=======
+function bearer(token) { return `Bearer ${token}`; }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 1. verifyAccess — unit-level
@@ -66,10 +98,14 @@ function bearer(token) {
 
 describe('verifyAccess — token verification', () => {
   test('valid fresh token is accepted and returns correct sub', () => {
+<<<<<<< HEAD
     const token = jwt.sign({ sub: 'user-001', role: 'user' }, JWT_SECRET, {
       algorithm: 'HS256',
       expiresIn: 60,
     });
+=======
+    const token   = jwt.sign({ sub: 'user-001', role: 'user' }, JWT_SECRET, { algorithm: 'HS256', expiresIn: 60 });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const payload = verifyAccess(token);
     expect(payload.sub).toBe('user-001');
     expect(payload.role).toBe('user');
@@ -81,19 +117,27 @@ describe('verifyAccess — token verification', () => {
   });
 
   test('token signed with wrong secret throws JsonWebTokenError', () => {
+<<<<<<< HEAD
     const token = jwt.sign({ sub: 'attacker' }, 'wrong-secret', {
       algorithm: 'HS256',
       expiresIn: 60,
     });
+=======
+    const token = jwt.sign({ sub: 'attacker' }, 'wrong-secret', { algorithm: 'HS256', expiresIn: 60 });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(() => verifyAccess(token)).toThrow(jwt.JsonWebTokenError);
   });
 
   test('alg:none attack is rejected (algorithms: ["HS256"] restriction)', () => {
     // Manually craft a "none" algorithm JWT
     const h = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+<<<<<<< HEAD
     const p = Buffer.from(
       JSON.stringify({ sub: 'attacker', role: 'admin', exp: 9_999_999_999 })
     ).toString('base64url');
+=======
+    const p = Buffer.from(JSON.stringify({ sub: 'attacker', role: 'admin', exp: 9_999_999_999 })).toString('base64url');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const noneToken = `${h}.${p}.`;
     expect(() => verifyAccess(noneToken)).toThrow();
   });
@@ -107,10 +151,14 @@ describe('verifyAccess — token verification', () => {
   });
 
   test('role is preserved exactly — no privilege escalation after verify', () => {
+<<<<<<< HEAD
     const token = jwt.sign({ sub: 'u1', role: 'user' }, JWT_SECRET, {
       algorithm: 'HS256',
       expiresIn: 60,
     });
+=======
+    const token   = jwt.sign({ sub: 'u1', role: 'user' }, JWT_SECRET, { algorithm: 'HS256', expiresIn: 60 });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const payload = verifyAccess(token);
     expect(payload.role).toBe('user');
     expect(payload.role).not.toBe('admin');
@@ -159,9 +207,13 @@ describe('requireJwt — middleware rejection scenarios', () => {
 
   test('alg:none attack via middleware → 401 TOKEN_INVALID', () => {
     const h = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+<<<<<<< HEAD
     const p = Buffer.from(
       JSON.stringify({ sub: 'hacker', role: 'admin', exp: 9_999_999_999 })
     ).toString('base64url');
+=======
+    const p = Buffer.from(JSON.stringify({ sub: 'hacker', role: 'admin', exp: 9_999_999_999 })).toString('base64url');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const { res, next } = mkMiddlewareEnv(bearer(`${h}.${p}.`));
     expect(res._status).toBe(401);
     expect(next).not.toHaveBeenCalled();
@@ -170,10 +222,14 @@ describe('requireJwt — middleware rejection scenarios', () => {
 
 describe('requireJwt — acceptance path', () => {
   test('valid token → calls next() and sets req.user', () => {
+<<<<<<< HEAD
     const token = jwt.sign({ sub: 'u5', role: 'user' }, JWT_SECRET, {
       algorithm: 'HS256',
       expiresIn: 60,
     });
+=======
+    const token = jwt.sign({ sub: 'u5', role: 'user' }, JWT_SECRET, { algorithm: 'HS256', expiresIn: 60 });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const { req, next } = mkMiddlewareEnv(bearer(token));
     expect(next).toHaveBeenCalledTimes(1);
     expect(req.user.sub).toBe('u5');

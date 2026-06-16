@@ -14,6 +14,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 const mockApiKeys = ['key-abc123', 'key-xyz789'];
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   apiKeys: mockApiKeys,
+<<<<<<< HEAD
   config: { JWT_REFRESH_SECRET: 'test-refresh-secret-very-long-32ch' },
 }));
 
@@ -25,6 +26,19 @@ jest.unstable_mockModule('../../../src/features/auth/token.service.js', () => ({
   issueTokens: mockIssueTokens,
   refreshTokens: mockRefreshTokens,
   verifyAccess: mockVerifyAccess,
+=======
+  config:  { JWT_REFRESH_SECRET: 'test-refresh-secret-very-long-32ch' },
+}));
+
+// ── Mock token.service ────────────────────────────────────────────────────────
+const mockIssueTokens   = jest.fn();
+const mockRefreshTokens = jest.fn();
+const mockVerifyAccess  = jest.fn();
+jest.unstable_mockModule('../../../src/features/auth/token.service.js', () => ({
+  issueTokens:   mockIssueTokens,
+  refreshTokens: mockRefreshTokens,
+  verifyAccess:  mockVerifyAccess,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock redisClient ──────────────────────────────────────────────────────────
@@ -40,9 +54,15 @@ const { handleIssue, handleRefresh, handleLogout } =
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function mockRes() {
   const res = {};
+<<<<<<< HEAD
   res.status = jest.fn(() => res);
   res.json = jest.fn(() => res);
   res.cookie = jest.fn(() => res);
+=======
+  res.status     = jest.fn(() => res);
+  res.json       = jest.fn(() => res);
+  res.cookie     = jest.fn(() => res);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   res.clearCookie = jest.fn(() => res);
   return res;
 }
@@ -50,6 +70,7 @@ function mockRes() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockIssueTokens.mockResolvedValue({
+<<<<<<< HEAD
     accessToken: 'access.token.here',
     refreshToken: 'refresh.token.here',
     expiresIn: 900,
@@ -58,6 +79,16 @@ beforeEach(() => {
     accessToken: 'new.access.token',
     refreshToken: 'new.refresh.token',
     expiresIn: 900,
+=======
+    accessToken:  'access.token.here',
+    refreshToken: 'refresh.token.here',
+    expiresIn:    900,
+  });
+  mockRefreshTokens.mockResolvedValue({
+    accessToken:  'new.access.token',
+    refreshToken: 'new.refresh.token',
+    expiresIn:    900,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 
@@ -73,7 +104,13 @@ describe('handleIssue — input validation', () => {
     await handleIssue(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
+<<<<<<< HEAD
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'VALIDATION_ERROR' }));
+=======
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'VALIDATION_ERROR' }),
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(mockIssueTokens).not.toHaveBeenCalled();
   });
 
@@ -93,7 +130,13 @@ describe('handleIssue — input validation', () => {
     await handleIssue(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
+<<<<<<< HEAD
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
+=======
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'UNAUTHORIZED' }),
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(mockIssueTokens).not.toHaveBeenCalled();
   });
 });
@@ -106,7 +149,11 @@ describe('handleIssue — success', () => {
     await handleIssue(req, res);
 
     expect(mockIssueTokens).toHaveBeenCalledWith(
+<<<<<<< HEAD
       expect.objectContaining({ sub: 'y-abc123', role: 'admin' })
+=======
+      expect.objectContaining({ sub: 'y-abc123', role: 'user' }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -119,7 +166,11 @@ describe('handleIssue — success', () => {
     expect(res.cookie).toHaveBeenCalledWith(
       'wolf_rt',
       'refresh.token.here',
+<<<<<<< HEAD
       expect.objectContaining({ httpOnly: true })
+=======
+      expect.objectContaining({ httpOnly: true }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -131,8 +182,13 @@ describe('handleIssue — success', () => {
 
     expect(res.json).toHaveBeenCalledWith({
       accessToken: 'access.token.here',
+<<<<<<< HEAD
       expiresIn: '15m',
       tokenType: 'Bearer',
+=======
+      expiresIn:   '15m',
+      tokenType:   'Bearer',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
   });
 });
@@ -149,7 +205,13 @@ describe('handleRefresh — no cookie', () => {
     await handleRefresh(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
+<<<<<<< HEAD
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
+=======
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'UNAUTHORIZED' }),
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(mockRefreshTokens).not.toHaveBeenCalled();
   });
 
@@ -172,11 +234,18 @@ describe('handleRefresh — invalid refresh token', () => {
     await handleRefresh(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
+<<<<<<< HEAD
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TOKEN_INVALID' }));
     expect(res.clearCookie).toHaveBeenCalledWith(
       'wolf_rt',
       expect.objectContaining({ path: '/auth' })
     );
+=======
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'TOKEN_INVALID' }),
+    );
+    expect(res.clearCookie).toHaveBeenCalledWith('wolf_rt', expect.objectContaining({ path: '/auth' }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 
@@ -191,10 +260,17 @@ describe('handleRefresh — success', () => {
     expect(res.cookie).toHaveBeenCalledWith(
       'wolf_rt',
       'new.refresh.token',
+<<<<<<< HEAD
       expect.objectContaining({ httpOnly: true })
     );
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ accessToken: 'new.access.token', tokenType: 'Bearer' })
+=======
+      expect.objectContaining({ httpOnly: true }),
+    );
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ accessToken: 'new.access.token', tokenType: 'Bearer' }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 });
@@ -210,10 +286,14 @@ describe('handleLogout', () => {
 
     await handleLogout(req, res);
 
+<<<<<<< HEAD
     expect(res.clearCookie).toHaveBeenCalledWith(
       'wolf_rt',
       expect.objectContaining({ path: '/auth' })
     );
+=======
+    expect(res.clearCookie).toHaveBeenCalledWith('wolf_rt', expect.objectContaining({ path: '/auth' }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(res.json).toHaveBeenCalledWith({ ok: true });
   });
 

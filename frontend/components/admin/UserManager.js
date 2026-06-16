@@ -17,6 +17,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import {
+<<<<<<< HEAD
   Plus,
   Trash2,
   Search,
@@ -26,16 +27,30 @@ import {
   ChevronDown,
   RotateCcw,
 } from 'lucide-react';
+=======
+  Plus, Trash2, Key, Search, UserCircle2,
+  Loader2, AlertCircle, ChevronDown, RotateCcw,
+} from 'lucide-react';
+import clsx from 'clsx';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const ROLES = ['admin', 'service', 'user', 'guest'];
 
+<<<<<<< HEAD
 const _ROLE_BADGE = {
   admin: 'badge-red',
   service: 'badge-blue',
   user: 'badge-green',
   guest: 'badge-gray',
+=======
+const ROLE_BADGE = {
+  admin:   'badge-red',
+  service: 'badge-blue',
+  user:    'badge-green',
+  guest:   'badge-gray',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 
 const PAGE_SIZE = 20;
@@ -43,9 +58,15 @@ const PAGE_SIZE = 20;
 // ── Create user modal ─────────────────────────────────────────────────────────
 
 function CreateUserModal({ onClose, onCreate }) {
+<<<<<<< HEAD
   const [form, setForm] = useState({ email: '', sub: '', role: 'user', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+=======
+  const [form,    setForm]    = useState({ email: '', sub: '', role: 'user', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -74,6 +95,7 @@ function CreateUserModal({ onClose, onCreate }) {
       <div className="card max-w-md w-full shadow-2xl space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Create User</h2>
+<<<<<<< HEAD
           <button
             onClick={onClose}
             className="text-text-muted hover:text-text-base text-lg leading-none"
@@ -84,10 +106,20 @@ function CreateUserModal({ onClose, onCreate }) {
         </div>
 
         {error && <p className="badge-red text-xs w-full text-center py-1">{error}</p>}
+=======
+          <button onClick={onClose} className="text-text-muted hover:text-text-base text-lg leading-none"
+            aria-label="Close">×</button>
+        </div>
+
+        {error && (
+          <p className="badge-red text-xs w-full text-center py-1">{error}</p>
+        )}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <Field label="Email" id="cu-email" required>
             <input
+<<<<<<< HEAD
               id="cu-email"
               type="email"
               required
@@ -95,24 +127,36 @@ function CreateUserModal({ onClose, onCreate }) {
               onChange={e => set('email', e.target.value)}
               className="input-base"
               placeholder="alice@wolf-inc.io"
+=======
+              id="cu-email" type="email" required
+              value={form.email} onChange={e => set('email', e.target.value)}
+              className="input-base" placeholder="alice@wolf-inc.io"
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
               aria-label="Email address"
             />
           </Field>
 
           <Field label="Username / sub" id="cu-sub">
             <input
+<<<<<<< HEAD
               id="cu-sub"
               type="text"
               value={form.sub}
               onChange={e => set('sub', e.target.value)}
               className="input-base"
               placeholder="alice"
+=======
+              id="cu-sub" type="text"
+              value={form.sub} onChange={e => set('sub', e.target.value)}
+              className="input-base" placeholder="alice"
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
               aria-label="Username"
             />
           </Field>
 
           <Field label="Initial password" id="cu-pwd" required>
             <input
+<<<<<<< HEAD
               id="cu-pwd"
               type="password"
               required
@@ -120,6 +164,11 @@ function CreateUserModal({ onClose, onCreate }) {
               onChange={e => set('password', e.target.value)}
               className="input-base"
               placeholder="min 12 characters"
+=======
+              id="cu-pwd" type="password" required
+              value={form.password} onChange={e => set('password', e.target.value)}
+              className="input-base" placeholder="min 12 characters"
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
               aria-label="Initial password"
             />
           </Field>
@@ -129,9 +178,13 @@ function CreateUserModal({ onClose, onCreate }) {
           </Field>
 
           <div className="flex justify-end gap-2 pt-2">
+<<<<<<< HEAD
             <button type="button" className="btn-ghost" onClick={onClose}>
               Cancel
             </button>
+=======
+            <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             <button
               type="submit"
               className="btn-primary"
@@ -164,15 +217,24 @@ function DeleteConfirm({ user, onConfirm, onCancel, loading }) {
           <div>
             <p className="text-sm font-medium">Delete user?</p>
             <p className="text-xs text-text-muted mt-1">
+<<<<<<< HEAD
               <span className="font-mono font-bold">{user.email}</span> will be permanently deleted.
               This cannot be undone.
+=======
+              <span className="font-mono font-bold">{user.email}</span> will be
+              permanently deleted. This cannot be undone.
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             </p>
           </div>
         </div>
         <div className="flex justify-end gap-2">
+<<<<<<< HEAD
           <button className="btn-ghost" onClick={onCancel} disabled={loading}>
             Cancel
           </button>
+=======
+          <button className="btn-ghost" onClick={onCancel} disabled={loading}>Cancel</button>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           <button className="btn-danger" onClick={onConfirm} disabled={loading} aria-busy={loading}>
             {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Delete
@@ -189,8 +251,12 @@ function Field({ label, id, required, children }) {
   return (
     <div className="space-y-1">
       <label htmlFor={id} className="block text-xs font-medium text-text-muted">
+<<<<<<< HEAD
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
+=======
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       </label>
       {children}
     </div>
@@ -207,6 +273,7 @@ function RoleSelect({ value, onChange, id }) {
         className="input-base appearance-none pr-8"
         aria-label="Role"
       >
+<<<<<<< HEAD
         {ROLES.map(r => (
           <option key={r} value={r}>
             {r}
@@ -218,6 +285,12 @@ function RoleSelect({ value, onChange, id }) {
                               h-3.5 w-3.5 text-text-muted"
         aria-hidden="true"
       />
+=======
+        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2
+                              h-3.5 w-3.5 text-text-muted" aria-hidden="true" />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     </div>
   );
 }
@@ -226,6 +299,7 @@ function RoleSelect({ value, onChange, id }) {
 
 function UserRow({ user, onRoleChange, onDelete, onReset }) {
   const [savingRole, setSavingRole] = useState(false);
+<<<<<<< HEAD
   const [deleting, setDeleting] = useState(false);
   const [showDel, setShowDel] = useState(false);
 
@@ -236,16 +310,30 @@ function UserRow({ user, onRoleChange, onDelete, onReset }) {
     } finally {
       setSavingRole(false);
     }
+=======
+  const [deleting,   setDeleting]   = useState(false);
+  const [showDel,    setShowDel]    = useState(false);
+
+  const handleRoleChange = async role => {
+    setSavingRole(true);
+    try { await onRoleChange(user.id, role); }
+    finally { setSavingRole(false); }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
 
   const handleDelete = async () => {
     setDeleting(true);
+<<<<<<< HEAD
     try {
       await onDelete(user.id);
       setShowDel(false);
     } finally {
       setDeleting(false);
     }
+=======
+    try { await onDelete(user.id); setShowDel(false); }
+    finally { setDeleting(false); }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
 
   return (
@@ -272,17 +360,40 @@ function UserRow({ user, onRoleChange, onDelete, onReset }) {
 
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
+<<<<<<< HEAD
             {savingRole ? <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted" /> : null}
             <RoleSelect id={`role-${user.id}`} value={user.role} onChange={handleRoleChange} />
+=======
+            {savingRole
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted" />
+              : null}
+            <RoleSelect
+              id={`role-${user.id}`}
+              value={user.role}
+              onChange={handleRoleChange}
+            />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           </div>
         </td>
 
         <td className="px-4 py-3 text-xs text-text-muted">
+<<<<<<< HEAD
           {user.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : '—'}
         </td>
 
         <td className="px-4 py-3 text-xs text-text-muted">
           {user.lastLogin ? new Date(user.lastLogin).toLocaleString('fr-FR') : 'Never'}
+=======
+          {user.createdAt
+            ? new Date(user.createdAt).toLocaleDateString('fr-FR')
+            : '—'}
+        </td>
+
+        <td className="px-4 py-3 text-xs text-text-muted">
+          {user.lastLogin
+            ? new Date(user.lastLogin).toLocaleString('fr-FR')
+            : 'Never'}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         </td>
 
         <td className="px-4 py-3">
@@ -324,6 +435,7 @@ function UserRow({ user, onRoleChange, onDelete, onReset }) {
  * }} props
  */
 export default function UserManager({
+<<<<<<< HEAD
   users = [],
   loading,
   error,
@@ -334,23 +446,41 @@ export default function UserManager({
 }) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+=======
+  users = [], loading, error,
+  onCreate, onRoleChange, onDelete, onReset,
+}) {
+  const [search,  setSearch]  = useState('');
+  const [page,    setPage]    = useState(1);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   const [showAdd, setShowAdd] = useState(false);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return users;
     const q = search.toLowerCase();
+<<<<<<< HEAD
     return users.filter(
       u => u.email?.toLowerCase().includes(q) || u.sub?.toLowerCase().includes(q)
+=======
+    return users.filter(u =>
+      u.email?.toLowerCase().includes(q) || u.sub?.toLowerCase().includes(q),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   }, [users, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+<<<<<<< HEAD
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleSearch = useCallback(v => {
     setSearch(v);
     setPage(1);
   }, []);
+=======
+  const paged      = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const handleSearch = useCallback(v => { setSearch(v); setPage(1); }, []);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   if (loading) {
     return (
@@ -376,10 +506,14 @@ export default function UserManager({
       {showAdd && (
         <CreateUserModal
           onClose={() => setShowAdd(false)}
+<<<<<<< HEAD
           onCreate={async data => {
             await onCreate(data);
             setShowAdd(false);
           }}
+=======
+          onCreate={async data => { await onCreate(data); setShowAdd(false); }}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         />
       )}
 
@@ -387,10 +521,15 @@ export default function UserManager({
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
+<<<<<<< HEAD
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5
                                text-text-muted pointer-events-none"
             />
+=======
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5
+                               text-text-muted pointer-events-none" />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             <input
               type="search"
               placeholder="Search by email or username…"
@@ -423,11 +562,16 @@ export default function UserManager({
             <thead className="bg-surface border-b border-border">
               <tr>
                 {['User', 'Role', 'Created', 'Last Login', 'Actions'].map(h => (
+<<<<<<< HEAD
                   <th
                     key={h}
                     scope="col"
                     className="px-4 py-3 text-left text-xs font-medium text-text-muted"
                   >
+=======
+                  <th key={h} scope="col"
+                    className="px-4 py-3 text-left text-xs font-medium text-text-muted">
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
                     {h}
                   </th>
                 ))}
@@ -440,6 +584,7 @@ export default function UserManager({
                     {search ? 'No users match your search.' : 'No users found.'}
                   </td>
                 </tr>
+<<<<<<< HEAD
               ) : (
                 paged.map(user => (
                   <UserRow
@@ -451,6 +596,17 @@ export default function UserManager({
                   />
                 ))
               )}
+=======
+              ) : paged.map(user => (
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  onRoleChange={onRoleChange}
+                  onDelete={onDelete}
+                  onReset={onReset}
+                />
+              ))}
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
             </tbody>
           </table>
         </div>

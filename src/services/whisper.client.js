@@ -7,6 +7,7 @@
 //
 // Circuit breaker protects only real backends.  Mock always succeeds locally.
 
+<<<<<<< HEAD
 import { randomUUID } from 'crypto';
 import { childLogger } from '../core/logger.js';
 import { config } from '../core/config.js';
@@ -19,6 +20,18 @@ import {
   withRetry,
 } from './circuitBreaker.js';
 import { recordRequest, recordFailure, recordLatency, setCircuitState } from './metrics.js';
+=======
+import { randomUUID }  from 'crypto';
+import { childLogger } from '../core/logger.js';
+import { config }      from '../core/config.js';
+import { apiFetch }    from '../infra/http/httpClient.js';
+import {
+  CircuitBreaker, CircuitOpenError, TimeoutError, HttpError, withRetry,
+} from './circuitBreaker.js';
+import {
+  recordRequest, recordFailure, recordLatency, setCircuitState,
+} from './metrics.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 const log = childLogger('whisper');
 
@@ -38,9 +51,13 @@ let _mockIdx = 0;
 function _buildMultipart(wavBuffer, filename = `audio_${Date.now()}.wav`) {
   const boundary = `----FormBoundary${randomUUID().replace(/-/g, '')}`;
   const body = Buffer.concat([
+<<<<<<< HEAD
     Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: audio/wav\r\n\r\n`
     ),
+=======
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: audio/wav\r\n\r\n`),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     wavBuffer,
     Buffer.from(`\r\n--${boundary}--\r\n`),
   ]);
@@ -56,9 +73,15 @@ function _buildMultipart(wavBuffer, filename = `audio_${Date.now()}.wav`) {
 async function _localServer(wavBuffer, signal) {
   const { boundary, body } = _buildMultipart(wavBuffer);
   const res = await apiFetch(config.WHISPER_SERVER_URL, {
+<<<<<<< HEAD
     method: 'POST',
     headers: {
       'Content-Type': `multipart/form-data; boundary=${boundary}`,
+=======
+    method:  'POST',
+    headers: {
+      'Content-Type':   `multipart/form-data; boundary=${boundary}`,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       'Content-Length': String(body.length),
     },
     body,
@@ -82,6 +105,7 @@ async function _openai(wavBuffer, signal) {
   if (!config.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
   const boundary = `----FormBoundary${randomUUID().replace(/-/g, '')}`;
   const body = Buffer.concat([
+<<<<<<< HEAD
     Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`
     ),
@@ -97,6 +121,21 @@ async function _openai(wavBuffer, signal) {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${config.OPENAI_API_KEY}`,
+=======
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`),
+    wavBuffer,
+    Buffer.from(
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1` +
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nfr` +
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="response_format"\r\n\r\njson` +
+      `\r\n--${boundary}--\r\n`,
+    ),
+  ]);
+  const res = await apiFetch('https://api.openai.com/v1/audio/transcriptions', {
+    method:  'POST',
+    headers: {
+      Authorization:  `Bearer ${config.OPENAI_API_KEY}`,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       'Content-Type': `multipart/form-data; boundary=${boundary}`,
     },
     body,
@@ -128,14 +167,23 @@ function _isRetryable(err) {
 
 function _requestStatus(err) {
   if (err instanceof CircuitOpenError) return 'circuit_open';
+<<<<<<< HEAD
   if (err instanceof TimeoutError) return 'timeout';
+=======
+  if (err instanceof TimeoutError)     return 'timeout';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return 'error';
 }
 
 function _failureReason(err) {
   if (err instanceof CircuitOpenError) return 'circuit_open';
+<<<<<<< HEAD
   if (err instanceof TimeoutError) return 'timeout';
   if (err instanceof HttpError) return err.status >= 500 ? 'http_5xx' : 'http_4xx';
+=======
+  if (err instanceof TimeoutError)     return 'timeout';
+  if (err instanceof HttpError)        return err.status >= 500 ? 'http_5xx' : 'http_4xx';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return 'network';
 }
 
@@ -154,7 +202,15 @@ function _failureReason(err) {
  * @returns {function(Buffer, object?): Promise<string>}
  */
 export function _makeTranscribeWav(breaker, retryOpts = {}) {
+<<<<<<< HEAD
   const { maxRetries = 2, baseMs = 200, maxMs = 2_000 } = retryOpts;
+=======
+  const {
+    maxRetries = 2,
+    baseMs     = 200,
+    maxMs      = 2_000,
+  } = retryOpts;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   // Initialise the state gauge for this breaker
   setCircuitState(breaker.name, breaker.getState());
@@ -176,7 +232,14 @@ export function _makeTranscribeWav(breaker, retryOpts = {}) {
       throw new Error('[Whisper] Invalid or too-short WAV buffer');
     }
 
+<<<<<<< HEAD
     const { requestId = '', timeoutMs = config.WHISPER_TIMEOUT ?? 15_000 } = opts;
+=======
+    const {
+      requestId = '',
+      timeoutMs = config.WHISPER_TIMEOUT ?? 15_000,
+    } = opts;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     const backend = config.WHISPER_BACKEND;
 
@@ -184,16 +247,30 @@ export function _makeTranscribeWav(breaker, retryOpts = {}) {
     if (backend === 'mock') return _mock();
 
     const backendFn = backend === 'openai' ? _openai : _localServer;
+<<<<<<< HEAD
     const start = Date.now();
     let attempts = 0;
+=======
+    const start     = Date.now();
+    let   attempts  = 0;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     try {
       const result = await withRetry(
         () => {
           attempts++;
+<<<<<<< HEAD
           return breaker.exec(signal => backendFn(wavBuffer, signal), { requestId, timeoutMs });
         },
         { maxRetries, baseMs, maxMs, shouldRetry: _isRetryable }
+=======
+          return breaker.exec(
+            (signal) => backendFn(wavBuffer, signal),
+            { requestId, timeoutMs },
+          );
+        },
+        { maxRetries, baseMs, maxMs, shouldRetry: _isRetryable },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       );
 
       const latency = Date.now() - start;
@@ -201,11 +278,16 @@ export function _makeTranscribeWav(breaker, retryOpts = {}) {
       recordLatency('whisper', latency);
       log.debug({ requestId, latency, attempts, state: breaker.getState() }, 'Whisper OK');
       return result;
+<<<<<<< HEAD
+=======
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     } catch (err) {
       const latency = Date.now() - start;
       recordRequest('whisper', _requestStatus(err));
       recordFailure('whisper', _failureReason(err));
       recordLatency('whisper', latency);
+<<<<<<< HEAD
       log.warn(
         {
           requestId,
@@ -216,6 +298,13 @@ export function _makeTranscribeWav(breaker, retryOpts = {}) {
         },
         'Whisper failed'
       );
+=======
+      log.warn({
+        requestId, latency, attempts,
+        state: breaker.getState(),
+        err:   err.message,
+      }, 'Whisper failed');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       throw err;
     }
   };
@@ -224,11 +313,19 @@ export function _makeTranscribeWav(breaker, retryOpts = {}) {
 // ── Default production instance ───────────────────────────────────────────────
 
 const _defaultBreaker = new CircuitBreaker('whisper', {
+<<<<<<< HEAD
   failureThreshold: 5,
   errorRateThreshold: 0.5,
   minCalls: 10,
   windowMs: 60_000,
   openDurationMs: 60_000,
+=======
+  failureThreshold:   5,
+  errorRateThreshold: 0.5,
+  minCalls:           10,
+  windowMs:           60_000,
+  openDurationMs:     60_000,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   onStateChange(state, name) {
     log.warn({ provider: name, state }, `Circuit breaker → ${state}`);
     setCircuitState(name, state);

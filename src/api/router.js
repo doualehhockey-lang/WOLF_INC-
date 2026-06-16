@@ -2,6 +2,7 @@
 // Mounts all feature routers and REST endpoints.
 // Order matters: Twilio HMAC is applied only on /twilio routes.
 
+<<<<<<< HEAD
 import crypto from 'crypto';
 import { Router } from 'express';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
@@ -62,6 +63,25 @@ setInterval(
   10 * 60 * 1000
 ).unref();
 
+=======
+import { Router }          from 'express';
+import { register }        from '../core/metrics.js';
+import { twilioHmac }      from './middleware/twilioHmac.js';
+import { validateBody, ReplyBodySchema } from './middleware/validation.js';
+import { requireJwt }      from '../features/auth/auth.middleware.js';
+import { authRouter }      from '../features/auth/auth.router.js';
+import { voiceRouter }     from '../features/voice/voice.router.js';
+import { smsRouter }       from '../features/sms/sms.router.js';
+import { autoReply, getTones } from '../features/responder/responder.service.js';
+import { childLogger }     from '../core/logger.js';
+import { config }          from '../core/config.js';
+import { adminRouter }     from '../features/admin/admin.router.js';
+import { makeSecurityMiddleware } from '../services/security.js';
+
+const log    = childLogger('router');
+export const router = Router();
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // Prometheus metrics auth:
 //  - dev/test:  no auth (open for local scraping)
 //  - prod with METRICS_TOKEN: static Bearer token (standard Prometheus pattern)
@@ -72,6 +92,7 @@ const _metricsAuth = (() => {
   if (metricsToken) {
     return (req, res, next) => {
       const auth = req.headers.authorization ?? '';
+<<<<<<< HEAD
       // Timing-safe comparison to prevent token brute-force via timing side-channel.
       const expected = `Bearer ${metricsToken}`;
       if (
@@ -79,6 +100,9 @@ const _metricsAuth = (() => {
         crypto.timingSafeEqual(Buffer.from(auth), Buffer.from(expected))
       )
         return next();
+=======
+      if (auth === `Bearer ${metricsToken}`) return next();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       res.status(401).set('WWW-Authenticate', 'Bearer realm="wolf-metrics"').end();
     };
   }
@@ -96,6 +120,7 @@ router.get('/health/live', (_req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
 
+<<<<<<< HEAD
 // H2 FIX: Readiness probe now checks actual dependencies.
 // Previously only checked heap — a pod could be "ready" while DB and Redis were down,
 // causing Kubernetes to route traffic to a pod that can't serve any real requests.
@@ -150,6 +175,17 @@ router.get('/health/ready', async (_req, res) => {
     heapPct: heapPct.toFixed(2),
     uptime: process.uptime(),
   });
+=======
+router.get('/health/ready', (_req, res) => {
+  const mem     = process.memoryUsage();
+  const heapPct = mem.heapUsed / mem.heapTotal;
+  if (heapPct > 0.95) {
+    return res.status(503).json({
+      status: 'degraded', reason: 'memory_pressure', heapPct: heapPct.toFixed(2),
+    });
+  }
+  res.json({ status: 'ok', heapPct: heapPct.toFixed(2), uptime: process.uptime() });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -173,6 +209,7 @@ router.post('/reply', requireJwt, validateBody(ReplyBodySchema), async (req, res
   }
 });
 
+<<<<<<< HEAD
 // ── Events — liste/création de rendez-vous (JWT-protected) ───────────────────
 
 router.get('/api/events', requireJwt, requireTenant, async (req, res, next) => {
@@ -784,4 +821,6 @@ router.post('/api/book/:tenantId', _bookingRateLimit, async (req, res, next) => 
   }
 });
 
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // Admin routes are mounted by the application factory in src/api/server.js

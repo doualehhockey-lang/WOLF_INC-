@@ -22,8 +22,13 @@ import { parse as parseYaml } from 'yaml';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
 const DOCKER = join(ROOT, 'packaging/docker');
+<<<<<<< HEAD
 const HELM = join(ROOT, 'packaging/helm');
 const CI = join(ROOT, 'packaging/ci');
+=======
+const HELM   = join(ROOT, 'packaging/helm');
+const CI     = join(ROOT, 'packaging/ci');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -37,7 +42,12 @@ function readYaml(path) {
 
 /** Return all FROM stage names in a Dockerfile. */
 function parseStages(dockerfileContent) {
+<<<<<<< HEAD
   return [...dockerfileContent.matchAll(/^FROM\s+\S+(?:\s+AS\s+(\S+))?/gim)].map(m => m[1] || null);
+=======
+  return [...dockerfileContent.matchAll(/^FROM\s+\S+(?:\s+AS\s+(\S+))?/gim)]
+    .map(m => m[1] || null);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 /** Return true if dockerfile content has a USER instruction before the last CMD/ENTRYPOINT. */
@@ -55,27 +65,47 @@ function hasHealthcheck(content) {
 describe('Dockerfiles', () => {
   const services = ['agent', 'claude', 'tts', 'whisper', 'ollama'];
 
+<<<<<<< HEAD
   test.each(services)('%s.Dockerfile exists', svc => {
     expect(existsSync(join(DOCKER, `${svc}.Dockerfile`))).toBe(true);
   });
 
   test.each(services)('%s.Dockerfile is multi-stage (≥ 2 FROM)', svc => {
+=======
+  test.each(services)('%s.Dockerfile exists', (svc) => {
+    expect(existsSync(join(DOCKER, `${svc}.Dockerfile`))).toBe(true);
+  });
+
+  test.each(services)('%s.Dockerfile is multi-stage (≥ 2 FROM)', (svc) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
     const stages = parseStages(content);
     expect(stages.length).toBeGreaterThanOrEqual(2);
   });
 
+<<<<<<< HEAD
   test.each(services)('%s.Dockerfile has non-root USER', svc => {
+=======
+  test.each(services)('%s.Dockerfile has non-root USER', (svc) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
     expect(hasNonRootUser(content)).toBe(true);
   });
 
+<<<<<<< HEAD
   test.each(services)('%s.Dockerfile has HEALTHCHECK', svc => {
+=======
+  test.each(services)('%s.Dockerfile has HEALTHCHECK', (svc) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
     expect(hasHealthcheck(content)).toBe(true);
   });
 
+<<<<<<< HEAD
   test.each(services)('%s.Dockerfile has OCI labels', svc => {
+=======
+  test.each(services)('%s.Dockerfile has OCI labels', (svc) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
     expect(content).toMatch(/org\.opencontainers\.image\.title/);
     expect(content).toMatch(/org\.opencontainers\.image\.version/);
@@ -127,7 +157,11 @@ describe('Dockerfiles', () => {
       const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
       // USER node must appear before CMD in runtime stage.
       const userIdx = content.lastIndexOf('USER node');
+<<<<<<< HEAD
       const cmdIdx = content.lastIndexOf('CMD ');
+=======
+      const cmdIdx  = content.lastIndexOf('CMD ');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       expect(userIdx).toBeGreaterThan(0);
       expect(userIdx).toBeLessThan(cmdIdx);
     }
@@ -206,11 +240,19 @@ describe('Helm values.yaml', () => {
     expect(values.global.imagePullPolicy).toBeTruthy();
   });
 
+<<<<<<< HEAD
   test.each(expectedComponents)('component %s exists', comp => {
     expect(values.components[comp]).toBeDefined();
   });
 
   test.each(expectedComponents)('component %s has required fields', comp => {
+=======
+  test.each(expectedComponents)('component %s exists', (comp) => {
+    expect(values.components[comp]).toBeDefined();
+  });
+
+  test.each(expectedComponents)('component %s has required fields', (comp) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const c = values.components[comp];
     expect(c).toHaveProperty('enabled');
     expect(c).toHaveProperty('image');
@@ -222,7 +264,11 @@ describe('Helm values.yaml', () => {
     expect(c).toHaveProperty('probes');
   });
 
+<<<<<<< HEAD
   test.each(expectedComponents)('component %s service has port', comp => {
+=======
+  test.each(expectedComponents)('component %s service has port', (comp) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(values.components[comp].service.port).toBeGreaterThan(0);
   });
 
@@ -309,7 +355,11 @@ describe('Helm templates', () => {
     'rbac.yaml',
   ];
 
+<<<<<<< HEAD
   test.each(templates)('template %s exists', tpl => {
+=======
+  test.each(templates)('template %s exists', (tpl) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(existsSync(join(HELM, 'templates', tpl))).toBe(true);
   });
 
@@ -432,7 +482,11 @@ describe('CI release pipeline', () => {
 
   const requiredJobs = ['validate', 'build', 'deploy', 'smoke', 'rollback', 'notify'];
 
+<<<<<<< HEAD
   test.each(requiredJobs)('job %s exists', job => {
+=======
+  test.each(requiredJobs)('job %s exists', (job) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(pipeline.jobs[job]).toBeDefined();
   });
 
@@ -551,10 +605,17 @@ describe('Security — no hardcoded credentials', () => {
 
   // Patterns that would indicate real secrets in source.
   const dangerousPatterns = [
+<<<<<<< HEAD
     /sk-ant-[a-zA-Z0-9]{20,}/, // Anthropic API key format
     /eyJ[a-zA-Z0-9_-]{20,}/, // JWT (base64url prefix)
     /AC[a-f0-9]{32}/, // Twilio SID
     /password:\s*["']?[a-zA-Z0-9!@#$%]{12,}["']?/i, // hardcoded password
+=======
+    /sk-ant-[a-zA-Z0-9]{20,}/,            // Anthropic API key format
+    /eyJ[a-zA-Z0-9_-]{20,}/,              // JWT (base64url prefix)
+    /AC[a-f0-9]{32}/,                      // Twilio SID
+    /password:\s*["']?[a-zA-Z0-9!@#$%]{12,}["']?/i,  // hardcoded password
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   ];
 
   for (const filePath of files) {

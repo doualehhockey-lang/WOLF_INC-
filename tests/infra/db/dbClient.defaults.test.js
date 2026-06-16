@@ -26,7 +26,11 @@ let capturedConfig = null;
 
 const mockRaw = jest.fn(async () => [{ 1: 1 }]);
 jest.unstable_mockModule('knex', () => ({
+<<<<<<< HEAD
   default: jest.fn(cfg => {
+=======
+  default: jest.fn((cfg) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     capturedConfig = cfg;
     return { raw: mockRaw, destroy: jest.fn() };
   }),

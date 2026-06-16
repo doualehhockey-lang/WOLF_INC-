@@ -9,23 +9,35 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
+<<<<<<< HEAD
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+=======
+    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   }),
 }));
 
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     BASE_URL: 'http://localhost:3000',
     TTS_PROVIDER: 'mock',
     WHISPER_BACKEND: 'local',
+=======
+    BASE_URL:        'http://localhost:3000',
+    TTS_PROVIDER:    'mock',
+    WHISPER_BACKEND: 'local',
+    OLLAMA_MODEL:    'llama3',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 // ── Mock core metrics ─────────────────────────────────────────────────────────
+<<<<<<< HEAD
 const mockCallsTotal = { inc: jest.fn() };
 const mockActiveSessions = { set: jest.fn() };
 const mockErrorCounter = { inc: jest.fn() };
@@ -50,6 +62,15 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   evalScript: jest.fn(async () => null),
   redis: null,
   redisAvailable: false,
+=======
+const mockCallsTotal    = { inc: jest.fn() };
+const mockActiveSessions = { set: jest.fn() };
+const mockErrorCounter  = { inc: jest.fn() };
+jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
+  callsTotal:     mockCallsTotal,
+  activeSessions: mockActiveSessions,
+  errorCounter:   mockErrorCounter,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock rate-limiter ─────────────────────────────────────────────────────────
@@ -60,15 +81,23 @@ jest.unstable_mockModule('../../../src/features/voice/rate-limiter.js', () => ({
 
 // ── Mock pipeline ─────────────────────────────────────────────────────────────
 const mockRunPipeline = jest.fn(async () => '<Response/>');
+<<<<<<< HEAD
 const mockWithTimeout = jest.fn(async fn => fn());
 jest.unstable_mockModule('../../../src/features/voice/pipeline.js', () => ({
   runPipeline: mockRunPipeline,
   withTimeout: mockWithTimeout,
+=======
+const mockWithTimeout = jest.fn(async (fn) => fn());
+jest.unstable_mockModule('../../../src/features/voice/pipeline.js', () => ({
+  runPipeline: mockRunPipeline,
+  withTimeout:  mockWithTimeout,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock greeting ─────────────────────────────────────────────────────────────
 let _greetingUrl = null;
 const mockGetGreetingUrl = jest.fn(() => _greetingUrl);
+<<<<<<< HEAD
 const mockGetFillerUrl = jest.fn(() => null);
 const mockGetFillerText = jest.fn(() => 'Un instant, je vérifie ça pour vous.');
 jest.unstable_mockModule('../../../src/features/voice/greeting.js', () => ({
@@ -76,24 +105,41 @@ jest.unstable_mockModule('../../../src/features/voice/greeting.js', () => ({
   getFillerUrl: mockGetFillerUrl,
   getFillerText: mockGetFillerText,
   GREETING_TEXT: 'Bonjour, comment puis-je vous aider ?',
+=======
+jest.unstable_mockModule('../../../src/features/voice/greeting.js', () => ({
+  getGreetingUrl: mockGetGreetingUrl,
+  GREETING_TEXT:  'Bonjour, comment puis-je vous aider ?',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock memory.service ───────────────────────────────────────────────────────
 const mockClearSession = jest.fn(async () => {});
+<<<<<<< HEAD
 const mockMemStats = jest.fn(() => ({ activeSessions: 3, totalSessions: 10 }));
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
   clearSession: mockClearSession,
   getStats: mockMemStats,
+=======
+const mockMemStats     = jest.fn(() => ({ activeSessions: 3, totalSessions: 10 }));
+jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
+  clearSession: mockClearSession,
+  getStats:     mockMemStats,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock lang.service ────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/features/lang/lang.service.js', () => ({
+<<<<<<< HEAD
   detectLang: jest.fn(() => 'fr'),
+=======
+  detectLang:   jest.fn(() => 'fr'),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   twilioLocale: jest.fn(() => 'fr-FR'),
 }));
 
 // ── Mock validation ───────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/api/middleware/validation.js', () => ({
+<<<<<<< HEAD
   sanitizeText: jest.fn(t => t),
 }));
 
@@ -113,15 +159,40 @@ jest.unstable_mockModule('../../../src/features/voice/twiml.builder.js', () => (
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 const { handleVoice, handleGather, handleGatherResult, handleStatus, handleHealth } =
+=======
+  sanitizeText: jest.fn((t) => t),
+}));
+
+// ── Mock twiml.builder ────────────────────────────────────────────────────────
+const mockTwimlGather         = jest.fn(() => '<Gather/>');
+const mockTwimlPlayThenGather = jest.fn(() => '<Play/>');
+const mockTwimlSayThenGather  = jest.fn(() => '<Say/>');
+const mockTwimlError          = jest.fn(() => '<Error/>');
+jest.unstable_mockModule('../../../src/features/voice/twiml.builder.js', () => ({
+  twimlGather:         mockTwimlGather,
+  twimlPlayThenGather: mockTwimlPlayThenGather,
+  twimlSayThenGather:  mockTwimlSayThenGather,
+  twimlError:          mockTwimlError,
+}));
+
+// ── Import AFTER mocks ────────────────────────────────────────────────────────
+const { handleVoice, handleGather, handleStatus, handleHealth } =
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   await import('../../../src/features/voice/voice.controller.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function mockRes() {
   const res = {};
+<<<<<<< HEAD
   res.send = jest.fn();
   res.sendStatus = jest.fn();
   res.json = jest.fn();
   res.set = jest.fn().mockReturnValue(res); // M8: Retry-After header
+=======
+  res.send       = jest.fn();
+  res.sendStatus = jest.fn();
+  res.json       = jest.fn();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return res;
 }
 
@@ -131,7 +202,11 @@ beforeEach(() => {
   mockIsRateLimited.mockResolvedValue(false);
   mockGetGreetingUrl.mockImplementation(() => _greetingUrl);
   mockRunPipeline.mockResolvedValue('<Response/>');
+<<<<<<< HEAD
   mockWithTimeout.mockImplementation(async fn => fn());
+=======
+  mockWithTimeout.mockImplementation(async (fn) => fn());
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -171,7 +246,11 @@ describe('handleVoice — greeting URL present', () => {
 
     expect(mockTwimlPlayThenGather).toHaveBeenCalledWith(
       'http://localhost:3000/audio/greeting.wav',
+<<<<<<< HEAD
       expect.stringContaining('/twilio/gather')
+=======
+      expect.stringContaining('/twilio/gather'),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     expect(res.send).toHaveBeenCalledWith('<Play/>');
   });
@@ -209,16 +288,26 @@ describe('handleGather — rate limited', () => {
 });
 
 describe('handleGather — empty text', () => {
+<<<<<<< HEAD
   test('sends "didn\'t catch that" when SpeechResult is empty', async () => {
+=======
+  test('sends "Je n\'ai pas bien entendu" when SpeechResult is empty', async () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const req = { body: { SpeechResult: '', CallSid: 'CA6', From: '+33600000006' } };
     const res = mockRes();
 
     await handleGather(req, res);
 
     expect(mockTwimlSayThenGather).toHaveBeenCalledWith(
+<<<<<<< HEAD
       expect.stringContaining('entendu'),
       expect.any(String),
       expect.any(Object)
+=======
+      expect.stringContaining("entendu"),
+      expect.any(String),
+      expect.any(Object),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     expect(mockRunPipeline).not.toHaveBeenCalled();
   });
@@ -234,13 +323,19 @@ describe('handleGather — empty text', () => {
   });
 });
 
+<<<<<<< HEAD
 describe('handleGather — two-phase pipeline delegation', () => {
   test('sends filler TwiML immediately when text is present', async () => {
+=======
+describe('handleGather — pipeline delegation', () => {
+  test('calls withTimeout and runPipeline when text is present', async () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const req = { body: { SpeechResult: 'Bonjour', CallSid: 'CA8', From: '+33600000008' } };
     const res = mockRes();
 
     await handleGather(req, res);
 
+<<<<<<< HEAD
     // Phase 1: should send filler redirect (not pipeline result directly)
     expect(mockTwimlFillerThenRedirect).toHaveBeenCalledTimes(1);
     expect(res.send).toHaveBeenCalledWith('<Filler/>');
@@ -248,10 +343,21 @@ describe('handleGather — two-phase pipeline delegation', () => {
 
   test('starts pipeline in background via withTimeout', async () => {
     const req = { body: { SpeechResult: 'Bonjour', CallSid: 'CA8b', From: '+33600000008' } };
+=======
+    expect(mockWithTimeout).toHaveBeenCalledTimes(1);
+    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
+    expect(res.send).toHaveBeenCalledWith('<Response/>');
+  });
+
+  test('sends twimlError when runPipeline throws', async () => {
+    mockRunPipeline.mockRejectedValueOnce(new Error('pipeline boom'));
+    const req = { body: { SpeechResult: 'Hello', CallSid: 'CA9', From: '+33600000009' } };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const res = mockRes();
 
     await handleGather(req, res);
 
+<<<<<<< HEAD
     // withTimeout is called to wrap the pipeline
     expect(mockWithTimeout).toHaveBeenCalledTimes(1);
   });
@@ -277,6 +383,10 @@ describe('handleGather — two-phase pipeline delegation', () => {
     await handleGatherResult(req, res);
 
     expect(mockTwimlSayThenGather).toHaveBeenCalled();
+=======
+    expect(mockTwimlError).toHaveBeenCalled();
+    expect(mockErrorCounter.inc).toHaveBeenCalled();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 
@@ -334,7 +444,13 @@ describe('handleHealth', () => {
 
     handleHealth(req, res);
 
+<<<<<<< HEAD
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ok: true }));
+=======
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ ok: true }),
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('includes timestamp, config, memory in response', () => {

@@ -3,11 +3,19 @@
 // Redis is NOT required — all tests run against the Map-based fallback.
 
 // Prevent config.js from crashing in test environment.
+<<<<<<< HEAD
 process.env.BASE_URL = 'http://localhost:3000';
 process.env.PHONE_SALT = 'testsalt1234567890';
 process.env.JWT_SECRET = 'testjwtsecret1234567890testjwtsecret1234567890';
 process.env.JWT_REFRESH_SECRET = 'testrefreshsecret1234567890testrefreshsecret';
 process.env.API_KEYS = 'test-key';
+=======
+process.env.BASE_URL   = 'http://localhost:3000';
+process.env.PHONE_SALT = 'testsalt1234567890';
+process.env.JWT_SECRET = 'testjwtsecret1234567890testjwtsecret1234567890';
+process.env.JWT_REFRESH_SECRET = 'testrefreshsecret1234567890testrefreshsecret';
+process.env.API_KEYS   = 'test-key';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // Do NOT set REDIS_URL — forces in-memory fallback.
 
 import {

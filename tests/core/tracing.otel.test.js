@@ -15,6 +15,7 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 // These are await import()'d inside initTracing() when OTEL_ENABLED=true.
 // Jest intercepts them even though they are dynamic.
 
+<<<<<<< HEAD
 const mockStart = jest.fn();
 const mockShutdown = jest.fn(async () => {});
 
@@ -25,6 +26,14 @@ class MockNodeSDK {
   shutdown() {
     return mockShutdown();
   }
+=======
+const mockStart    = jest.fn();
+const mockShutdown = jest.fn(async () => {});
+
+class MockNodeSDK {
+  start()    { mockStart(); }
+  shutdown() { return mockShutdown(); }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 jest.unstable_mockModule('@opentelemetry/sdk-node', () => ({
@@ -32,20 +41,29 @@ jest.unstable_mockModule('@opentelemetry/sdk-node', () => ({
 }));
 
 jest.unstable_mockModule('@opentelemetry/exporter-trace-otlp-http', () => ({
+<<<<<<< HEAD
   OTLPTraceExporter: class {
     constructor() {}
   },
+=======
+  OTLPTraceExporter: class { constructor() {} },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const capturedHookArgs = {};
 jest.unstable_mockModule('@opentelemetry/auto-instrumentations-node', () => ({
+<<<<<<< HEAD
   getNodeAutoInstrumentations: jest.fn(opts => {
+=======
+  getNodeAutoInstrumentations: jest.fn((opts) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     capturedHookArgs.opts = opts;
     return []; // no real instrumentations
   }),
 }));
 
 jest.unstable_mockModule('@opentelemetry/resources', () => ({
+<<<<<<< HEAD
   Resource: class {
     constructor(attrs) {
       this.attrs = attrs;
@@ -55,15 +73,28 @@ jest.unstable_mockModule('@opentelemetry/resources', () => ({
 
 jest.unstable_mockModule('@opentelemetry/semantic-conventions', () => ({
   SEMRESATTRS_SERVICE_NAME: 'service.name',
+=======
+  Resource: class { constructor(attrs) { this.attrs = attrs; } },
+}));
+
+jest.unstable_mockModule('@opentelemetry/semantic-conventions', () => ({
+  SEMRESATTRS_SERVICE_NAME:    'service.name',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   SEMRESATTRS_SERVICE_VERSION: 'service.version',
 }));
 
 // Mock @opentelemetry/api so _tracer is set
 const mockStartSpan = jest.fn(() => ({
   setAttributes: jest.fn(),
+<<<<<<< HEAD
   setStatus: jest.fn(),
   recordException: jest.fn(),
   end: jest.fn(),
+=======
+  setStatus:     jest.fn(),
+  recordException: jest.fn(),
+  end:           jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 const mockGetTracer = jest.fn(() => ({ startSpan: mockStartSpan }));
 jest.unstable_mockModule('@opentelemetry/api', () => ({

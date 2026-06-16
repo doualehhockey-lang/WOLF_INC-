@@ -13,7 +13,10 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 const mockRateLimitCounter = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: mockRateLimitCounter,
+<<<<<<< HEAD
   auditLogFailures: { inc: jest.fn() },
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock Redis helpers — redisAvailable: true (Redis path always) ─────────────
@@ -21,10 +24,16 @@ const mockEvalScript = jest.fn();
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   redisAvailable: true, // hardcoded — keeps Redis path always
+<<<<<<< HEAD
   isRedisAvailable: jest.fn().mockReturnValue(true),
   evalScript: mockEvalScript,
   cacheIncr: jest.fn(),
   cacheExpire: jest.fn(),
+=======
+  evalScript:     mockEvalScript,
+  cacheIncr:      jest.fn(),
+  cacheExpire:    jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock fs/promises (Lua script reader) ─────────────────────────────────────

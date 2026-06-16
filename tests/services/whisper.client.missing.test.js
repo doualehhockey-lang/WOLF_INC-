@@ -14,10 +14,17 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 // Mutable config object — tests mutate fields to exercise different branches
 const cfg = {
+<<<<<<< HEAD
   WHISPER_BACKEND: 'local-server',
   WHISPER_SERVER_URL: 'http://localhost:9000/transcribe',
   WHISPER_TIMEOUT: 5_000,
   OPENAI_API_KEY: 'sk-test',
+=======
+  WHISPER_BACKEND:    'local-server',
+  WHISPER_SERVER_URL: 'http://localhost:9000/transcribe',
+  WHISPER_TIMEOUT:    5_000,
+  OPENAI_API_KEY:     'sk-test',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 jest.unstable_mockModule('../../src/core/config.js', () => ({ config: cfg }));
 
@@ -27,17 +34,28 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
+<<<<<<< HEAD
   recordRequest: jest.fn(),
   recordFailure: jest.fn(),
   recordLatency: jest.fn(),
   setCircuitState: jest.fn(),
   auditLogFailures: { inc: jest.fn() },
+=======
+  recordRequest:   jest.fn(),
+  recordFailure:   jest.fn(),
+  recordLatency:   jest.fn(),
+  setCircuitState: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 
 const { _makeTranscribeWav } = await import('../../src/services/whisper.client.js');
+<<<<<<< HEAD
 const { CircuitBreaker } = await import('../../src/services/circuitBreaker.js');
+=======
+const { CircuitBreaker }     = await import('../../src/services/circuitBreaker.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -51,10 +69,17 @@ function makeClient() {
 
 function okResponse(body) {
   return {
+<<<<<<< HEAD
     ok: true,
     status: 200,
     json: async () => body,
     text: async () => JSON.stringify(body),
+=======
+    ok:     true,
+    status: 200,
+    json:   async () => body,
+    text:   async () => JSON.stringify(body),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
 }
 
@@ -62,7 +87,11 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Reset to safe defaults before each test
   cfg.WHISPER_BACKEND = 'local-server';
+<<<<<<< HEAD
   cfg.OPENAI_API_KEY = 'sk-test';
+=======
+  cfg.OPENAI_API_KEY  = 'sk-test';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -105,14 +134,22 @@ describe('_localServer — json field fallback chain (line 68)', () => {
 describe('_openai — missing API key (line 78)', () => {
   test('throws when OPENAI_API_KEY is undefined', async () => {
     cfg.WHISPER_BACKEND = 'openai';
+<<<<<<< HEAD
     cfg.OPENAI_API_KEY = undefined;
+=======
+    cfg.OPENAI_API_KEY  = undefined;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const transcribeWav = makeClient();
     await expect(transcribeWav(validWav)).rejects.toThrow('OPENAI_API_KEY not configured');
   });
 
   test('throws when OPENAI_API_KEY is empty string', async () => {
     cfg.WHISPER_BACKEND = 'openai';
+<<<<<<< HEAD
     cfg.OPENAI_API_KEY = '';
+=======
+    cfg.OPENAI_API_KEY  = '';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const transcribeWav = makeClient();
     await expect(transcribeWav(validWav)).rejects.toThrow('OPENAI_API_KEY not configured');
   });
@@ -126,9 +163,15 @@ describe('_localServer — res.text().catch fallback (line 64)', () => {
   test('catch(() => "") fires when res.text() rejects on non-ok response', async () => {
     cfg.WHISPER_BACKEND = 'local-server';
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: false,
       status: 503,
       text: jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
+=======
+      ok:     false,
+      status: 503,
+      text:   jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     const transcribeWav = makeClient();
     await expect(transcribeWav(validWav)).rejects.toThrow('Whisper local 503');
@@ -143,7 +186,11 @@ describe('_localServer — res.text().catch fallback (line 64)', () => {
 describe('_openai — empty response (line 104)', () => {
   beforeEach(() => {
     cfg.WHISPER_BACKEND = 'openai';
+<<<<<<< HEAD
     cfg.OPENAI_API_KEY = 'sk-test';
+=======
+    cfg.OPENAI_API_KEY  = 'sk-test';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('throws when json.text is empty string', async () => {

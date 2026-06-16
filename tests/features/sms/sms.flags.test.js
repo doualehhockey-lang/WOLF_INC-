@@ -7,12 +7,18 @@ jest.unstable_mockModule('../../../src/core/featureFlags.js', () => ({
   isEnabled: jest.fn(async () => false), // all flags disabled
   FLAGS: {
     PIPELINE_SMS: 'pipeline.sms',
+<<<<<<< HEAD
     RATE_LIMIT: 'rate-limit',
   },
   setFlag: jest.fn(),
   getAllFlags: jest.fn(),
   snapshotFlags: jest.fn(() => ({})),
   clearCache: jest.fn(),
+=======
+    RATE_LIMIT:   'rate-limit',
+  },
+  setFlag: jest.fn(), getAllFlags: jest.fn(), snapshotFlags: jest.fn(() => ({})), clearCache: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
@@ -20,6 +26,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
+<<<<<<< HEAD
   smsTotal: { inc: jest.fn() },
   errorCounter: { inc: jest.fn() },
   rateLimitCounter: { inc: jest.fn() },
@@ -35,6 +42,13 @@ jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   inflightTts: { inc: jest.fn(), dec: jest.fn() },
   ttsCacheHits: { inc: jest.fn() },
   circuitBreakerGauge: { set: jest.fn() },
+=======
+  smsTotal:     { inc: jest.fn() },
+  errorCounter: { inc: jest.fn() },
+  rateLimitCounter: { inc: jest.fn() },
+  pipelineLatency:  { startTimer: jest.fn(() => jest.fn()) },
+  activeSessions:   { set: jest.fn() },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 jest.unstable_mockModule('../../../src/features/voice/rate-limiter.js', () => ({
@@ -47,7 +61,11 @@ jest.unstable_mockModule('../../../src/features/responder/responder.service.js',
 }));
 
 jest.unstable_mockModule('../../../src/api/middleware/validation.js', () => ({
+<<<<<<< HEAD
   sanitizeText: jest.fn(t => t),
+=======
+  sanitizeText: jest.fn((t) => t),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 const { handleSms } = await import('../../../src/features/sms/sms.controller.js');

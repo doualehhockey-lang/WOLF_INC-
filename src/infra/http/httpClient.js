@@ -3,21 +3,37 @@
 // Import apiFetch() instead of bare fetch() for all external API calls.
 
 import https from 'https';
+<<<<<<< HEAD
 import http from 'http';
+=======
+import http  from 'http';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Agents ────────────────────────────────────────────────────────────────────
 
 const httpsAgent = new https.Agent({
+<<<<<<< HEAD
   keepAlive: true,
   maxSockets: 50,
   timeout: 30_000,
+=======
+  keepAlive:  true,
+  maxSockets: 50,
+  timeout:    30_000,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   scheduling: 'lifo', // reuse most-recently-used sockets first (warmer TLS sessions)
 });
 
 const httpAgent = new http.Agent({
+<<<<<<< HEAD
   keepAlive: true,
   maxSockets: 20,
   timeout: 30_000,
+=======
+  keepAlive:  true,
+  maxSockets: 20,
+  timeout:    30_000,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ── Public API ────────────────────────────────────────────────────────────────

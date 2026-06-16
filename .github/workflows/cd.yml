@@ -46,7 +46,10 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+<<<<<<< HEAD
     timeout-minutes: 15
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
     environment: production
 
@@ -58,6 +61,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
+<<<<<<< HEAD
             set -euo pipefail
             cd /opt/wolf-agenda
 
@@ -75,3 +79,9 @@ jobs:
             docker image prune -f
 
             echo "Deploy $(date) OK"
+=======
+            cd /opt/wolf-engine
+            docker compose pull app
+            docker compose up -d --no-deps app
+            docker image prune -f
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b

@@ -6,6 +6,7 @@ import { jest } from '@jest/globals';
 
 // ── Mock fs/promises ──────────────────────────────────────────────────────────
 const mockReaddir = jest.fn(async () => []);
+<<<<<<< HEAD
 const mockStat = jest.fn(async () => null);
 const mockUnlink = jest.fn(async () => {});
 const mockWriteFile = jest.fn(async () => {});
@@ -17,17 +18,39 @@ jest.unstable_mockModule('fs/promises', () => ({
   unlink: mockUnlink,
   writeFile: mockWriteFile,
   mkdir: mockMkdir,
+=======
+const mockStat    = jest.fn(async () => null);
+const mockUnlink  = jest.fn(async () => {});
+const mockWriteFile = jest.fn(async () => {});
+const mockMkdir   = jest.fn(async () => {});
+
+jest.unstable_mockModule('fs/promises', () => ({
+  readdir:   mockReaddir,
+  stat:      mockStat,
+  unlink:    mockUnlink,
+  writeFile: mockWriteFile,
+  mkdir:     mockMkdir,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     AUDIO_DIR: '/tmp/audio-test',
     BASE_URL: 'http://localhost:3000',
     PHONE_SALT: 'testsalt1234567890',
     JWT_SECRET: 'testjwtsecret1234567890testjwtsecret1234567890',
     JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
     API_KEYS: ['test-key'],
+=======
+    AUDIO_DIR:   '/tmp/audio-test',
+    BASE_URL:    'http://localhost:3000',
+    PHONE_SALT:  'testsalt1234567890',
+    JWT_SECRET:  'testjwtsecret1234567890testjwtsecret1234567890',
+    JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
+    API_KEYS:    ['test-key'],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
@@ -62,7 +85,11 @@ describe('audio.utils — auto-purge setInterval (lines 11-24)', () => {
     const TTS_MAX_AGE_MS = 10 * 60 * 1_000;
     const now = Date.now();
     mockReaddir.mockResolvedValueOnce(['old.mp3', 'new.mp3']);
+<<<<<<< HEAD
     mockStat.mockImplementation(async fp => ({
+=======
+    mockStat.mockImplementation(async (fp) => ({
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       mtimeMs: fp.includes('old') ? now - TTS_MAX_AGE_MS - 1_000 : now - 1_000,
     }));
 

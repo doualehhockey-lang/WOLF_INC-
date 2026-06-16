@@ -1,0 +1,21 @@
+# k8s/services/ollama-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: wolf-engine
+  labels:
+    app:                         wolf-engine
+    app.kubernetes.io/name:      wolf-engine
+    app.kubernetes.io/component: ollama
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  selector:
+    app.kubernetes.io/component: ollama
+    stage:                       stable
+  ports:
+    - name:       http
+      port:       11434
+      targetPort: http
+      protocol:   TCP

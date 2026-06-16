@@ -5,6 +5,7 @@
 import { jest } from '@jest/globals';
 
 // ── Set REDIS_URL to trigger the init block ───────────────────────────────────
+<<<<<<< HEAD
 process.env.REDIS_URL = 'redis://bad-host:6379';
 process.env.BASE_URL = 'http://localhost:3000';
 process.env.PHONE_SALT = 'testsalt1234567890';
@@ -19,6 +20,20 @@ const mockFailInstance = {
   }),
   ping: jest.fn(),
   on: jest.fn(),
+=======
+process.env.REDIS_URL          = 'redis://bad-host:6379';
+process.env.BASE_URL           = 'http://localhost:3000';
+process.env.PHONE_SALT         = 'testsalt1234567890';
+process.env.JWT_SECRET         = 'testjwtsecret1234567890testjwtsecret1234567890';
+process.env.JWT_REFRESH_SECRET = 'testrefreshsecret1234567890testrefreshsecret';
+process.env.API_KEYS           = 'test-key';
+
+// ── ioredis mock: connect() throws ───────────────────────────────────────────
+const mockFailInstance = {
+  connect: jest.fn(async () => { throw new Error('ECONNREFUSED bad-host:6379'); }),
+  ping:    jest.fn(),
+  on:      jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 
 jest.unstable_mockModule('ioredis', () => ({
@@ -31,12 +46,26 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: { inc: jest.fn() },
+<<<<<<< HEAD
   auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 const { redis, redisAvailable, cacheGet, cacheSet, cacheDel, evalScript } =
   await import('../../../src/infra/redis/redisClient.js');
+=======
+}));
+
+// ── Import AFTER mocks ────────────────────────────────────────────────────────
+const {
+  redis,
+  redisAvailable,
+  cacheGet,
+  cacheSet,
+  cacheDel,
+  evalScript,
+} = await import('../../../src/infra/redis/redisClient.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Catch block (lines 39-42)

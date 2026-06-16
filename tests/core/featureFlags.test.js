@@ -11,6 +11,7 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 // ── Redis mock — controllable per-key store ───────────────────────────────────
 const _store = {};
 
+<<<<<<< HEAD
 const mockCacheGet = jest.fn(async key => _store[key] ?? null);
 const mockCacheSet = jest.fn(async (key, value) => {
   _store[key] = value;
@@ -36,6 +37,29 @@ jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
 
 const { isEnabled, setFlag, killSwitch, restore, getAllFlags, snapshotFlags, clearCache, FLAGS } =
   await import('../../src/core/featureFlags.js');
+=======
+const mockCacheGet = jest.fn(async (key) => _store[key] ?? null);
+const mockCacheSet = jest.fn(async (key, value) => { _store[key] = value; return 'OK'; });
+
+jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
+  cacheGet:       mockCacheGet,
+  cacheSet:       mockCacheSet,
+  cacheDel:       jest.fn(async (key) => { delete _store[key]; return 1; }),
+  cacheIncr:      jest.fn(),
+  cacheExpire:    jest.fn(),
+  cacheGetBuffer: jest.fn(),
+  cacheSetBuffer: jest.fn(),
+  cacheTtl:       jest.fn(),
+  evalScript:     jest.fn(),
+  redis:          null,
+  redisAvailable: false,
+}));
+
+const {
+  isEnabled, setFlag, killSwitch, restore,
+  getAllFlags, snapshotFlags, clearCache, FLAGS,
+} = await import('../../src/core/featureFlags.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -60,6 +84,7 @@ describe('FLAGS constants', () => {
 
   test('FLAGS contains all expected keys', () => {
     const expected = [
+<<<<<<< HEAD
       'CLAUDE_NLU',
       'TTS_ELEVENLABS',
       'TTS_AZURE',
@@ -70,6 +95,11 @@ describe('FLAGS constants', () => {
       'RATE_LIMIT',
       'AUDIT_LOG',
       'TRANSLATION',
+=======
+      'CLAUDE_NLU', 'OLLAMA_NLU', 'TTS_ELEVENLABS', 'TTS_AZURE', 'TTS_PIPER',
+      'PIPELINE_VOICE', 'PIPELINE_SMS', 'MEMORY_CONTEXT', 'RATE_LIMIT',
+      'OTEL_TRACES', 'AUDIT_LOG', 'TRANSLATION',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     ];
     for (const key of expected) {
       expect(FLAGS).toHaveProperty(key);
@@ -162,12 +192,24 @@ describe('isEnabled — Redis failure falls back to default', () => {
 describe('setFlag', () => {
   test('setFlag(name, false) writes "0" to Redis', async () => {
     await setFlag(FLAGS.CLAUDE_NLU, false);
+<<<<<<< HEAD
     expect(mockCacheSet).toHaveBeenCalledWith('ff:wolf:claude.nlu', '0', expect.any(Number));
+=======
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'ff:wolf:claude.nlu', '0', expect.any(Number)
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('setFlag(name, true) writes "1" to Redis', async () => {
     await setFlag(FLAGS.AUDIT_LOG, true);
+<<<<<<< HEAD
     expect(mockCacheSet).toHaveBeenCalledWith('ff:wolf:audit.log', '1', expect.any(Number));
+=======
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'ff:wolf:audit.log', '1', expect.any(Number)
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('setFlag invalidates local cache — next isEnabled reads Redis', async () => {
@@ -193,12 +235,24 @@ describe('setFlag', () => {
 describe('killSwitch and restore', () => {
   test('killSwitch disables the flag', async () => {
     await killSwitch(FLAGS.RATE_LIMIT);
+<<<<<<< HEAD
     expect(mockCacheSet).toHaveBeenCalledWith('ff:wolf:rate-limit', '0', expect.any(Number));
+=======
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'ff:wolf:rate-limit', '0', expect.any(Number)
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('restore re-enables the flag', async () => {
     await restore(FLAGS.RATE_LIMIT);
+<<<<<<< HEAD
     expect(mockCacheSet).toHaveBeenCalledWith('ff:wolf:rate-limit', '1', expect.any(Number));
+=======
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'ff:wolf:rate-limit', '1', expect.any(Number)
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('kill then restore → flag is enabled again', async () => {
@@ -271,10 +325,17 @@ describe('snapshotFlags', () => {
   });
 
   test('reflects killed flag in snapshot', async () => {
+<<<<<<< HEAD
     _store['ff:wolf:claude.nlu'] = '0';
     await isEnabled(FLAGS.CLAUDE_NLU); // warm cache with false
     const snap = snapshotFlags();
     expect(snap[FLAGS.CLAUDE_NLU]).toBe(false);
+=======
+    _store['ff:wolf:otel.traces'] = '0';
+    await isEnabled(FLAGS.OTEL_TRACES); // warm cache with false
+    const snap = snapshotFlags();
+    expect(snap[FLAGS.OTEL_TRACES]).toBe(false);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 

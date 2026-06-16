@@ -7,8 +7,13 @@
 // ── States ────────────────────────────────────────────────────────────────────
 
 export const STATE = Object.freeze({
+<<<<<<< HEAD
   CLOSED: 'CLOSED',
   OPEN: 'OPEN',
+=======
+  CLOSED:    'CLOSED',
+  OPEN:      'OPEN',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   HALF_OPEN: 'HALF_OPEN',
 });
 
@@ -17,7 +22,11 @@ export const STATE = Object.freeze({
 export class CircuitOpenError extends Error {
   constructor(provider) {
     super(`Circuit breaker OPEN for provider "${provider}"`);
+<<<<<<< HEAD
     this.name = 'CircuitOpenError';
+=======
+    this.name     = 'CircuitOpenError';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     this.provider = provider;
   }
 }
@@ -25,8 +34,13 @@ export class CircuitOpenError extends Error {
 export class TimeoutError extends Error {
   constructor(provider, timeoutMs) {
     super(`Request to "${provider}" timed out after ${timeoutMs}ms`);
+<<<<<<< HEAD
     this.name = 'TimeoutError';
     this.provider = provider;
+=======
+    this.name      = 'TimeoutError';
+    this.provider  = provider;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     this.timeoutMs = timeoutMs;
   }
 }
@@ -35,7 +49,11 @@ export class TimeoutError extends Error {
 export class HttpError extends Error {
   constructor(status, message) {
     super(message);
+<<<<<<< HEAD
     this.name = 'HttpError';
+=======
+    this.name   = 'HttpError';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     this.status = status;
   }
 }
@@ -43,6 +61,7 @@ export class HttpError extends Error {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function _isAbortError(err) {
+<<<<<<< HEAD
   return (
     err?.name === 'AbortError' ||
     // Stryker disable next-line all -- DOMException global absent in Node < 18 test envs; branch unreachable in CI
@@ -50,6 +69,11 @@ function _isAbortError(err) {
       err instanceof DOMException &&
       err.name === 'AbortError')
   );
+=======
+  return err?.name === 'AbortError' ||
+    // Stryker disable next-line all -- DOMException global absent in Node < 18 test envs; branch unreachable in CI
+    (typeof DOMException !== 'undefined' && err instanceof DOMException && err.name === 'AbortError');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 function _sleep(ms) {
@@ -75,6 +99,7 @@ export class CircuitBreaker {
    * @param {function} [opts.now]                     Clock override — () => number (for tests)
    */
   constructor(name, opts = {}) {
+<<<<<<< HEAD
     this.name = name;
     this._failureThreshold = opts.failureThreshold ?? 5;
     this._errorRateThreshold = opts.errorRateThreshold ?? 0.5;
@@ -95,15 +120,43 @@ export class CircuitBreaker {
   getState() {
     return this._state;
   }
+=======
+    this.name                  = name;
+    this._failureThreshold     = opts.failureThreshold     ?? 5;
+    this._errorRateThreshold   = opts.errorRateThreshold   ?? 0.5;
+    this._minCalls             = opts.minCalls             ?? 10;
+    this._windowMs             = opts.windowMs             ?? 60_000;
+    this._openDurationMs       = opts.openDurationMs       ?? 60_000;
+    this._onStateChange        = opts.onStateChange        ?? null;
+    this._now                  = opts.now                  ?? (() => Date.now());
+
+    this._state                = STATE.CLOSED;
+    this._consecutiveFailures  = 0;
+    this._openUntil            = 0;
+    this._halfOpenProbeInFlight = false;
+    this._calls                = []; // { ts: number, success: boolean }[]
+  }
+
+  /** Current breaker state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' */
+  getState() { return this._state; }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   /** Hard-reset to CLOSED, clearing all counters and the sliding window. */
   reset() {
     const wasOpen = this._state !== STATE.CLOSED;
+<<<<<<< HEAD
     this._state = STATE.CLOSED;
     this._consecutiveFailures = 0;
     this._openUntil = 0;
     this._halfOpenProbeInFlight = false;
     this._calls = [];
+=======
+    this._state                 = STATE.CLOSED;
+    this._consecutiveFailures   = 0;
+    this._openUntil             = 0;
+    this._halfOpenProbeInFlight = false;
+    this._calls                 = [];
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     if (wasOpen) this._onStateChange?.(STATE.CLOSED, this.name);
   }
 
@@ -118,7 +171,11 @@ export class CircuitBreaker {
    * @throws {CircuitOpenError} When the breaker is open and the timer has not expired.
    * @throws {TimeoutError}     When fn does not resolve within timeoutMs.
    */
+<<<<<<< HEAD
   async exec(fn, { requestId: _requestId = '', timeoutMs = 10_000 } = {}) {
+=======
+  async exec(fn, { requestId = '', timeoutMs = 10_000 } = {}) { // eslint-disable-line no-unused-vars
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const now = this._now();
 
     // ── OPEN: guard ──────────────────────────────────────────────────────────
@@ -134,7 +191,11 @@ export class CircuitBreaker {
     }
 
     // ── Execute with timeout ─────────────────────────────────────────────────
+<<<<<<< HEAD
     const ac = new AbortController();
+=======
+    const ac    = new AbortController();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const timer = setTimeout(() => ac.abort(), timeoutMs);
 
     try {
@@ -228,7 +289,16 @@ export class CircuitBreaker {
  * @returns {Promise<*>}
  */
 export async function withRetry(fn, opts = {}) {
+<<<<<<< HEAD
   const { maxRetries = 3, baseMs = 200, maxMs = 2_000, shouldRetry = _defaultShouldRetry } = opts;
+=======
+  const {
+    maxRetries  = 3,
+    baseMs      = 200,
+    maxMs       = 2_000,
+    shouldRetry = _defaultShouldRetry,
+  } = opts;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   let attempt = 0;
   for (;;) {
@@ -237,7 +307,11 @@ export async function withRetry(fn, opts = {}) {
     } catch (err) {
       if (attempt >= maxRetries || !shouldRetry(err, attempt)) throw err;
       const jitter = Math.random() * 100;
+<<<<<<< HEAD
       const delay = Math.min(baseMs * 2 ** attempt + jitter, maxMs);
+=======
+      const delay  = Math.min(baseMs * (2 ** attempt) + jitter, maxMs);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       await _sleep(delay);
       attempt++;
     }

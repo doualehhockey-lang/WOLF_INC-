@@ -11,20 +11,33 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 const mockTtsCacheHits = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   ttsCacheHits: mockTtsCacheHits,
+<<<<<<< HEAD
   auditLogFailures: { inc: jest.fn() },
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // Redis not available — exercises in-memory path without locale arg
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
+<<<<<<< HEAD
   redis: null,
+=======
+  redis:          null,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   redisAvailable: false,
 }));
 
 const { cacheKey, cacheGet, cacheSet } = await import('../../../src/features/tts/tts.cache.js');
 
+<<<<<<< HEAD
 const TEXT = 'Bonjour par défaut';
 const PROVIDER = 'mock';
 const result = { buffer: Buffer.alloc(20, 0xab), ext: '.wav', mimeType: 'audio/wav' };
+=======
+const TEXT     = 'Bonjour par défaut';
+const PROVIDER = 'mock';
+const result   = { buffer: Buffer.alloc(20, 0xAB), ext: '.wav', mimeType: 'audio/wav' };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 beforeEach(() => jest.clearAllMocks());
 

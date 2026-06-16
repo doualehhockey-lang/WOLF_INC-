@@ -1,15 +1,28 @@
 // src/services/agent.js — Wolf Engine ML pipeline orchestrator.
 //
+<<<<<<< HEAD
 // Pipeline (3 stages):
 //   1. Whisper  → transcription text  (required — failure returns ok:false)
 //   2. Claude   → NLU analysis        (required — failure returns ok:false)
 //   3. TTS      → audio buffer        (required — failure returns ok:false)
+=======
+// Pipeline (4 stages):
+//   1. Whisper  → transcription text  (required — failure returns ok:false)
+//   2. Claude   → NLU analysis        (required — failure returns ok:false)
+//   3. Ollama   → enrichment          (optional — never throws; pipeline continues on error)
+//   4. TTS      → audio buffer        (required — failure returns ok:false)
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 //
 // Factory pattern:  _makeAgent(deps) exported for testing with DI.
 // Production entry: export const { process } = _makeAgent()
 
+<<<<<<< HEAD
 import { randomUUID } from 'crypto';
 import { childLogger } from '../core/logger.js';
+=======
+import { randomUUID }             from 'crypto';
+import { childLogger }            from '../core/logger.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 import { CircuitOpenError, TimeoutError } from './circuitBreaker.js';
 import {
   recordAgentRequest,
@@ -29,7 +42,11 @@ const log = childLogger('agent');
  */
 function _failureReason(err) {
   if (err instanceof CircuitOpenError) return 'circuit_open';
+<<<<<<< HEAD
   if (err instanceof TimeoutError) return 'timeout';
+=======
+  if (err instanceof TimeoutError)     return 'timeout';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return 'error';
 }
 
@@ -37,11 +54,19 @@ function _failureReason(err) {
 
 /** Intent → natural-language response (French, default Wolf Engine persona). */
 const _INTENT_RESPONSES = {
+<<<<<<< HEAD
   create_event: a => `Parfait, je crée l'événement "${a.subject}" pour ${a.date} à ${a.time}.`,
   cancel_event: a => `D'accord, j'annule l'événement "${a.subject}".`,
   update_event: a => `Je mets à jour l'événement "${a.subject}".`,
   list_events: () => 'Voici vos événements à venir.',
   unknown: () => "Je n'ai pas compris votre demande. Pouvez-vous reformuler ?",
+=======
+  create_event: (a) => `Parfait, je crée l'événement "${a.subject}" pour ${a.date} à ${a.time}.`,
+  cancel_event: (a) => `D'accord, j'annule l'événement "${a.subject}".`,
+  update_event: (a) => `Je mets à jour l'événement "${a.subject}".`,
+  list_events:  ()  => 'Voici vos événements à venir.',
+  unknown:      ()  => 'Je n\'ai pas compris votre demande. Pouvez-vous reformuler ?',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 
 /**
@@ -64,16 +89,25 @@ function _composeResponse(analysis) {
  * @param {object} [deps]
  * @param {function} [deps.transcribeWav]  whisper.client transcribeWav
  * @param {function} [deps.claudeAnalyze]  claude.client analyze
+<<<<<<< HEAD
+=======
+ * @param {function} [deps.ollamaAnalyze]  ollama.client analyze (never throws)
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
  * @param {function} [deps.synthesize]     tts.client synthesize
  * @param {function} [deps.now]            () => number  (clock injection for tests)
  * @returns {{ process: function }}
  */
 export function _makeAgent(deps = {}) {
+<<<<<<< HEAD
   let transcribeWav, claudeAnalyze, synthesize;
+=======
+  let transcribeWav, claudeAnalyze, ollamaAnalyze, synthesize;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   // Lazy-resolved defaults (dynamic import avoids circular deps at module load time)
   async function _resolve() {
     if (!transcribeWav) {
+<<<<<<< HEAD
       transcribeWav = deps.transcribeWav ?? (await import('./whisper.client.js')).transcribeWav;
     }
     if (!claudeAnalyze) {
@@ -81,6 +115,22 @@ export function _makeAgent(deps = {}) {
     }
     if (!synthesize) {
       synthesize = deps.synthesize ?? (await import('./tts.client.js')).synthesize;
+=======
+      transcribeWav = deps.transcribeWav
+        ?? (await import('./whisper.client.js')).transcribeWav;
+    }
+    if (!claudeAnalyze) {
+      claudeAnalyze = deps.claudeAnalyze
+        ?? (await import('./claude.client.js')).analyze;
+    }
+    if (!ollamaAnalyze) {
+      ollamaAnalyze = deps.ollamaAnalyze
+        ?? (await import('./ollama.client.js')).analyze;
+    }
+    if (!synthesize) {
+      synthesize = deps.synthesize
+        ?? (await import('./tts.client.js')).synthesize;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     }
   }
 
@@ -103,6 +153,10 @@ export function _makeAgent(deps = {}) {
    * @property {string} requestId
    * @property {string} transcription
    * @property {object} analysis        NLU output from Claude
+<<<<<<< HEAD
+=======
+   * @property {object} enriched        NLU enrichment from Ollama (may have strategy:'ollama-error')
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
    * @property {object} audio           { buffer, ext, mimeType }
    * @property {string} responseText    Text fed to TTS
    * @property {number} latency         Total pipeline latency in ms
@@ -115,7 +169,11 @@ export function _makeAgent(deps = {}) {
    */
   async function process(wavBuffer = null, opts = {}) {
     const requestId = opts.requestId ?? randomUUID();
+<<<<<<< HEAD
     const start = _now();
+=======
+    const start     = _now();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
     await _resolve();
 
@@ -150,13 +208,36 @@ export function _makeAgent(deps = {}) {
       return { ok: false, stage: 'claude', error: err.message, requestId };
     }
 
+<<<<<<< HEAD
     // ── Stage 3: TTS ────────────────────────────────────────────────────────
+=======
+    // ── Stage 3: Ollama enrichment (non-blocking) ───────────────────────────
+    let enriched;
+    try {
+      enriched = await ollamaAnalyze(transcription, { requestId, timeoutMs: opts.timeoutMs });
+      if (enriched?.strategy === 'ollama-error') {
+        recordAgentStageFailure('ollama', 'error');
+        log.warn({ requestId }, 'Agent: Ollama enrichment returned error fallback');
+      }
+    } catch (err) {
+      // ollamaAnalyze() should never throw — defensive catch in case of DI mismatch
+      recordAgentStageFailure('ollama', _failureReason(err));
+      log.warn({ requestId, err: err.message }, 'Agent: Ollama stage threw unexpectedly');
+      enriched = { intent: 'unknown', subject: '', date: '', time: '', confidence: 0, errors: [err.message], strategy: 'ollama-error' };
+    }
+
+    // ── Stage 4: TTS ────────────────────────────────────────────────────────
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const responseText = _composeResponse(analysis);
     let audio;
     try {
       audio = await synthesize(responseText, {
         requestId,
+<<<<<<< HEAD
         locale: opts.locale ?? 'fr-FR',
+=======
+        locale:    opts.locale ?? 'fr-FR',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         timeoutMs: opts.timeoutMs,
       });
     } catch (err) {
@@ -180,6 +261,10 @@ export function _makeAgent(deps = {}) {
       requestId,
       transcription,
       analysis,
+<<<<<<< HEAD
+=======
+      enriched,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       audio,
       responseText,
       latency,

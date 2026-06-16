@@ -1,0 +1,552 @@
+{
+  "title": "Wolf Engine — Pipeline & Observability",
+  "uid": "wolf-pipeline-otel-v1",
+  "description": "OpenTelemetry + Prometheus view of the Wolf Engine ML pipeline (Whisper → Claude → Ollama → TTS). Companion to the main Wolf Engine dashboard.",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+
+  "templating": {
+    "list": [
+      {
+        "name": "stage",
+        "label": "Stage",
+        "type": "custom",
+        "options": [
+          { "text": "All",     "value": "" },
+          { "text": "Whisper", "value": "whisper" },
+          { "text": "Claude",  "value": "claude" },
+          { "text": "Ollama",  "value": "ollama" },
+          { "text": "TTS",     "value": "tts" }
+        ],
+        "current": { "text": "All", "value": "" },
+        "includeAll": true,
+        "multi": false
+      },
+      {
+        "name": "interval",
+        "label": "Rate window",
+        "type": "interval",
+        "options": ["1m", "5m", "10m", "30m"],
+        "current": { "text": "5m", "value": "5m" },
+        "auto": false
+      }
+    ]
+  },
+
+  "panels": [
+
+    {
+      "id": 100,
+      "title": "ROW — Pipeline Summary",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 1,
+      "title": "Pipeline Success Rate (%)",
+      "description": "Percentage of agent pipeline runs that completed all 4 stages successfully.",
+      "type": "gauge",
+      "gridPos": { "x": 0, "y": 1, "w": 4, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * rate(agent_pipeline_success_total[$interval]) / (rate(agent_requests_total[$interval]) + 0.001)",
+          "legendFormat": "Success %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0,  "color": "red" },
+              { "value": 90, "color": "yellow" },
+              { "value": 98, "color": "green" }
+            ]
+          }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": false, "showThresholdMarkers": true }
+    },
+
+    {
+      "id": 2,
+      "title": "Pipeline Throughput (req/min)",
+      "description": "Total pipeline invocations per minute.",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 1, "w": 4, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(agent_requests_total[$interval]) * 60",
+          "legendFormat": "req/min"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqpm", "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "value": 0, "color": "blue" }] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
+    },
+
+    {
+      "id": 3,
+      "title": "Pipeline Error Rate (%)",
+      "description": "Percentage of pipelines that failed at any stage.",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 1, "w": 4, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * rate(agent_requests_total{status='error'}[$interval]) / (rate(agent_requests_total[$interval]) + 0.001)",
+          "legendFormat": "Error %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "steps": [
+            { "value": 0,  "color": "green" },
+            { "value": 2,  "color": "yellow" },
+            { "value": 10, "color": "red" }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
+    },
+
+    {
+      "id": 4,
+      "title": "Cumulative Pipeline Successes",
+      "description": "Total end-to-end pipeline successes since last restart.",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 1, "w": 4, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "agent_pipeline_success_total", "legendFormat": "Total successes" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "value": 0, "color": "green" }] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" }
+    },
+
+    {
+      "id": 5,
+      "title": "Stage Failure Breakdown",
+      "description": "Which pipeline stage is responsible for failures, and why.",
+      "type": "piechart",
+      "gridPos": { "x": 16, "y": 1, "w": 8, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (stage) (rate(agent_stage_failures_total[$interval]))",
+          "legendFormat": "{{ stage }}"
+        }
+      ],
+      "options": { "pieType": "donut", "displayLabels": ["name", "percent"] }
+    },
+
+    {
+      "id": 200,
+      "title": "ROW — Stage Latency (P50 / P95 / P99)",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 7, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 10,
+      "title": "Whisper — Latency Percentiles",
+      "description": "Speech-to-text transcription latency using provider_latency_ms histogram.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(provider_latency_ms_bucket{provider='whisper'}[$interval]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(provider_latency_ms_bucket{provider='whisper'}[$interval]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(provider_latency_ms_bucket{provider='whisper'}[$interval]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "p99" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p95" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p50" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 11,
+      "title": "Claude — Latency Percentiles",
+      "description": "NLU analysis latency via Claude API.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(provider_latency_ms_bucket{provider='claude'}[$interval]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(provider_latency_ms_bucket{provider='claude'}[$interval]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(provider_latency_ms_bucket{provider='claude'}[$interval]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }
+      }
+    },
+
+    {
+      "id": 12,
+      "title": "Ollama — Latency Percentiles",
+      "description": "Local LLM enrichment latency via Ollama.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(provider_latency_ms_bucket{provider='ollama'}[$interval]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(provider_latency_ms_bucket{provider='ollama'}[$interval]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(provider_latency_ms_bucket{provider='ollama'}[$interval]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }
+      }
+    },
+
+    {
+      "id": 13,
+      "title": "TTS — Latency Percentiles",
+      "description": "Text-to-speech synthesis latency (ElevenLabs / Azure / Piper).",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(provider_latency_ms_bucket{provider='tts'}[$interval]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(provider_latency_ms_bucket{provider='tts'}[$interval]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(provider_latency_ms_bucket{provider='tts'}[$interval]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }
+      }
+    },
+
+    {
+      "id": 300,
+      "title": "ROW — Stage Error Rates",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 20,
+      "title": "Error Rate per Stage (errors/min)",
+      "description": "Rate of provider_failures_total labelled by provider. Spot which stage degrades first.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 25, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(provider_failures_total{provider='whisper'}[$interval]) * 60",
+          "legendFormat": "Whisper"
+        },
+        {
+          "expr": "rate(provider_failures_total{provider='claude'}[$interval]) * 60",
+          "legendFormat": "Claude"
+        },
+        {
+          "expr": "rate(provider_failures_total{provider='ollama'}[$interval]) * 60",
+          "legendFormat": "Ollama"
+        },
+        {
+          "expr": "rate(provider_failures_total{provider='tts'}[$interval]) * 60",
+          "legendFormat": "TTS"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqpm", "custom": { "lineWidth": 2 } }
+      }
+    },
+
+    {
+      "id": 21,
+      "title": "Failure Reason Breakdown (all stages)",
+      "description": "provider_failures_total labelled by reason: network / timeout / http_5xx / http_4xx / circuit_open.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 25, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (reason) (rate(provider_failures_total[$interval])) * 60",
+          "legendFormat": "{{ reason }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqpm", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "circuit_open" }, "properties": [{ "id": "color", "value": { "fixedColor": "dark-red",   "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "timeout" },      "properties": [{ "id": "color", "value": { "fixedColor": "orange",     "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "http_5xx" },     "properties": [{ "id": "color", "value": { "fixedColor": "red",        "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "http_4xx" },     "properties": [{ "id": "color", "value": { "fixedColor": "yellow",     "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "network" },      "properties": [{ "id": "color", "value": { "fixedColor": "dark-orange","mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 400,
+      "title": "ROW — Circuit Breakers",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 30,
+      "title": "Circuit Breaker State",
+      "description": "0 = CLOSED (healthy), 1 = HALF_OPEN (probing), 2 = OPEN (rejecting). Any non-zero value is an alert.",
+      "type": "state-timeline",
+      "gridPos": { "x": 0, "y": 34, "w": 16, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "provider_circuit_breaker_state",
+          "legendFormat": "{{ provider }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 0, "fillOpacity": 80 },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "CLOSED",    "color": "green"  } } },
+            { "type": "value", "options": { "1": { "text": "HALF_OPEN", "color": "yellow" } } },
+            { "type": "value", "options": { "2": { "text": "OPEN",      "color": "red"    } } }
+          ]
+        }
+      },
+      "options": { "mergeValues": true, "showValue": "always" }
+    },
+
+    {
+      "id": 31,
+      "title": "Circuit Open Events (rate)",
+      "description": "Rate of requests rejected because a circuit breaker was OPEN.",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 34, "w": 8, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(provider_failures_total{reason='circuit_open'}[$interval])) * 60",
+          "legendFormat": "{{ provider }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqpm", "color": { "fixedColor": "dark-red", "mode": "fixed" } }
+      }
+    },
+
+    {
+      "id": 500,
+      "title": "ROW — End-to-End Pipeline Latency",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 40, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 40,
+      "title": "Agent Pipeline Duration (P50 / P95 / P99)",
+      "description": "Full 4-stage pipeline duration from agent_latency_ms histogram.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 41, "w": 16, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(agent_latency_ms_bucket[$interval]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(agent_latency_ms_bucket[$interval]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(agent_latency_ms_bucket[$interval]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "p99" }, "properties": [{ "id": "color", "value": { "fixedColor": "red",    "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p95" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p50" }, "properties": [{ "id": "color", "value": { "fixedColor": "green",  "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 41,
+      "title": "Stage Latency Comparison (P95)",
+      "description": "P95 latency side-by-side for all four stages — useful for spotting the bottleneck.",
+      "type": "barchart",
+      "gridPos": { "x": 16, "y": 41, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(provider_latency_ms_bucket{provider='whisper'}[$interval]))",
+          "legendFormat": "Whisper"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(provider_latency_ms_bucket{provider='claude'}[$interval]))",
+          "legendFormat": "Claude"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(provider_latency_ms_bucket{provider='ollama'}[$interval]))",
+          "legendFormat": "Ollama"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(provider_latency_ms_bucket{provider='tts'}[$interval]))",
+          "legendFormat": "TTS"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms" }
+      },
+      "options": { "orientation": "horizontal", "barWidth": 0.6, "groupWidth": 0.7 }
+    },
+
+    {
+      "id": 600,
+      "title": "ROW — Traces (Tempo)",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 49, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+
+    {
+      "id": 50,
+      "title": "Trace Search — Recent Pipelines",
+      "description": "Search Tempo for wolf.pipeline.* spans. Click any trace to see the full timeline (Whisper → Claude → Ollama → TTS). Requires Grafana Tempo datasource named 'Tempo'.",
+      "type": "traces",
+      "gridPos": { "x": 0, "y": 50, "w": 24, "h": 10 },
+      "datasource": "Tempo",
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ resource.service.name = \"wolf-engine\" && name =~ \"wolf\\\\.pipeline\\\\..*\" }",
+          "limit": 20
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableNodeGraph": true,
+        "traceToLogs": {
+          "datasourceUid": "loki",
+          "filterBySpanID": true,
+          "filterByTraceID": true,
+          "tags": ["wolf.request_id"]
+        }
+      }
+    },
+
+    {
+      "id": 51,
+      "title": "Span Count per Stage (rate)",
+      "description": "Number of spans started per stage per minute — confirms all stages are being traced.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 60, "w": 24, "h": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(provider_requests_total{provider='whisper'}[$interval]) * 60",
+          "legendFormat": "Whisper"
+        },
+        {
+          "expr": "rate(provider_requests_total{provider='claude'}[$interval]) * 60",
+          "legendFormat": "Claude"
+        },
+        {
+          "expr": "rate(provider_requests_total{provider='ollama'}[$interval]) * 60",
+          "legendFormat": "Ollama"
+        },
+        {
+          "expr": "rate(provider_requests_total{provider='tts'}[$interval]) * 60",
+          "legendFormat": "TTS"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqpm", "custom": { "lineWidth": 2 } }
+      }
+    }
+
+  ],
+
+  "annotations": {
+    "list": [
+      {
+        "name": "Circuit Breaker Opens",
+        "datasource": "Prometheus",
+        "expr": "changes(provider_circuit_breaker_state[1m]) > 0 and provider_circuit_breaker_state == 2",
+        "step": "60s",
+        "titleFormat": "CB OPEN: {{ provider }}",
+        "tagKeys": "provider",
+        "enable": true,
+        "iconColor": "red"
+      }
+    ]
+  },
+
+  "links": [
+    {
+      "title": "Wolf Engine Overview",
+      "url": "/d/wolf-engine-v1",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false
+    }
+  ]
+}

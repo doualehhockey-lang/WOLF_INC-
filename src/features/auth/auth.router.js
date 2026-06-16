@@ -1,5 +1,6 @@
 // src/features/auth/auth.router.js — Express router for auth endpoints.
 // Mounts at /auth in src/api/router.js.
+<<<<<<< HEAD
 //
 // CSRF protection:
 //   POST /auth/token   — API-key auth only, no cookie read → no CSRF risk
@@ -143,3 +144,15 @@ authRouter.delete(
     }
   }
 );
+=======
+// No global middleware — each handler validates its own input.
+
+import { Router }        from 'express';
+import { handleIssue, handleRefresh, handleLogout } from './auth.controller.js';
+
+export const authRouter = Router();
+
+authRouter.post('/token',   handleIssue);
+authRouter.post('/refresh', handleRefresh);
+authRouter.post('/logout',  handleLogout);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b

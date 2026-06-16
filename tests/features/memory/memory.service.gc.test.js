@@ -11,26 +11,51 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
     SESSION_TTL_SEC: 300, // 5 min TTL
+<<<<<<< HEAD
     BASE_URL: 'http://localhost:3000',
     PHONE_SALT: 'testsalt1234567890',
     JWT_SECRET: 'testjwtsecret1234567890testjwtsecret1234567890',
     JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
     API_KEYS: ['test-key'],
+=======
+    BASE_URL:        'http://localhost:3000',
+    PHONE_SALT:      'testsalt1234567890',
+    JWT_SECRET:      'testjwtsecret1234567890testjwtsecret1234567890',
+    JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
+    API_KEYS:        ['test-key'],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   },
 }));
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   redisAvailable: false,
+<<<<<<< HEAD
   cacheGet: jest.fn(async () => null),
   cacheSet: jest.fn(async () => {}),
   cacheDel: jest.fn(async () => {}),
+=======
+  cacheGet:       jest.fn(async () => null),
+  cacheSet:       jest.fn(async () => {}),
+  cacheDel:       jest.fn(async () => {}),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // Use fake timers BEFORE import so setInterval uses fake timers
 jest.useFakeTimers();
 
+<<<<<<< HEAD
 const { getSession, clearSession, buildContext, getLastEntities, addUserTurn, setLang } =
   await import('../../../src/features/memory/memory.service.js');
+=======
+const {
+  getSession,
+  clearSession,
+  buildContext,
+  getLastEntities,
+  addUserTurn,
+  setLang,
+} = await import('../../../src/features/memory/memory.service.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 afterAll(() => {
   jest.useRealTimers();

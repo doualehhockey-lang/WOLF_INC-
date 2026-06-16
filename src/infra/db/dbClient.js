@@ -3,9 +3,15 @@
 // Call destroyDb() on graceful shutdown to drain the pool cleanly.
 // Run migrations with: npm run db:migrate
 
+<<<<<<< HEAD
 import promClient from 'prom-client';
 import { childLogger } from '../../core/logger.js';
 import { config } from '../../core/config.js';
+=======
+import promClient     from 'prom-client';
+import { childLogger } from '../../core/logger.js';
+import { config }      from '../../core/config.js';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 const log = childLogger('database');
 
@@ -17,15 +23,23 @@ const dbPoolAcquired = new promClient.Gauge({
 });
 
 const dbQueryDuration = new promClient.Histogram({
+<<<<<<< HEAD
   name: 'wolf_db_query_duration_seconds',
   help: 'Database query execution time in seconds',
   labelNames: ['status'],
   buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+=======
+  name:       'wolf_db_query_duration_seconds',
+  help:       'Database query execution time in seconds',
+  labelNames: ['status'],
+  buckets:    [0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ── Knex instance ─────────────────────────────────────────────────────────────
 
 /** Knex instance — null when running without PostgreSQL. */
+<<<<<<< HEAD
 export let db = null;
 /** True once the DB connection has been verified with SELECT 1. */
 export let dbAvailable = false;
@@ -35,6 +49,11 @@ export let dbAvailable = false;
  * The readiness probe uses this to return 503 until migrations are applied.
  */
 export let pendingMigrationCount = 0;
+=======
+export let db          = null;
+/** True once the DB connection has been verified with SELECT 1. */
+export let dbAvailable = false;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 if (config.DB_HOST) {
   // Dynamic import so the module loads even if knex isn't installed.
@@ -43,6 +62,7 @@ if (config.DB_HOST) {
   db = knex({
     client: 'pg',
     connection: {
+<<<<<<< HEAD
       host: config.DB_HOST,
       port: config.DB_PORT,
       user: config.DB_USER ?? 'postgres',
@@ -55,6 +75,20 @@ if (config.DB_HOST) {
       max: 10,
       acquireTimeoutMillis: 3_000, // fail fast — pipeline timeout is 10s, can't spend 10s on pool checkout
       idleTimeoutMillis: 30_000,
+=======
+      host:     config.DB_HOST,
+      port:     config.DB_PORT,
+      user:     config.DB_USER     ?? 'postgres',
+      password: config.DB_PASSWORD ?? '',
+      database: config.DB_NAME     ?? 'wolf_engine',
+      ssl:      process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    },
+    pool: {
+      min:                  2,
+      max:                  10,
+      acquireTimeoutMillis: 10_000,
+      idleTimeoutMillis:    30_000,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       // Knex/pg-pool: test connection before checkout
       afterCreate: (conn, done) => {
         conn.query('SELECT 1', err => done(err, conn));
@@ -68,17 +102,25 @@ if (config.DB_HOST) {
 
   // ── Query instrumentation (guarded: mock instances may not have .on) ────────
   if (typeof db.on === 'function') {
+<<<<<<< HEAD
     db.on('query', q => {
       q.__t = process.hrtime.bigint();
       dbPoolAcquired.inc();
     });
+=======
+    db.on('query',          (q)     => { q.__t = process.hrtime.bigint(); dbPoolAcquired.inc(); });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     db.on('query-response', (_r, q) => {
       const ms = Number(process.hrtime.bigint() - q.__t) / 1e6;
       dbPoolAcquired.dec();
       dbQueryDuration.observe({ status: 'success' }, ms / 1000);
       if (ms > 500) log.warn({ sql: q.sql?.slice(0, 200), ms }, 'Slow DB query');
     });
+<<<<<<< HEAD
     db.on('query-error', (_e, q) => {
+=======
+    db.on('query-error',    (_e, q) => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       dbPoolAcquired.dec();
       if (q.__t) {
         const ms = Number(process.hrtime.bigint() - q.__t) / 1e6;
@@ -97,6 +139,7 @@ if (config.DB_HOST) {
     // Do NOT null-out db here: callers can still attempt queries, they will fail with
     // a clear error rather than a null-dereference.
   }
+<<<<<<< HEAD
 
   // M7 FIX: Check for pending (unapplied) migrations at startup.
   // Without this, a deploy that skips migrations runs against a mismatched schema —
@@ -126,6 +169,8 @@ if (config.DB_HOST) {
       );
     }
   }
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 } else {
   log.info('DB_HOST not set — running without PostgreSQL (JSON file store active)');
 }

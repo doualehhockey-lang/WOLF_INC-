@@ -7,10 +7,14 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
+<<<<<<< HEAD
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+=======
+    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   }),
 }));
 
@@ -18,18 +22,30 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 const mockTtsCacheHits = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   ttsCacheHits: mockTtsCacheHits,
+<<<<<<< HEAD
   auditLogFailures: { inc: jest.fn() },
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Mock Redis — unavailable (in-memory path) ─────────────────────────────────
 const mockRedis = {
   getBuffer: jest.fn(),
+<<<<<<< HEAD
   get: jest.fn(),
   expire: jest.fn(),
   setex: jest.fn(),
 };
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   redis: null,
+=======
+  get:       jest.fn(),
+  expire:    jest.fn(),
+  setex:     jest.fn(),
+};
+jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
+  redis:          null,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   redisAvailable: false,
 }));
 
@@ -37,10 +53,17 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
 const { cacheKey, cacheGet, cacheSet } = await import('../../../src/features/tts/tts.cache.js');
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 const TEXT = 'Bonjour monde';
 const PROVIDER = 'mock';
 const LOCALE = 'fr-FR';
 const fakeBuffer = () => Buffer.alloc(20, 0xab);
+=======
+const TEXT     = 'Bonjour monde';
+const PROVIDER = 'mock';
+const LOCALE   = 'fr-FR';
+const fakeBuffer = () => Buffer.alloc(20, 0xAB);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -92,12 +115,16 @@ describe('cacheGet — in-memory (no Redis)', () => {
 
   test('returns value stored by cacheSet', async () => {
     const buf = fakeBuffer();
+<<<<<<< HEAD
     await cacheSet(
       'mem-roundtrip',
       PROVIDER,
       { buffer: buf, ext: '.wav', mimeType: 'audio/wav' },
       LOCALE
     );
+=======
+    await cacheSet('mem-roundtrip', PROVIDER, { buffer: buf, ext: '.wav', mimeType: 'audio/wav' }, LOCALE);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const cached = await cacheGet('mem-roundtrip', PROVIDER, LOCALE);
     expect(cached).not.toBeNull();
     expect(cached.ext).toBe('.wav');
@@ -106,12 +133,16 @@ describe('cacheGet — in-memory (no Redis)', () => {
   });
 
   test('records ttsCacheHits with type "memory" on hit', async () => {
+<<<<<<< HEAD
     await cacheSet(
       'mem-hit-metric',
       PROVIDER,
       { buffer: fakeBuffer(), ext: '.wav', mimeType: 'audio/wav' },
       LOCALE
     );
+=======
+    await cacheSet('mem-hit-metric', PROVIDER, { buffer: fakeBuffer(), ext: '.wav', mimeType: 'audio/wav' }, LOCALE);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await cacheGet('mem-hit-metric', PROVIDER, LOCALE);
     expect(mockTtsCacheHits.inc).toHaveBeenCalledWith({ type: 'memory' });
   });
@@ -124,6 +155,7 @@ describe('cacheGet — in-memory (no Redis)', () => {
   test('locale differentiates in-memory cache entries', async () => {
     const buf1 = Buffer.alloc(10, 0x01);
     const buf2 = Buffer.alloc(10, 0x02);
+<<<<<<< HEAD
     await cacheSet(
       'locale-test',
       PROVIDER,
@@ -136,6 +168,10 @@ describe('cacheGet — in-memory (no Redis)', () => {
       { buffer: buf2, ext: '.wav', mimeType: 'audio/wav' },
       'en-US'
     );
+=======
+    await cacheSet('locale-test', PROVIDER, { buffer: buf1, ext: '.wav', mimeType: 'audio/wav' }, 'fr-FR');
+    await cacheSet('locale-test', PROVIDER, { buffer: buf2, ext: '.wav', mimeType: 'audio/wav' }, 'en-US');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const fr = await cacheGet('locale-test', PROVIDER, 'fr-FR');
     const en = await cacheGet('locale-test', PROVIDER, 'en-US');
     expect(fr.buffer.equals(buf1)).toBe(true);
@@ -158,6 +194,7 @@ describe('cacheSet — in-memory FIFO eviction', () => {
   });
 
   test('writing 101+ unique entries evicts oldest (FIFO, cap 100)', async () => {
+<<<<<<< HEAD
     const prefix = `fifo-${Date.now()}-`;
     const entries = [];
     for (let i = 0; i < 101; i++) {
@@ -168,6 +205,13 @@ describe('cacheSet — in-memory FIFO eviction', () => {
         { buffer: fakeBuffer(), ext: '.wav', mimeType: 'audio/wav' },
         LOCALE
       );
+=======
+    const prefix  = `fifo-${Date.now()}-`;
+    const entries = [];
+    for (let i = 0; i < 101; i++) {
+      entries.push(`${prefix}${i}`);
+      await cacheSet(`${prefix}${i}`, PROVIDER, { buffer: fakeBuffer(), ext: '.wav', mimeType: 'audio/wav' }, LOCALE);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     }
     // Latest entry must be accessible
     const latest = await cacheGet(entries[100], PROVIDER, LOCALE);

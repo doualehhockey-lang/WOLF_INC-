@@ -37,7 +37,11 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 const cfg = {
   CLAUDE_API_KEY: 'sk-mutations-test',
+<<<<<<< HEAD
   CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
+=======
+  CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 jest.unstable_mockModule('../../src/core/config.js', () => ({ config: cfg }));
 
@@ -50,6 +54,7 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 
 // ── Metrics ───────────────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 const mockRecordRequest = jest.fn();
 const mockRecordFailure = jest.fn();
 const mockRecordLatency = jest.fn();
@@ -60,6 +65,17 @@ jest.unstable_mockModule('../../src/services/metrics.js', () => ({
   recordLatency: mockRecordLatency,
   setCircuitState: mockSetCircuitState,
   auditLogFailures: { inc: jest.fn() },
+=======
+const mockRecordRequest   = jest.fn();
+const mockRecordFailure   = jest.fn();
+const mockRecordLatency   = jest.fn();
+const mockSetCircuitState = jest.fn();
+jest.unstable_mockModule('../../src/services/metrics.js', () => ({
+  recordRequest:   mockRecordRequest,
+  recordFailure:   mockRecordFailure,
+  recordLatency:   mockRecordLatency,
+  setCircuitState: mockSetCircuitState,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Feature flags ─────────────────────────────────────────────────────────────
@@ -71,8 +87,13 @@ jest.unstable_mockModule('../../src/core/featureFlags.js', () => ({
 
 // ── CircuitBreaker mock — real withRetry (no sleep) so _isRetryable is called ─
 
+<<<<<<< HEAD
 let _capturedCtorArgs; // { name, opts } — set by the mock constructor
 const mockExec = jest.fn();
+=======
+let _capturedCtorArgs;  // { name, opts } — set by the mock constructor
+const mockExec     = jest.fn();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 const mockGetState = jest.fn(() => 'CLOSED');
 
 jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => {
@@ -80,13 +101,18 @@ jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => {
   class CircuitOpenError extends Error {
     constructor(p) {
       super(`Circuit breaker OPEN for provider "${p}"`);
+<<<<<<< HEAD
       this.name = 'CircuitOpenError';
       this.provider = p;
+=======
+      this.name = 'CircuitOpenError'; this.provider = p;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     }
   }
   class TimeoutError extends Error {
     constructor(p, ms) {
       super(`Request to "${p}" timed out after ${ms}ms`);
+<<<<<<< HEAD
       this.name = 'TimeoutError';
       this.provider = p;
       this.timeoutMs = ms;
@@ -98,6 +124,13 @@ jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => {
       this.name = 'HttpError';
       this.status = s;
     }
+=======
+      this.name = 'TimeoutError'; this.provider = p; this.timeoutMs = ms;
+    }
+  }
+  class HttpError extends Error {
+    constructor(s, m) { super(m); this.name = 'HttpError'; this.status = s; }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   }
 
   // Real withRetry without sleep — _isRetryable IS called for retry decisions.
@@ -105,9 +138,14 @@ jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => {
     const { maxRetries = 3, shouldRetry = () => true } = opts;
     let attempt = 0;
     for (;;) {
+<<<<<<< HEAD
       try {
         return await fn();
       } catch (err) {
+=======
+      try { return await fn(); }
+      catch (err) {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         if (attempt >= maxRetries || !shouldRetry(err, attempt)) throw err;
         attempt++;
       }
@@ -120,10 +158,15 @@ jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => {
   });
 
   return {
+<<<<<<< HEAD
     CircuitBreaker: MockCB,
     CircuitOpenError,
     TimeoutError,
     HttpError,
+=======
+    CircuitBreaker:   MockCB,
+    CircuitOpenError, TimeoutError, HttpError,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     withRetry,
     STATE: { CLOSED: 'CLOSED', OPEN: 'OPEN', HALF_OPEN: 'HALF_OPEN' },
   };
@@ -132,36 +175,59 @@ jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => {
 // ── Import under test ─────────────────────────────────────────────────────────
 
 const { analyze, translate } = await import('../../src/services/claude.client.js');
+<<<<<<< HEAD
 const { config } = await import('../../src/core/config.js');
 const { CircuitOpenError, TimeoutError, HttpError } =
   await import('../../src/services/circuitBreaker.js');
+=======
+const { config }             = await import('../../src/core/config.js');
+const {
+  CircuitOpenError, TimeoutError, HttpError,
+} = await import('../../src/services/circuitBreaker.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Capture module-init calls (before any beforeEach can clear them) ──────────
 
 const _initSetCircuitCalls = mockSetCircuitState.mock.calls.map(a => [...a]);
+<<<<<<< HEAD
 const _breakerCtorName = _capturedCtorArgs?.name;
 const _breakerOpts = _capturedCtorArgs?.opts;
 // L19: childLogger('claude') is called at module level
 const _loggerInitArg = mockChildLogger.mock.calls[0]?.[0];
+=======
+const _breakerCtorName     = _capturedCtorArgs?.name;
+const _breakerOpts         = _capturedCtorArgs?.opts;
+// L19: childLogger('claude') is called at module level
+const _loggerInitArg       = mockChildLogger.mock.calls[0]?.[0];
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeOkRes(text) {
   return {
+<<<<<<< HEAD
     ok: true,
     status: 200,
+=======
+    ok: true, status: 200,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     json: async () => ({ content: [{ text }] }),
     text: async () => text,
   };
 }
 function makeErrRes(status, body = 'error body') {
   return {
+<<<<<<< HEAD
     ok: false,
     status,
+=======
+    ok: false, status,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     json: async () => ({}),
     text: async () => body,
   };
 }
+<<<<<<< HEAD
 function claudeJson(obj) {
   return JSON.stringify(obj);
 }
@@ -176,16 +242,27 @@ const OK_RESPONSE = makeOkRes(
     strategy: 'claude',
   })
 );
+=======
+function claudeJson(obj) { return JSON.stringify(obj); }
+const OK_RESPONSE = makeOkRes(claudeJson({ intent: 'list_events', subject: '', date: '', time: '', confidence: 0.9, errors: [], strategy: 'claude' }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   jest.clearAllMocks();
   cfg.CLAUDE_API_KEY = 'sk-mutations-test';
+<<<<<<< HEAD
   cfg.CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
   mockGetState.mockReturnValue('CLOSED');
   // Default: exec passes through to fn so apiFetch is called
   mockExec.mockImplementation(async fn => fn(new AbortController().signal));
+=======
+  cfg.CLAUDE_MODEL   = 'claude-haiku-4-5-20251001';
+  mockGetState.mockReturnValue('CLOSED');
+  // Default: exec passes through to fn so apiFetch is called
+  mockExec.mockImplementation(async (fn) => fn(new AbortController().signal));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   mockApiFetch.mockResolvedValue(OK_RESPONSE);
 });
 
@@ -221,7 +298,11 @@ describe('onStateChange callback (L29-33 killers)', () => {
     _breakerOpts.onStateChange('HALF_OPEN', 'claude');
     expect(mockLog.warn).toHaveBeenCalledWith(
       expect.objectContaining({ provider: 'claude', state: 'HALF_OPEN' }),
+<<<<<<< HEAD
       expect.any(String)
+=======
+      expect.any(String),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -347,7 +428,11 @@ describe('_call API headers and URL (L79-84 killers)', () => {
     await analyze('créer rendez-vous');
     expect(mockApiFetch).toHaveBeenCalledWith(
       'https://api.anthropic.com/v1/messages',
+<<<<<<< HEAD
       expect.any(Object)
+=======
+      expect.any(Object),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -383,8 +468,12 @@ describe('_call API headers and URL (L79-84 killers)', () => {
 describe('HttpError body handling (L91-92 killers)', () => {
   test('res.text() result is included in HttpError message (L92 StringLiteral)', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: false,
       status: 400,
+=======
+      ok: false, status: 400,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       json: async () => ({}),
       text: async () => 'Detailed error message',
     });
@@ -396,12 +485,18 @@ describe('HttpError body handling (L91-92 killers)', () => {
 
   test('res.text() throwing does not crash _call (L92 MethodExpression catch)', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: false,
       status: 422,
       json: async () => ({}),
       text: async () => {
         throw new Error('text() failed');
       },
+=======
+      ok: false, status: 422,
+      json: async () => ({}),
+      text: async () => { throw new Error('text() failed'); },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     const result = await analyze('test');
     expect(result.strategy).toBe('rule-based');
@@ -452,7 +547,11 @@ describe('_call failure log.warn (L113/L117 killers)', () => {
     await analyze('test');
     expect(mockLog.warn).toHaveBeenCalledWith(
       expect.objectContaining({ err: 'ECONNRESET failure' }),
+<<<<<<< HEAD
       expect.any(String)
+=======
+      expect.any(String),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -509,9 +608,13 @@ describe('_escJson special-char escaping (L40-41 killers)', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('_ruleBased update_event regex (L129 killer)', () => {
+<<<<<<< HEAD
   beforeEach(() => {
     cfg.CLAUDE_API_KEY = '';
   }); // force rule-based
+=======
+  beforeEach(() => { cfg.CLAUDE_API_KEY = ''; }); // force rule-based
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   test('"modifier" triggers update_event', async () => {
     const r = await analyze('modifier le rendez-vous de lundi');
@@ -530,7 +633,11 @@ describe('_ruleBased update_event regex (L129 killer)', () => {
   });
 
   test('"change" triggers update_event', async () => {
+<<<<<<< HEAD
     const r = await analyze("change l'heure du rendez-vous");
+=======
+    const r = await analyze('change l\'heure du rendez-vous');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(r.intent).toBe('update_event');
   });
 });
@@ -540,6 +647,7 @@ describe('_ruleBased update_event regex (L129 killer)', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('_ruleBased date parsing (L133-146 killers)', () => {
+<<<<<<< HEAD
   beforeEach(() => {
     cfg.CLAUDE_API_KEY = '';
   });
@@ -548,6 +656,13 @@ describe('_ruleBased date parsing (L133-146 killers)', () => {
     const r = await analyze('créer réunion demain à 10h');
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+=======
+  beforeEach(() => { cfg.CLAUDE_API_KEY = ''; });
+
+  test('"demain" → tomorrow\'s date (L135 StringLiteral)', async () => {
+    const r = await analyze('créer réunion demain à 10h');
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(r.date).toBe(tomorrow.toISOString().slice(0, 10));
   });
 
@@ -585,9 +700,13 @@ describe('_ruleBased date parsing (L133-146 killers)', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('_ruleBased subject and confidence (L148-155 killers)', () => {
+<<<<<<< HEAD
   beforeEach(() => {
     cfg.CLAUDE_API_KEY = '';
   });
+=======
+  beforeEach(() => { cfg.CLAUDE_API_KEY = ''; });
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   test('"avec X" extracts subject (L148 Regex)', async () => {
     const r = await analyze('réunion avec Pierre à 15h');
@@ -744,8 +863,12 @@ describe('analyze API body — system prompt + messages (L186-197 killers)', () 
 describe('analyze — content OptionalChaining + Regex (L199-200 killers)', () => {
   test('null content → rule-based fallback (L199 OptionalChaining json.content[0])', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: true,
       status: 200,
+=======
+      ok: true, status: 200,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       json: async () => ({ content: null }),
       text: async () => '',
     });
@@ -755,8 +878,12 @@ describe('analyze — content OptionalChaining + Regex (L199-200 killers)', () =
 
   test('missing content array → rule-based fallback (L199 OptionalChaining)', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: true,
       status: 200,
+=======
+      ok: true, status: 200,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       json: async () => ({}),
       text: async () => '',
     });
@@ -766,8 +893,12 @@ describe('analyze — content OptionalChaining + Regex (L199-200 killers)', () =
 
   test('null text in content[0] → rule-based fallback (L199 OptionalChaining .text)', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: true,
       status: 200,
+=======
+      ok: true, status: 200,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       json: async () => ({ content: [{ text: null }] }),
       text: async () => '',
     });
@@ -776,6 +907,7 @@ describe('analyze — content OptionalChaining + Regex (L199-200 killers)', () =
   });
 
   test('```json wrapper is stripped before parse (L200 Regex)', async () => {
+<<<<<<< HEAD
     const payload = {
       intent: 'create_event',
       subject: 'test',
@@ -785,6 +917,9 @@ describe('analyze — content OptionalChaining + Regex (L199-200 killers)', () =
       errors: [],
       strategy: 'claude',
     };
+=======
+    const payload = { intent: 'create_event', subject: 'test', date: '', time: '', confidence: 0.9, errors: [], strategy: 'claude' };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     mockApiFetch.mockResolvedValueOnce(makeOkRes(`\`\`\`json\n${JSON.stringify(payload)}\n\`\`\``));
     const r = await analyze('créer');
     expect(r.intent).toBe('create_event');
@@ -792,6 +927,7 @@ describe('analyze — content OptionalChaining + Regex (L199-200 killers)', () =
   });
 
   test('``` without json wrapper is also stripped (L200 Regex variant)', async () => {
+<<<<<<< HEAD
     const payload = {
       intent: 'list_events',
       subject: '',
@@ -801,12 +937,16 @@ describe('analyze — content OptionalChaining + Regex (L199-200 killers)', () =
       errors: [],
       strategy: 'claude',
     };
+=======
+    const payload = { intent: 'list_events', subject: '', date: '', time: '', confidence: 0.8, errors: [], strategy: 'claude' };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     mockApiFetch.mockResolvedValueOnce(makeOkRes(`\`\`\`\n${JSON.stringify(payload)}\n\`\`\``));
     const r = await analyze('liste');
     expect(r.intent).toBe('list_events');
   });
 
   test('trailing ``` stripped from response (L200 Regex /\\n?```$/)', async () => {
+<<<<<<< HEAD
     const payload = {
       intent: 'cancel_event',
       subject: '',
@@ -816,6 +956,9 @@ describe('analyze — content OptionalChaining + Regex (L199-200 killers)', () =
       errors: [],
       strategy: 'claude',
     };
+=======
+    const payload = { intent: 'cancel_event', subject: '', date: '', time: '', confidence: 0.8, errors: [], strategy: 'claude' };
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     mockApiFetch.mockResolvedValueOnce(makeOkRes(`${JSON.stringify(payload)}\n\`\`\``));
     const r = await analyze('annuler');
     expect(r.intent).toBe('cancel_event');
@@ -844,8 +987,13 @@ describe('analyze — JSON parse failure log (L205-206 killers)', () => {
   test('parse failure log message is "Claude JSON parse failed..." (L206 StringLiteral)', async () => {
     mockApiFetch.mockResolvedValueOnce(makeOkRes('BAD_JSON'));
     await analyze('test');
+<<<<<<< HEAD
     const hasMsg = mockLog.warn.mock.calls.some(
       ([, msg]) => typeof msg === 'string' && msg.includes('parse failed')
+=======
+    const hasMsg = mockLog.warn.mock.calls.some(([, msg]) =>
+      typeof msg === 'string' && msg.includes('parse failed'),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     expect(hasMsg).toBe(true);
   });
@@ -919,15 +1067,24 @@ describe('analyze catch log.warn (L220 killers)', () => {
     await analyze('test');
     expect(mockLog.warn).toHaveBeenCalledWith(
       expect.objectContaining({ err: 'unexpected API error' }),
+<<<<<<< HEAD
       expect.any(String)
+=======
+      expect.any(String),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
   test('log.warn message is "Claude analyze failed..." (L220 StringLiteral)', async () => {
     mockExec.mockRejectedValue(new Error('x'));
     await analyze('test');
+<<<<<<< HEAD
     const hasMsg = mockLog.warn.mock.calls.some(
       ([, msg]) => typeof msg === 'string' && msg.includes('analyze failed')
+=======
+    const hasMsg = mockLog.warn.mock.calls.some(([, msg]) =>
+      typeof msg === 'string' && msg.includes('analyze failed'),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     expect(hasMsg).toBe(true);
   });
@@ -1010,8 +1167,12 @@ describe('translate API body and response (L240-249 killers)', () => {
 
   test('translate null content → returns original (L247 OptionalChaining null guard)', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: true,
       status: 200,
+=======
+      ok: true, status: 200,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       json: async () => ({ content: null }),
       text: async () => '',
     });
@@ -1021,8 +1182,12 @@ describe('translate API body and response (L240-249 killers)', () => {
 
   test('translate content[0].text null → returns original (L247 OptionalChaining .text)', async () => {
     mockApiFetch.mockResolvedValueOnce({
+<<<<<<< HEAD
       ok: true,
       status: 200,
+=======
+      ok: true, status: 200,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       json: async () => ({ content: [{ text: null }] }),
       text: async () => '',
     });
@@ -1037,7 +1202,11 @@ describe('translate API body and response (L240-249 killers)', () => {
     expect(r).toBe('Bonjour'); // original returned
     expect(mockLog.warn).toHaveBeenCalledWith(
       expect.objectContaining({ err: 'translate API error' }),
+<<<<<<< HEAD
       expect.any(String)
+=======
+      expect.any(String),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
   });
 
@@ -1045,12 +1214,18 @@ describe('translate API body and response (L240-249 killers)', () => {
     mockExec.mockRejectedValue(new Error('x'));
     await translate('Bonjour', 'en');
     // Source: 'Claude translate failed — returning original'
+<<<<<<< HEAD
     const hasMsg = mockLog.warn.mock.calls.some(
       ([, m]) => typeof m === 'string' && m.includes('Claude translate failed')
+=======
+    const hasMsg = mockLog.warn.mock.calls.some(([, m]) =>
+      typeof m === 'string' && m.includes('Claude translate failed'),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     );
     expect(hasMsg).toBe(true);
   });
 });
+<<<<<<< HEAD
 
 // ═════════════════════════════════════════════════════════════════════════════
 // L77 UpdateOperator attempts-- → attempts++ killer
@@ -1130,3 +1305,5 @@ describe('_call log object shape (L106/L114 ObjectLiteral killers)', () => {
     expect(typeof warnCall[0].latency).toBe('number');
   });
 });
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b

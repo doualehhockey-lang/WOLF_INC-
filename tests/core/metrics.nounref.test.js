@@ -13,9 +13,15 @@ await jest.unstable_mockModule('prom-client', () => ({
   default: {
     collectDefaultMetrics: mockCollectDefaultMetrics,
     Histogram: jest.fn().mockImplementation(() => ({ observe: jest.fn(), startTimer: jest.fn() })),
+<<<<<<< HEAD
     Counter: jest.fn().mockImplementation(() => ({ inc: jest.fn() })),
     Gauge: jest.fn().mockImplementation(() => ({ inc: jest.fn(), dec: jest.fn(), set: jest.fn() })),
     register: {
+=======
+    Counter:   jest.fn().mockImplementation(() => ({ inc: jest.fn() })),
+    Gauge:     jest.fn().mockImplementation(() => ({ inc: jest.fn(), dec: jest.fn(), set: jest.fn() })),
+    register:  {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       clear: jest.fn(),
       metrics: jest.fn(async () => ''),
       contentType: 'text/plain; version=0.0.4; charset=utf-8',

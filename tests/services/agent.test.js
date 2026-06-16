@@ -2,7 +2,11 @@
 //
 // Tests for src/services/agent.js — Wolf Engine ML pipeline orchestrator.
 //
+<<<<<<< HEAD
 // Strategy: jest.unstable_mockModule for all 3 client modules + metrics + logger.
+=======
+// Strategy: jest.unstable_mockModule for all 4 client modules + metrics + logger.
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // _makeAgent(deps) is used with explicit dep injection so tests are fully isolated.
 
 import { jest } from '@jest/globals';
@@ -11,14 +15,19 @@ import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('../../src/core/logger.js', () => ({
   childLogger: () => ({
+<<<<<<< HEAD
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+=======
+    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   }),
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
+<<<<<<< HEAD
   recordAgentRequest: jest.fn(),
   recordAgentLatency: jest.fn(),
   recordAgentStageFailure: jest.fn(),
@@ -36,6 +45,33 @@ const { recordAgentRequest, recordAgentLatency, recordAgentStageFailure, recordP
   await import('../../src/services/metrics.js');
 
 const { _makeAgent } = await import('../../src/services/agent.js');
+=======
+  recordAgentRequest:     jest.fn(),
+  recordAgentLatency:     jest.fn(),
+  recordAgentStageFailure: jest.fn(),
+  recordPipelineSuccess:  jest.fn(),
+  // provider-level helpers (not used by agent.js directly, but metrics module exports them)
+  recordRequest:    jest.fn(),
+  recordFailure:    jest.fn(),
+  recordLatency:    jest.fn(),
+  setCircuitState:  jest.fn(),
+}));
+
+// circuitBreaker errors ARE real — we need the real class instances for instanceof checks
+// but we don't want the module to do anything heavy, so just re-export the real module.
+// No mock needed here — the real circuitBreaker.js only exports class definitions.
+
+// ── Import after mocks ────────────────────────────────────────────────────────
+
+const {
+  recordAgentRequest,
+  recordAgentLatency,
+  recordAgentStageFailure,
+  recordPipelineSuccess,
+} = await import('../../src/services/metrics.js');
+
+const { _makeAgent }       = await import('../../src/services/agent.js');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 const { CircuitOpenError, TimeoutError } = await import('../../src/services/circuitBreaker.js');
 
 // ── Test helpers ──────────────────────────────────────────────────────────────
@@ -43,6 +79,7 @@ const { CircuitOpenError, TimeoutError } = await import('../../src/services/circ
 const DUMMY_WAV = Buffer.from('RIFF');
 
 const MOCK_ANALYSIS = {
+<<<<<<< HEAD
   intent: 'create_event',
   subject: 'Réunion équipe',
   date: 'lundi',
@@ -50,6 +87,25 @@ const MOCK_ANALYSIS = {
   confidence: 0.95,
   errors: [],
   strategy: 'claude',
+=======
+  intent:     'create_event',
+  subject:    'Réunion équipe',
+  date:       'lundi',
+  time:       '14h30',
+  confidence: 0.95,
+  errors:     [],
+  strategy:   'claude',
+};
+
+const MOCK_ENRICHED = {
+  intent:     'create_event',
+  subject:    'Réunion équipe',
+  date:       'lundi',
+  time:       '14h30',
+  confidence: 0.95,
+  errors:     [],
+  strategy:   'ollama',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 
 const MOCK_AUDIO = { buffer: Buffer.from('audio'), ext: '.mp3', mimeType: 'audio/mpeg' };
@@ -61,7 +117,12 @@ function makeAgent(overrides = {}) {
   const deps = {
     transcribeWav: jest.fn().mockResolvedValue('Crée une réunion lundi à 14h30'),
     claudeAnalyze: jest.fn().mockResolvedValue(MOCK_ANALYSIS),
+<<<<<<< HEAD
     synthesize: jest.fn().mockResolvedValue(MOCK_AUDIO),
+=======
+    ollamaAnalyze: jest.fn().mockResolvedValue(MOCK_ENRICHED),
+    synthesize:    jest.fn().mockResolvedValue(MOCK_AUDIO),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     now: () => fakeNow,
     ...overrides,
   };
@@ -70,9 +131,13 @@ function makeAgent(overrides = {}) {
   return {
     process,
     deps,
+<<<<<<< HEAD
     advance: ms => {
       fakeNow += ms;
     },
+=======
+    advance: (ms) => { fakeNow += ms; },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   };
 }
 
@@ -90,6 +155,10 @@ describe('full pipeline success', () => {
   test('returns ok:true with all fields populated', async () => {
     const { process, deps, advance } = makeAgent();
 
+<<<<<<< HEAD
+=======
+    // Simulate 500 ms of pipeline time
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const origTranscribe = deps.transcribeWav;
     deps.transcribeWav = jest.fn().mockImplementation(async (...a) => {
       advance(200);
@@ -102,12 +171,17 @@ describe('full pipeline success', () => {
     expect(result.requestId).toBe('req-1');
     expect(result.transcription).toBe('Crée une réunion lundi à 14h30');
     expect(result.analysis).toEqual(MOCK_ANALYSIS);
+<<<<<<< HEAD
+=======
+    expect(result.enriched).toEqual(MOCK_ENRICHED);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(result.audio).toBe(MOCK_AUDIO);
     expect(typeof result.responseText).toBe('string');
     expect(result.responseText.length).toBeGreaterThan(0);
     expect(typeof result.latency).toBe('number');
   });
 
+<<<<<<< HEAD
   test('calls all 3 stages in order', async () => {
     const order = [];
     const { process } = makeAgent({
@@ -127,6 +201,19 @@ describe('full pipeline success', () => {
 
     await process(DUMMY_WAV, { requestId: 'req-order' });
     expect(order).toEqual(['whisper', 'claude', 'tts']);
+=======
+  test('calls all 4 stages in order', async () => {
+    const order = [];
+    const { process } = makeAgent({
+      transcribeWav: jest.fn().mockImplementation(async () => { order.push('whisper'); return 'text'; }),
+      claudeAnalyze: jest.fn().mockImplementation(async () => { order.push('claude'); return MOCK_ANALYSIS; }),
+      ollamaAnalyze: jest.fn().mockImplementation(async () => { order.push('ollama'); return MOCK_ENRICHED; }),
+      synthesize:    jest.fn().mockImplementation(async () => { order.push('tts'); return MOCK_AUDIO; }),
+    });
+
+    await process(DUMMY_WAV, { requestId: 'req-order' });
+    expect(order).toEqual(['whisper', 'claude', 'ollama', 'tts']);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('records success metrics', async () => {
@@ -143,6 +230,7 @@ describe('full pipeline success', () => {
     const { process, deps } = makeAgent();
     await process(DUMMY_WAV, { requestId: 'req-propagate' });
 
+<<<<<<< HEAD
     expect(deps.transcribeWav).toHaveBeenCalledWith(
       DUMMY_WAV,
       expect.objectContaining({ requestId: 'req-propagate' })
@@ -155,6 +243,12 @@ describe('full pipeline success', () => {
       expect.any(String),
       expect.objectContaining({ requestId: 'req-propagate' })
     );
+=======
+    expect(deps.transcribeWav).toHaveBeenCalledWith(DUMMY_WAV, expect.objectContaining({ requestId: 'req-propagate' }));
+    expect(deps.claudeAnalyze).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ requestId: 'req-propagate' }));
+    expect(deps.ollamaAnalyze).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ requestId: 'req-propagate' }));
+    expect(deps.synthesize).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ requestId: 'req-propagate' }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('auto-generates requestId when not provided', async () => {
@@ -180,26 +274,35 @@ describe('full pipeline success', () => {
     const { process, deps } = makeAgent();
     await process(DUMMY_WAV, { requestId: 'req-locale', locale: 'en-US' });
 
+<<<<<<< HEAD
     expect(deps.synthesize).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ locale: 'en-US' })
     );
+=======
+    expect(deps.synthesize).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ locale: 'en-US' }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('defaults locale to fr-FR', async () => {
     const { process, deps } = makeAgent();
     await process(DUMMY_WAV, { requestId: 'req-locale-default' });
 
+<<<<<<< HEAD
     expect(deps.synthesize).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ locale: 'fr-FR' })
     );
+=======
+    expect(deps.synthesize).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ locale: 'fr-FR' }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('passes timeoutMs to every stage', async () => {
     const { process, deps } = makeAgent();
     await process(DUMMY_WAV, { requestId: 'req-timeout', timeoutMs: 9_999 });
 
+<<<<<<< HEAD
     expect(deps.transcribeWav).toHaveBeenCalledWith(
       DUMMY_WAV,
       expect.objectContaining({ timeoutMs: 9_999 })
@@ -212,11 +315,18 @@ describe('full pipeline success', () => {
       expect.any(String),
       expect.objectContaining({ timeoutMs: 9_999 })
     );
+=======
+    expect(deps.transcribeWav).toHaveBeenCalledWith(DUMMY_WAV, expect.objectContaining({ timeoutMs: 9_999 }));
+    expect(deps.claudeAnalyze).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ timeoutMs: 9_999 }));
+    expect(deps.ollamaAnalyze).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ timeoutMs: 9_999 }));
+    expect(deps.synthesize).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ timeoutMs: 9_999 }));
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('latency reflects elapsed time', async () => {
     let fakeNow = 5_000_000;
     const deps = {
+<<<<<<< HEAD
       transcribeWav: jest.fn().mockImplementation(async () => {
         fakeNow += 100;
         return 'text';
@@ -229,12 +339,22 @@ describe('full pipeline success', () => {
         fakeNow += 150;
         return MOCK_AUDIO;
       }),
+=======
+      transcribeWav: jest.fn().mockImplementation(async () => { fakeNow += 100; return 'text'; }),
+      claudeAnalyze: jest.fn().mockImplementation(async () => { fakeNow += 200; return MOCK_ANALYSIS; }),
+      ollamaAnalyze: jest.fn().mockImplementation(async () => { fakeNow += 50;  return MOCK_ENRICHED; }),
+      synthesize:    jest.fn().mockImplementation(async () => { fakeNow += 150; return MOCK_AUDIO; }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       now: () => fakeNow,
     };
     const { process } = _makeAgent(deps);
     const result = await process(DUMMY_WAV, { requestId: 'req-latency' });
 
+<<<<<<< HEAD
     expect(result.latency).toBe(450); // 100+200+150
+=======
+    expect(result.latency).toBe(500); // 100+200+50+150
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 
@@ -245,6 +365,7 @@ describe('full pipeline success', () => {
 describe('responseText composition', () => {
   async function textFor(intent, subject = 'S', date = 'lundi', time = '9h') {
     const { process } = makeAgent({
+<<<<<<< HEAD
       claudeAnalyze: jest.fn().mockResolvedValue({
         intent,
         subject,
@@ -254,6 +375,9 @@ describe('responseText composition', () => {
         errors: [],
         strategy: 'claude',
       }),
+=======
+      claudeAnalyze: jest.fn().mockResolvedValue({ intent, subject, date, time, confidence: 0.9, errors: [], strategy: 'claude' }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     });
     const result = await process(DUMMY_WAV, { requestId: 'req-text-' + intent });
     return result.responseText;
@@ -342,6 +466,10 @@ describe('Whisper stage failure', () => {
     await process(DUMMY_WAV, { requestId: 'req-wskip' });
 
     expect(deps.claudeAnalyze).not.toHaveBeenCalled();
+<<<<<<< HEAD
+=======
+    expect(deps.ollamaAnalyze).not.toHaveBeenCalled();
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(deps.synthesize).not.toHaveBeenCalled();
   });
 });
@@ -385,7 +513,62 @@ describe('Claude stage failure', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 // 5. TTS failure
+=======
+// 5. Ollama failure / fallback (non-blocking)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Ollama stage — non-blocking fallback', () => {
+  test('ollama-error strategy → pipeline continues, ok:true', async () => {
+    const ollamaErrorResult = { intent: 'unknown', subject: '', date: '', time: '', confidence: 0, errors: ['timeout'], strategy: 'ollama-error' };
+    const { process } = makeAgent({
+      ollamaAnalyze: jest.fn().mockResolvedValue(ollamaErrorResult),
+    });
+    const result = await process(DUMMY_WAV, { requestId: 'req-ollama-soft' });
+
+    expect(result.ok).toBe(true);
+    expect(result.enriched.strategy).toBe('ollama-error');
+    expect(result.audio).toBe(MOCK_AUDIO);
+  });
+
+  test('ollama-error strategy records stage failure metric', async () => {
+    const { process } = makeAgent({
+      ollamaAnalyze: jest.fn().mockResolvedValue({ strategy: 'ollama-error', intent: 'unknown', subject: '', date: '', time: '', confidence: 0, errors: [] }),
+    });
+    await process(DUMMY_WAV, { requestId: 'req-ollama-metric' });
+
+    expect(recordAgentStageFailure).toHaveBeenCalledWith('ollama', 'error');
+    // Pipeline still succeeds
+    expect(recordPipelineSuccess).toHaveBeenCalledTimes(1);
+    expect(recordAgentRequest).toHaveBeenCalledWith('success');
+  });
+
+  test('if ollamaAnalyze throws unexpectedly → pipeline continues with synthetic fallback', async () => {
+    const { process } = makeAgent({
+      ollamaAnalyze: jest.fn().mockRejectedValue(new Error('unexpected throw')),
+    });
+    const result = await process(DUMMY_WAV, { requestId: 'req-ollama-throw' });
+
+    expect(result.ok).toBe(true);
+    expect(result.enriched.strategy).toBe('ollama-error');
+    expect(result.enriched.errors).toContain('unexpected throw');
+  });
+
+  test('unexpected throw records ollama stage failure', async () => {
+    const { process } = makeAgent({
+      ollamaAnalyze: jest.fn().mockRejectedValue(new CircuitOpenError('ollama')),
+    });
+    await process(DUMMY_WAV, { requestId: 'req-ollama-co' });
+
+    expect(recordAgentStageFailure).toHaveBeenCalledWith('ollama', 'circuit_open');
+    expect(recordPipelineSuccess).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. TTS failure
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('TTS stage failure', () => {
@@ -421,7 +604,11 @@ describe('TTS stage failure', () => {
     expect(recordAgentStageFailure).toHaveBeenCalledWith('tts', 'circuit_open');
   });
 
+<<<<<<< HEAD
   test('Whisper and Claude ARE called before TTS failure', async () => {
+=======
+  test('Whisper, Claude, Ollama ARE called before TTS failure', async () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const { process, deps } = makeAgent({
       synthesize: jest.fn().mockRejectedValue(new Error('tts down')),
     });
@@ -429,11 +616,19 @@ describe('TTS stage failure', () => {
 
     expect(deps.transcribeWav).toHaveBeenCalledTimes(1);
     expect(deps.claudeAnalyze).toHaveBeenCalledTimes(1);
+<<<<<<< HEAD
+=======
+    expect(deps.ollamaAnalyze).toHaveBeenCalledTimes(1);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 // 6. requestId propagation
+=======
+// 7. requestId propagation
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('requestId propagation', () => {
@@ -464,13 +659,18 @@ describe('requestId propagation', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 // 7. Metrics — detailed correctness
+=======
+// 8. Metrics — detailed correctness
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('metrics correctness', () => {
   test('success path: recordLatency receives positive number', async () => {
     let fakeNow = 0;
     const deps = {
+<<<<<<< HEAD
       transcribeWav: jest.fn().mockImplementation(async () => {
         fakeNow += 100;
         return 'text';
@@ -483,20 +683,35 @@ describe('metrics correctness', () => {
         fakeNow += 150;
         return MOCK_AUDIO;
       }),
+=======
+      transcribeWav: jest.fn().mockImplementation(async () => { fakeNow += 100; return 'text'; }),
+      claudeAnalyze: jest.fn().mockImplementation(async () => { fakeNow += 200; return MOCK_ANALYSIS; }),
+      ollamaAnalyze: jest.fn().mockImplementation(async () => { fakeNow += 50;  return MOCK_ENRICHED; }),
+      synthesize:    jest.fn().mockImplementation(async () => { fakeNow += 150; return MOCK_AUDIO; }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       now: () => fakeNow,
     };
     const { process } = _makeAgent(deps);
     await process(DUMMY_WAV, { requestId: 'req-lat' });
 
     const latencyArg = recordAgentLatency.mock.calls[0][0];
+<<<<<<< HEAD
     expect(latencyArg).toBe(450);
+=======
+    expect(latencyArg).toBe(500);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 
   test('each error path calls recordAgentRequest exactly once', async () => {
     for (const [stage, override] of [
       ['whisper', { transcribeWav: jest.fn().mockRejectedValue(new Error('fail')) }],
+<<<<<<< HEAD
       ['claude', { claudeAnalyze: jest.fn().mockRejectedValue(new Error('fail')) }],
       ['tts', { synthesize: jest.fn().mockRejectedValue(new Error('fail')) }],
+=======
+      ['claude',  { claudeAnalyze: jest.fn().mockRejectedValue(new Error('fail')) }],
+      ['tts',     { synthesize:    jest.fn().mockRejectedValue(new Error('fail')) }],
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     ]) {
       jest.clearAllMocks();
       const { process } = makeAgent(override);
@@ -509,6 +724,11 @@ describe('metrics correctness', () => {
   test('success path does not call recordAgentStageFailure', async () => {
     const { process } = makeAgent();
     await process(DUMMY_WAV, { requestId: 'req-nosf' });
+<<<<<<< HEAD
+=======
+    // Only ollama stage would fire if enriched.strategy === 'ollama-error';
+    // here it returns valid enrichment
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     expect(recordAgentStageFailure).not.toHaveBeenCalled();
   });
 
@@ -516,7 +736,11 @@ describe('metrics correctness', () => {
     for (const override of [
       { transcribeWav: jest.fn().mockRejectedValue(new Error('fail')) },
       { claudeAnalyze: jest.fn().mockRejectedValue(new Error('fail')) },
+<<<<<<< HEAD
       { synthesize: jest.fn().mockRejectedValue(new Error('fail')) },
+=======
+      { synthesize:    jest.fn().mockRejectedValue(new Error('fail')) },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     ]) {
       jest.clearAllMocks();
       const { process } = makeAgent(override);
@@ -527,14 +751,22 @@ describe('metrics correctness', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 // 8. Multiple concurrent calls
+=======
+// 9. Multiple concurrent calls
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('concurrent pipeline calls', () => {
   test('two simultaneous success calls return independent results', async () => {
     const { process } = makeAgent({
+<<<<<<< HEAD
       claudeAnalyze: jest
         .fn()
+=======
+      claudeAnalyze: jest.fn()
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         .mockResolvedValueOnce({ ...MOCK_ANALYSIS, subject: 'First' })
         .mockResolvedValueOnce({ ...MOCK_ANALYSIS, subject: 'Second' }),
     });
@@ -571,7 +803,11 @@ describe('concurrent pipeline calls', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 // 9. Edge cases
+=======
+// 10. Edge cases
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('edge cases', () => {
@@ -615,11 +851,20 @@ describe('edge cases', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+<<<<<<< HEAD
 // 10. Default parameters (line 126) — wavBuffer = null default branch
+=======
+// 11. Default parameters (line 126) — wavBuffer = null default branch
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('process() default parameters (line 126)', () => {
   test('calling process() with no arguments uses wavBuffer=null default', async () => {
+<<<<<<< HEAD
+=======
+    // This covers the TRUE branch of `wavBuffer = null` — the only code path
+    // where wavBuffer is not explicitly provided. transcribeWav is called with null.
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const { process, deps } = makeAgent();
     const result = await process();
 

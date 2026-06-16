@@ -3,7 +3,11 @@
 
 import { jest } from '@jest/globals';
 import https from 'https';
+<<<<<<< HEAD
 import http from 'http';
+=======
+import http  from 'http';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 import { apiFetch, httpsAgent, httpAgent } from '../../src/infra/http/httpClient.js';
 
 describe('httpClient', () => {
@@ -19,7 +23,11 @@ describe('httpClient', () => {
 
   test('apiFetch delegates to global fetch', async () => {
     const mockResponse = { ok: true, status: 200 };
+<<<<<<< HEAD
     const mockFetch = jest.fn().mockResolvedValue(mockResponse);
+=======
+    const mockFetch    = jest.fn().mockResolvedValue(mockResponse);
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const originalFetch = globalThis.fetch;
 
     globalThis.fetch = mockFetch;
@@ -41,9 +49,15 @@ describe('httpClient', () => {
     globalThis.fetch = mockFetch;
     try {
       await apiFetch('https://api.example.com', {
+<<<<<<< HEAD
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ x: 1 }),
+=======
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ x: 1 }),
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       });
       const [, opts] = mockFetch.mock.calls[0];
       expect(opts.method).toBe('POST');

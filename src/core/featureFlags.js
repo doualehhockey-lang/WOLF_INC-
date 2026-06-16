@@ -28,6 +28,7 @@ import { childLogger } from './logger.js';
 
 let _redisModule = null;
 
+<<<<<<< HEAD
 async function _getRedis() {
   if (!_redisModule) _redisModule = await import('../infra/redis/redisClient.js');
   return _redisModule;
@@ -37,6 +38,12 @@ async function _redisGet(key) {
   try {
     const m = await _getRedis();
     return m.cacheGet?.(key) ?? null;
+=======
+async function _redisGet(key) {
+  try {
+    if (!_redisModule) _redisModule = await import('../infra/redis/redisClient.js');
+    return _redisModule.cacheGet?.(key) ?? null;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   } catch {
     return null; // Redis module failed to load — fall back to defaults
   }
@@ -44,6 +51,7 @@ async function _redisGet(key) {
 
 async function _redisSet(key, value, ttl) {
   try {
+<<<<<<< HEAD
     const m = await _getRedis();
     return m.cacheSet?.(key, value, ttl);
   } catch {
@@ -59,21 +67,33 @@ async function _redisPublish(channel, message) {
   } catch {
     /* ignore — pub/sub is a best-effort propagation mechanism */
   }
+=======
+    if (!_redisModule) _redisModule = await import('../infra/redis/redisClient.js');
+    return _redisModule.cacheSet?.(key, value, ttl);
+  } catch { /* ignore — flag will expire from local cache */ }
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }
 
 const log = childLogger('feature-flags');
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
 const REDIS_PREFIX = 'ff:wolf:';
 const REDIS_TTL_SEC = 86_400; // 24h — flags persist across restarts
 const FLAG_CACHE_TTL_MS = 30_000; // 30s local cache — avoids Redis on every request
 const INVALIDATION_CHANNEL = 'wolf:ff:invalidate'; // pub/sub channel for cross-instance invalidation
+=======
+const REDIS_PREFIX      = 'ff:wolf:';
+const REDIS_TTL_SEC     = 86_400;       // 24h — flags persist across restarts
+const FLAG_CACHE_TTL_MS = 30_000;       // 30s local cache — avoids Redis on every request
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
 // ── Typed flag keys ───────────────────────────────────────────────────────────
 // Use FLAGS.CLAUDE_NLU instead of 'claude.nlu' to catch typos at import time.
 
 export const FLAGS = Object.freeze({
+<<<<<<< HEAD
   CLAUDE_NLU: 'claude.nlu', // Use Claude for NLU (false → rule-based)
   TTS_ELEVENLABS: 'tts.elevenlabs', // ElevenLabs TTS provider
   TTS_AZURE: 'tts.azure', // Azure TTS provider
@@ -84,11 +104,26 @@ export const FLAGS = Object.freeze({
   RATE_LIMIT: 'rate-limit', // Enforce per-phone rate limit
   AUDIT_LOG: 'audit.log', // Write to audit_logs table
   TRANSLATION: 'translation', // Translate non-FR responses via Claude
+=======
+  CLAUDE_NLU:       'claude.nlu',       // Use Claude for NLU (false → rule-based)
+  OLLAMA_NLU:       'ollama.nlu',       // Use Ollama when Claude is killed
+  TTS_ELEVENLABS:   'tts.elevenlabs',   // ElevenLabs TTS provider
+  TTS_AZURE:        'tts.azure',        // Azure TTS provider
+  TTS_PIPER:        'tts.piper',        // Local Piper TTS provider
+  PIPELINE_VOICE:   'pipeline.voice',   // Process inbound voice calls
+  PIPELINE_SMS:     'pipeline.sms',     // Process inbound SMS
+  MEMORY_CONTEXT:   'memory.context',   // Inject conversation memory into NLU
+  RATE_LIMIT:       'rate-limit',       // Enforce per-phone rate limit
+  OTEL_TRACES:      'otel.traces',      // Emit OpenTelemetry traces
+  AUDIT_LOG:        'audit.log',        // Write to audit_logs table
+  TRANSLATION:      'translation',      // Translate non-FR responses via Claude
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ── Default values — ALL enabled unless explicitly disabled ───────────────────
 
 const DEFAULTS = Object.freeze({
+<<<<<<< HEAD
   [FLAGS.CLAUDE_NLU]: true,
   [FLAGS.TTS_ELEVENLABS]: true,
   [FLAGS.TTS_AZURE]: true,
@@ -99,6 +134,20 @@ const DEFAULTS = Object.freeze({
   [FLAGS.RATE_LIMIT]: true,
   [FLAGS.AUDIT_LOG]: true,
   [FLAGS.TRANSLATION]: true,
+=======
+  [FLAGS.CLAUDE_NLU]:     true,
+  [FLAGS.OLLAMA_NLU]:     true,
+  [FLAGS.TTS_ELEVENLABS]: true,
+  [FLAGS.TTS_AZURE]:      true,
+  [FLAGS.TTS_PIPER]:      true,
+  [FLAGS.PIPELINE_VOICE]: true,
+  [FLAGS.PIPELINE_SMS]:   true,
+  [FLAGS.MEMORY_CONTEXT]: true,
+  [FLAGS.RATE_LIMIT]:     true,
+  [FLAGS.OTEL_TRACES]:    true,
+  [FLAGS.AUDIT_LOG]:      true,
+  [FLAGS.TRANSLATION]:    true,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 });
 
 // ── In-process cache ──────────────────────────────────────────────────────────
@@ -170,9 +219,12 @@ export async function setFlag(flagName, enabled) {
   const value = enabled ? '1' : '0';
   await _redisSet(REDIS_PREFIX + flagName, value, REDIS_TTL_SEC);
   _cacheInvalidate(flagName);
+<<<<<<< HEAD
   // M1 FIX: publish invalidation so other instances drop their local cache immediately.
   // Other instances subscribe via subscribeToFlagInvalidations() at startup.
   await _redisPublish(INVALIDATION_CHANNEL, flagName);
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   log.info({ flagName, enabled }, 'Feature flag updated');
 }
 
@@ -207,10 +259,17 @@ export async function getAllFlags() {
     const cached = _cacheGet(flagName);
     const enabled = cached !== null ? cached : await isEnabled(flagName);
     result[flagName] = {
+<<<<<<< HEAD
       key: constKey,
       enabled,
       default: DEFAULTS[flagName] ?? true,
       cached: cached !== null,
+=======
+      key:     constKey,
+      enabled,
+      default: DEFAULTS[flagName] ?? true,
+      cached:  cached !== null,
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     };
   }
   return result;
@@ -242,6 +301,7 @@ export function clearCache() {
   _redisModule = null; // allow re-import (important for test isolation)
   log.debug('Feature flag cache cleared');
 }
+<<<<<<< HEAD
 
 /**
  * Subscribe to cross-instance feature-flag invalidation messages.
@@ -305,3 +365,5 @@ export async function subscribeToFlagInvalidations() {
     );
   }
 }
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b

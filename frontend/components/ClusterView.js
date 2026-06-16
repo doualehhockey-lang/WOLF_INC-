@@ -12,17 +12,29 @@
 //   error   — Error|null
 
 import { useMemo } from 'react';
+<<<<<<< HEAD
 import { Server, AlertCircle, CheckCircle2, Clock, XCircle } from 'lucide-react';
+=======
+import { Server, Cpu, MemoryStick, AlertCircle, CheckCircle2, Clock, XCircle } from 'lucide-react';
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 import clsx from 'clsx';
 
 // ── Phase → style map ─────────────────────────────────────────────────────────
 
 const PHASE_STYLE = {
+<<<<<<< HEAD
   Running: { badge: 'badge-green', Icon: CheckCircle2 },
   Pending: { badge: 'badge-yellow', Icon: Clock },
   Failed: { badge: 'badge-red', Icon: XCircle },
   Unknown: { badge: 'badge-gray', Icon: AlertCircle },
   Succeeded: { badge: 'badge-blue', Icon: CheckCircle2 },
+=======
+  Running:   { badge: 'badge-green',  Icon: CheckCircle2 },
+  Pending:   { badge: 'badge-yellow', Icon: Clock        },
+  Failed:    { badge: 'badge-red',    Icon: XCircle      },
+  Unknown:   { badge: 'badge-gray',   Icon: AlertCircle  },
+  Succeeded: { badge: 'badge-blue',   Icon: CheckCircle2 },
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 };
 
 // ── Pod card ──────────────────────────────────────────────────────────────────
@@ -35,10 +47,16 @@ const PHASE_STYLE = {
 function PodCard({ pod }) {
   const { badge, Icon } = PHASE_STYLE[pod.phase] ?? PHASE_STYLE.Unknown;
 
+<<<<<<< HEAD
   const cpuPct =
     pod.cpuRequestM > 0
       ? Math.min(Math.round(((pod.cpuM ?? 0) / pod.cpuRequestM) * 100), 200)
       : null;
+=======
+  const cpuPct = pod.cpuRequestM > 0
+    ? Math.min(Math.round((pod.cpuM ?? 0) / pod.cpuRequestM * 100), 200)
+    : null;
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   const isStressed = cpuPct !== null && cpuPct > 80;
 
@@ -46,7 +64,11 @@ function PodCard({ pod }) {
     <article
       className={clsx(
         'card flex flex-col gap-3 text-sm',
+<<<<<<< HEAD
         pod.phase === 'Failed' && 'border-red-300 dark:border-red-800'
+=======
+        pod.phase === 'Failed' && 'border-red-300 dark:border-red-800',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
       )}
       aria-label={`Pod: ${pod.name}`}
     >
@@ -65,19 +87,30 @@ function PodCard({ pod }) {
 
       {/* Metrics row */}
       <div className="grid grid-cols-3 gap-2 text-xs">
+<<<<<<< HEAD
         <MetricCell label="Restarts" value={pod.restarts ?? 0} warn={(pod.restarts ?? 0) > 3} />
         <MetricCell
           label="CPU"
           value={cpuPct !== null ? `${cpuPct}%` : `${pod.cpuM ?? 0}m`}
           warn={isStressed}
         />
+=======
+        <MetricCell label="Restarts" value={pod.restarts ?? 0}
+                    warn={(pod.restarts ?? 0) > 3} />
+        <MetricCell label="CPU" value={cpuPct !== null ? `${cpuPct}%` : `${pod.cpuM ?? 0}m`}
+                    warn={isStressed} />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         <MetricCell label="Mem" value={pod.memMi ? `${pod.memMi}Mi` : '—'} />
       </div>
 
       {/* Ready state */}
       <p className="text-xs text-text-muted">
+<<<<<<< HEAD
         Ready:{' '}
         <span className={pod.ready ? 'text-emerald-500' : 'text-red-500'}>
+=======
+        Ready: <span className={pod.ready ? 'text-emerald-500' : 'text-red-500'}>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
           {pod.ready ? 'Yes' : 'No'}
         </span>
         {pod.node && <span className="ml-2 font-mono">{pod.node}</span>}
@@ -88,6 +121,7 @@ function PodCard({ pod }) {
 
 function MetricCell({ label, value, warn }) {
   return (
+<<<<<<< HEAD
     <div
       className={clsx(
         'rounded-md px-2 py-1 bg-surface text-center',
@@ -100,6 +134,13 @@ function MetricCell({ label, value, warn }) {
           warn && 'text-amber-600 dark:text-amber-400'
         )}
       >
+=======
+    <div className={clsx(
+      'rounded-md px-2 py-1 bg-surface text-center',
+      warn && 'bg-amber-50 dark:bg-amber-900/20',
+    )}>
+      <p className={clsx('font-mono font-medium tabular-nums', warn && 'text-amber-600 dark:text-amber-400')}>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
         {value}
       </p>
       <p className="text-text-muted text-[10px]">{label}</p>
@@ -116,8 +157,14 @@ function MetricCell({ label, value, warn }) {
  * }> }} props
  */
 function HpaTable({ hpa }) {
+<<<<<<< HEAD
   if (!hpa.length)
     return <p className="text-sm text-text-muted text-center py-4">No HPA resources found.</p>;
+=======
+  if (!hpa.length) return (
+    <p className="text-sm text-text-muted text-center py-4">No HPA resources found.</p>
+  );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
@@ -125,11 +172,16 @@ function HpaTable({ hpa }) {
         <thead className="bg-surface border-b border-border">
           <tr>
             {['Component', 'Current', 'Desired', 'Min', 'Max', 'CPU%', 'Target%'].map(h => (
+<<<<<<< HEAD
               <th
                 key={h}
                 scope="col"
                 className="px-4 py-2 text-left text-xs font-medium text-text-muted"
               >
+=======
+              <th key={h} scope="col"
+                className="px-4 py-2 text-left text-xs font-medium text-text-muted">
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
                 {h}
               </th>
             ))}
@@ -143,6 +195,7 @@ function HpaTable({ hpa }) {
                 <td className="px-4 py-2 font-medium">{h.component ?? h.name}</td>
                 <td className="px-4 py-2 font-mono tabular-nums">{h.currentReplicas}</td>
                 <td className="px-4 py-2 font-mono tabular-nums">{h.desiredReplicas}</td>
+<<<<<<< HEAD
                 <td className="px-4 py-2 font-mono tabular-nums text-text-muted">
                   {h.minReplicas}
                 </td>
@@ -155,6 +208,12 @@ function HpaTable({ hpa }) {
                     cpuOver ? 'text-amber-500' : 'text-text-base'
                   )}
                 >
+=======
+                <td className="px-4 py-2 font-mono tabular-nums text-text-muted">{h.minReplicas}</td>
+                <td className="px-4 py-2 font-mono tabular-nums text-text-muted">{h.maxReplicas}</td>
+                <td className={clsx('px-4 py-2 font-mono tabular-nums',
+                  cpuOver ? 'text-amber-500' : 'text-text-base')}>
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
                   {h.cpuUtilization ?? '—'}%
                 </td>
                 <td className="px-4 py-2 font-mono tabular-nums text-text-muted">
@@ -180,6 +239,7 @@ function ClusterSummary({ pods }) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+<<<<<<< HEAD
       <SumCard label="Total Pods" value={counts.total} icon={Server} />
       <SumCard
         label="Running"
@@ -189,6 +249,12 @@ function ClusterSummary({ pods }) {
       />
       <SumCard label="Pending" value={counts.Pending ?? 0} icon={Clock} color="text-amber-500" />
       <SumCard label="Failed" value={counts.Failed ?? 0} icon={XCircle} color="text-red-500" />
+=======
+      <SumCard label="Total Pods"   value={counts.total}          icon={Server}      />
+      <SumCard label="Running"      value={counts.Running ?? 0}   icon={CheckCircle2} color="text-emerald-500" />
+      <SumCard label="Pending"      value={counts.Pending ?? 0}   icon={Clock}        color="text-amber-500"   />
+      <SumCard label="Failed"       value={counts.Failed ?? 0}    icon={XCircle}      color="text-red-500"     />
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     </div>
   );
 }
@@ -216,6 +282,7 @@ function SumCard({ label, value, icon: Icon, color = 'text-wolf-500' }) {
  * }} props
  */
 export default function ClusterView({ pods = [], hpa = [], loading, error }) {
+<<<<<<< HEAD
   // Group pods by component for clearer layout.
   const grouped = useMemo(() => {
     const map = {};
@@ -226,6 +293,8 @@ export default function ClusterView({ pods = [], hpa = [], loading, error }) {
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
   }, [pods]);
 
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   if (loading) {
     return (
       <div className="space-y-4" aria-busy="true" aria-label="Loading cluster state">
@@ -252,6 +321,19 @@ export default function ClusterView({ pods = [], hpa = [], loading, error }) {
     );
   }
 
+<<<<<<< HEAD
+=======
+  // Group pods by component for clearer layout.
+  const grouped = useMemo(() => {
+    const map = {};
+    for (const pod of pods) {
+      const k = pod.component ?? 'other';
+      (map[k] = map[k] ?? []).push(pod);
+    }
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+  }, [pods]);
+
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   return (
     <div className="space-y-6">
       <ClusterSummary pods={pods} />

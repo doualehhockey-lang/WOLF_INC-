@@ -14,7 +14,11 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
+<<<<<<< HEAD
     JWT_SECRET: 'test-access-secret-very-long-32ch',
+=======
+    JWT_SECRET:         'test-access-secret-very-long-32ch',
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     JWT_REFRESH_SECRET: 'test-refresh-secret-very-long-32ch',
   },
 }));
@@ -27,8 +31,11 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   cacheSet: mockCacheSet,
   cacheGet: mockCacheGet,
   cacheDel: mockCacheDel,
+<<<<<<< HEAD
   isRedisAvailable: jest.fn().mockReturnValue(false),
   evalScript: jest.fn(async () => null),
+=======
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
@@ -171,9 +178,17 @@ describe('refreshTokens — invalid token', () => {
   });
 
   test('throws for expired refresh token', async () => {
+<<<<<<< HEAD
     const expired = jwt.sign({ sub: 'user-x', jti: 'some-id' }, config.JWT_REFRESH_SECRET, {
       expiresIn: -1,
     });
+=======
+    const expired = jwt.sign(
+      { sub: 'user-x', jti: 'some-id' },
+      config.JWT_REFRESH_SECRET,
+      { expiresIn: -1 },
+    );
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     await expect(refreshTokens(expired)).rejects.toThrow();
   });
 });
@@ -183,17 +198,29 @@ describe('refreshTokens — cache unavailable', () => {
     const { refreshToken } = await issueTokens({ sub: 'user-cache-err' });
     mockCacheGet.mockRejectedValueOnce(new Error('ECONNRESET'));
 
+<<<<<<< HEAD
     await expect(refreshTokens(refreshToken)).rejects.toThrow();
   });
 
   test('throws when cacheDel throws (C5: abort rotation to prevent JTI replay)', async () => {
+=======
+    await expect(refreshTokens(refreshToken)).rejects.toThrow('ECONNRESET');
+  });
+
+  test('proceeds even when cacheDel throws (non-critical rotation step)', async () => {
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
     const { refreshToken } = await issueTokens({ sub: 'user-del-err' });
     jest.clearAllMocks();
     mockCacheGet.mockResolvedValue('1');
     mockCacheSet.mockResolvedValue(undefined);
     mockCacheDel.mockRejectedValueOnce(new Error('del failed'));
 
+<<<<<<< HEAD
     // C5 FIX: cacheDel failure aborts rotation — old JTI stays valid, replay window prevented
     await expect(refreshTokens(refreshToken)).rejects.toThrow('Session rotation failed');
+=======
+    // Should NOT throw — deletion failure is best-effort
+    await expect(refreshTokens(refreshToken)).resolves.toHaveProperty('accessToken');
+>>>>>>> e83552a2128b90ebc9cc2e6071a3f37a9bbf5c2b
   });
 });
