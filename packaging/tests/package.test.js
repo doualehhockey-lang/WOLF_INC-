@@ -22,8 +22,8 @@ import { parse as parseYaml } from 'yaml';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
 const DOCKER = join(ROOT, 'packaging/docker');
-const HELM   = join(ROOT, 'packaging/helm');
-const CI     = join(ROOT, 'packaging/ci');
+const HELM = join(ROOT, 'packaging/helm');
+const CI = join(ROOT, 'packaging/ci');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -37,8 +37,7 @@ function readYaml(path) {
 
 /** Return all FROM stage names in a Dockerfile. */
 function parseStages(dockerfileContent) {
-  return [...dockerfileContent.matchAll(/^FROM\s+\S+(?:\s+AS\s+(\S+))?/gim)]
-    .map(m => m[1] || null);
+  return [...dockerfileContent.matchAll(/^FROM\s+\S+(?:\s+AS\s+(\S+))?/gim)].map(m => m[1] || null);
 }
 
 /** Return true if dockerfile content has a USER instruction before the last CMD/ENTRYPOINT. */
@@ -56,27 +55,27 @@ function hasHealthcheck(content) {
 describe('Dockerfiles', () => {
   const services = ['agent', 'claude', 'tts', 'whisper', 'ollama'];
 
-  test.each(services)('%s.Dockerfile exists', (svc) => {
+  test.each(services)('%s.Dockerfile exists', svc => {
     expect(existsSync(join(DOCKER, `${svc}.Dockerfile`))).toBe(true);
   });
 
-  test.each(services)('%s.Dockerfile is multi-stage (≥ 2 FROM)', (svc) => {
+  test.each(services)('%s.Dockerfile is multi-stage (≥ 2 FROM)', svc => {
     const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
     const stages = parseStages(content);
     expect(stages.length).toBeGreaterThanOrEqual(2);
   });
 
-  test.each(services)('%s.Dockerfile has non-root USER', (svc) => {
+  test.each(services)('%s.Dockerfile has non-root USER', svc => {
     const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
     expect(hasNonRootUser(content)).toBe(true);
   });
 
-  test.each(services)('%s.Dockerfile has HEALTHCHECK', (svc) => {
+  test.each(services)('%s.Dockerfile has HEALTHCHECK', svc => {
     const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
     expect(hasHealthcheck(content)).toBe(true);
   });
 
-  test.each(services)('%s.Dockerfile has OCI labels', (svc) => {
+  test.each(services)('%s.Dockerfile has OCI labels', svc => {
     const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
     expect(content).toMatch(/org\.opencontainers\.image\.title/);
     expect(content).toMatch(/org\.opencontainers\.image\.version/);
@@ -128,7 +127,7 @@ describe('Dockerfiles', () => {
       const content = readFile(join(DOCKER, `${svc}.Dockerfile`));
       // USER node must appear before CMD in runtime stage.
       const userIdx = content.lastIndexOf('USER node');
-      const cmdIdx  = content.lastIndexOf('CMD ');
+      const cmdIdx = content.lastIndexOf('CMD ');
       expect(userIdx).toBeGreaterThan(0);
       expect(userIdx).toBeLessThan(cmdIdx);
     }
@@ -207,11 +206,11 @@ describe('Helm values.yaml', () => {
     expect(values.global.imagePullPolicy).toBeTruthy();
   });
 
-  test.each(expectedComponents)('component %s exists', (comp) => {
+  test.each(expectedComponents)('component %s exists', comp => {
     expect(values.components[comp]).toBeDefined();
   });
 
-  test.each(expectedComponents)('component %s has required fields', (comp) => {
+  test.each(expectedComponents)('component %s has required fields', comp => {
     const c = values.components[comp];
     expect(c).toHaveProperty('enabled');
     expect(c).toHaveProperty('image');
@@ -223,7 +222,7 @@ describe('Helm values.yaml', () => {
     expect(c).toHaveProperty('probes');
   });
 
-  test.each(expectedComponents)('component %s service has port', (comp) => {
+  test.each(expectedComponents)('component %s service has port', comp => {
     expect(values.components[comp].service.port).toBeGreaterThan(0);
   });
 
@@ -310,7 +309,7 @@ describe('Helm templates', () => {
     'rbac.yaml',
   ];
 
-  test.each(templates)('template %s exists', (tpl) => {
+  test.each(templates)('template %s exists', tpl => {
     expect(existsSync(join(HELM, 'templates', tpl))).toBe(true);
   });
 
@@ -433,7 +432,7 @@ describe('CI release pipeline', () => {
 
   const requiredJobs = ['validate', 'build', 'deploy', 'smoke', 'rollback', 'notify'];
 
-  test.each(requiredJobs)('job %s exists', (job) => {
+  test.each(requiredJobs)('job %s exists', job => {
     expect(pipeline.jobs[job]).toBeDefined();
   });
 
@@ -552,10 +551,10 @@ describe('Security — no hardcoded credentials', () => {
 
   // Patterns that would indicate real secrets in source.
   const dangerousPatterns = [
-    /sk-ant-[a-zA-Z0-9]{20,}/,            // Anthropic API key format
-    /eyJ[a-zA-Z0-9_-]{20,}/,              // JWT (base64url prefix)
-    /AC[a-f0-9]{32}/,                      // Twilio SID
-    /password:\s*["']?[a-zA-Z0-9!@#$%]{12,}["']?/i,  // hardcoded password
+    /sk-ant-[a-zA-Z0-9]{20,}/, // Anthropic API key format
+    /eyJ[a-zA-Z0-9_-]{20,}/, // JWT (base64url prefix)
+    /AC[a-f0-9]{32}/, // Twilio SID
+    /password:\s*["']?[a-zA-Z0-9!@#$%]{12,}["']?/i, // hardcoded password
   ];
 
   for (const filePath of files) {

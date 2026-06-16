@@ -28,7 +28,7 @@ const { requireJwt, requireApiKey } = await import('../../../src/features/auth/a
 function mockRes() {
   const res = {};
   res.status = jest.fn(() => res);
-  res.json   = jest.fn(() => res);
+  res.json = jest.fn(() => res);
   return res;
 }
 
@@ -46,36 +46,32 @@ beforeEach(() => {
 
 describe('requireJwt — missing or malformed authorization header', () => {
   test('returns 401 when authorization header is absent', () => {
-    const req  = mockReq({});
-    const res  = mockRes();
+    const req = mockReq({});
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'UNAUTHORIZED' }),
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
     expect(next).not.toHaveBeenCalled();
   });
 
   test('returns 401 when authorization header does not start with "Bearer "', () => {
-    const req  = mockReq({ authorization: 'Basic dXNlcjpwYXNz' });
-    const res  = mockRes();
+    const req = mockReq({ authorization: 'Basic dXNlcjpwYXNz' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'UNAUTHORIZED' }),
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
     expect(next).not.toHaveBeenCalled();
   });
 
   test('returns 401 for "bearer " (lowercase) — case-sensitive', () => {
-    const req  = mockReq({ authorization: 'bearer mytoken' });
-    const res  = mockRes();
+    const req = mockReq({ authorization: 'bearer mytoken' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
@@ -92,8 +88,8 @@ describe('requireJwt — missing or malformed authorization header', () => {
 describe('requireJwt — valid token', () => {
   test('calls next() when verifyAccess succeeds', () => {
     mockVerifyAccess.mockReturnValueOnce({ sub: 'user-1', role: 'admin' });
-    const req  = mockReq({ authorization: 'Bearer valid.jwt.token' });
-    const res  = mockRes();
+    const req = mockReq({ authorization: 'Bearer valid.jwt.token' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
@@ -105,8 +101,8 @@ describe('requireJwt — valid token', () => {
   test('sets req.user from verifyAccess return value', () => {
     const payload = { sub: 'user-42', role: 'user' };
     mockVerifyAccess.mockReturnValueOnce(payload);
-    const req  = mockReq({ authorization: 'Bearer some.jwt' });
-    const res  = mockRes();
+    const req = mockReq({ authorization: 'Bearer some.jwt' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
@@ -116,8 +112,8 @@ describe('requireJwt — valid token', () => {
 
   test('passes the token (without "Bearer ") to verifyAccess', () => {
     mockVerifyAccess.mockReturnValueOnce({ sub: 'u' });
-    const req  = mockReq({ authorization: 'Bearer my.secret.token' });
-    const res  = mockRes();
+    const req = mockReq({ authorization: 'Bearer my.secret.token' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
@@ -132,20 +128,20 @@ describe('requireJwt — valid token', () => {
 
 describe('requireJwt — expired token', () => {
   test('returns 401 with TOKEN_EXPIRED when verifyAccess throws TokenExpiredError', () => {
-    const err  = new Error('jwt expired');
-    err.name   = 'TokenExpiredError';
-    mockVerifyAccess.mockImplementationOnce(() => { throw err; });
+    const err = new Error('jwt expired');
+    err.name = 'TokenExpiredError';
+    mockVerifyAccess.mockImplementationOnce(() => {
+      throw err;
+    });
 
-    const req  = mockReq({ authorization: 'Bearer expired.jwt' });
-    const res  = mockRes();
+    const req = mockReq({ authorization: 'Bearer expired.jwt' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'TOKEN_EXPIRED' }),
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TOKEN_EXPIRED' }));
     expect(next).not.toHaveBeenCalled();
   });
 });
@@ -156,36 +152,36 @@ describe('requireJwt — expired token', () => {
 
 describe('requireJwt — invalid token', () => {
   test('returns 401 with TOKEN_INVALID for JsonWebTokenError', () => {
-    const err  = new Error('invalid signature');
-    err.name   = 'JsonWebTokenError';
-    mockVerifyAccess.mockImplementationOnce(() => { throw err; });
+    const err = new Error('invalid signature');
+    err.name = 'JsonWebTokenError';
+    mockVerifyAccess.mockImplementationOnce(() => {
+      throw err;
+    });
 
-    const req  = mockReq({ authorization: 'Bearer bad.jwt' });
-    const res  = mockRes();
+    const req = mockReq({ authorization: 'Bearer bad.jwt' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'TOKEN_INVALID' }),
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TOKEN_INVALID' }));
     expect(next).not.toHaveBeenCalled();
   });
 
   test('returns 401 with TOKEN_INVALID for generic Error', () => {
-    mockVerifyAccess.mockImplementationOnce(() => { throw new Error('unexpected'); });
+    mockVerifyAccess.mockImplementationOnce(() => {
+      throw new Error('unexpected');
+    });
 
-    const req  = mockReq({ authorization: 'Bearer weird.jwt' });
-    const res  = mockRes();
+    const req = mockReq({ authorization: 'Bearer weird.jwt' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireJwt(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'TOKEN_INVALID' }),
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TOKEN_INVALID' }));
   });
 });
 
@@ -195,8 +191,8 @@ describe('requireJwt — invalid token', () => {
 
 describe('requireApiKey — valid key', () => {
   test('calls next() when x-api-key is in apiKeys list', () => {
-    const req  = mockReq({ 'x-api-key': 'valid-key-abc' });
-    const res  = mockRes();
+    const req = mockReq({ 'x-api-key': 'valid-key-abc' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireApiKey(req, res, next);
@@ -206,8 +202,8 @@ describe('requireApiKey — valid key', () => {
   });
 
   test('calls next() for second valid key', () => {
-    const req  = mockReq({ 'x-api-key': 'valid-key-xyz' });
-    const res  = mockRes();
+    const req = mockReq({ 'x-api-key': 'valid-key-xyz' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireApiKey(req, res, next);
@@ -218,36 +214,32 @@ describe('requireApiKey — valid key', () => {
 
 describe('requireApiKey — invalid key', () => {
   test('returns 403 when x-api-key is absent', () => {
-    const req  = mockReq({});
-    const res  = mockRes();
+    const req = mockReq({});
+    const res = mockRes();
     const next = jest.fn();
 
     requireApiKey(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'FORBIDDEN' }),
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'FORBIDDEN' }));
     expect(next).not.toHaveBeenCalled();
   });
 
   test('returns 403 when x-api-key is not in apiKeys list', () => {
-    const req  = mockReq({ 'x-api-key': 'hacker-key' });
-    const res  = mockRes();
+    const req = mockReq({ 'x-api-key': 'hacker-key' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireApiKey(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'FORBIDDEN' }),
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'FORBIDDEN' }));
     expect(next).not.toHaveBeenCalled();
   });
 
   test('returns 403 for empty string key', () => {
-    const req  = mockReq({ 'x-api-key': '' });
-    const res  = mockRes();
+    const req = mockReq({ 'x-api-key': '' });
+    const res = mockRes();
     const next = jest.fn();
 
     requireApiKey(req, res, next);

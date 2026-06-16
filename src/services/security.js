@@ -13,15 +13,43 @@
 //   - OTel spans injected via recordStageSpan (observability).
 //   - Never leaks JWT internals — errors are normalised to SecurityError.
 
-import { childLogger }           from '../core/logger.js';
-import { config, apiKeys }       from '../core/config.js';
-import { verifyAccess }          from '../features/auth/token.service.js';
-import { cacheIncr, cacheExpire } from '../infra/redis/redisClient.js';
+import crypto from 'crypto';
+import { readFile } from 'fs/promises';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { childLogger } from '../core/logger.js';
+import { apiKeys } from '../core/config.js';
+import { verifyAccess } from '../features/auth/token.service.js';
 import {
-  rateLimitCounter,
-  errorCounter,
-} from '../core/metrics.js';
-import { recordStageSpan }       from './observability.js';
+  evalScript,
+  cacheIncr,
+  cacheExpire,
+  isRedisAvailable,
+} from '../infra/redis/redisClient.js';
+import { rateLimitCounter, errorCounter } from '../core/metrics.js';
+const recordStageSpan = (_stage, _attrs, fn) => fn(null);
+// Lazy-import db to avoid circular deps at module load; dbAvailable checked at call time.
+let _db = null;
+async function _getDb() {
+  if (!_db) {
+    try {
+      const m = await import('../infra/db/dbClient.js');
+      if (m.dbAvailable) _db = m.db;
+    } catch {
+      /* DB not available — fall through to env-var keys */
+    }
+  }
+  return _db;
+}
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const LUA_PATH = resolve(__dirname, '../infra/redis/scripts/rateLimit.lua');
+
+let _luaScript = null;
+async function _getLua() {
+  if (!_luaScript) _luaScript = await readFile(LUA_PATH, 'utf8');
+  return _luaScript;
+}
 
 const log = childLogger('security');
 
@@ -33,9 +61,7 @@ export class SecurityError extends Error {
     super(message);
     this.name = 'SecurityError';
     this.code = code;
-    this.statusCode =
-      code === 'RATE_LIMITED' ? 429 :
-      code === 'FORBIDDEN'    ? 403 : 401;
+    this.statusCode = code === 'RATE_LIMITED' ? 429 : code === 'FORBIDDEN' ? 403 : 401;
   }
 }
 
@@ -44,16 +70,16 @@ export class SecurityError extends Error {
 // 'admin' is implicit super-set — checked first.
 
 const ROLE_CAPABILITIES = Object.freeze({
-  admin:   ['agent', 'whisper', 'claude', 'tts', 'ollama', 'metrics', 'admin'],
-  service: ['agent', 'whisper', 'claude', 'tts', 'ollama'],
-  user:    ['agent', 'tts'],
-  guest:   [],
+  admin: ['agent', 'whisper', 'claude', 'tts', 'metrics', 'admin'],
+  service: ['agent', 'whisper', 'claude', 'tts'],
+  user: ['agent', 'tts'],
+  guest: [],
 });
 
 // Default rate-limit config (overridable per call).
 const DEFAULT_RATE_LIMIT = Object.freeze({
-  windowSec: 60,   // sliding window length in seconds
-  maxHits:   100,  // allowed requests per window
+  windowSec: 60, // sliding window length in seconds
+  maxHits: 100, // allowed requests per window
 });
 
 // ── Factory ───────────────────────────────────────────────────────────────────
@@ -71,13 +97,13 @@ const DEFAULT_RATE_LIMIT = Object.freeze({
  */
 
 export function _makeSecurity(deps = {}) {
-  const _verifyAccess     = deps._verifyAccess     ?? verifyAccess;
-  const _apiKeys          = deps._apiKeys          ?? apiKeys;
-  const _cacheIncr        = deps._cacheIncr        ?? cacheIncr;
-  const _cacheExpire      = deps._cacheExpire      ?? cacheExpire;
-  const _rlCounter        = deps._rateLimitCounter ?? rateLimitCounter;
-  const _errCounter       = deps._errorCounter     ?? errorCounter;
-  const _spanFn           = deps._recordStageSpan  ?? recordStageSpan;
+  const _verifyAccess = deps._verifyAccess ?? verifyAccess;
+  const _apiKeys = deps._apiKeys ?? apiKeys;
+  const _cacheIncr = deps._cacheIncr ?? cacheIncr;
+  const _cacheExpire = deps._cacheExpire ?? cacheExpire;
+  const _rlCounter = deps._rateLimitCounter ?? rateLimitCounter;
+  const _errCounter = deps._errorCounter ?? errorCounter;
+  const _spanFn = deps._recordStageSpan ?? recordStageSpan;
 
   // ── authenticate ────────────────────────────────────────────────────────────
 
@@ -89,16 +115,70 @@ export function _makeSecurity(deps = {}) {
    */
   async function authenticate(req) {
     return _spanFn('security.auth', { 'security.method': 'resolve' }, async span => {
-      const auth   = req.headers?.authorization ?? '';
+      const auth = req.headers?.authorization ?? '';
       const apiKey = req.headers?.['x-api-key'] ?? '';
 
       // ── API key path (service-to-service) ──────────────────────────────────
       if (apiKey) {
-        if (_apiKeys.includes(apiKey)) {
+        // 1. Check env-var static keys (backward compat, timing-safe).
+        // Iterate ALL keys — never short-circuit — to prevent timing leaks.
+        let staticMatch = false;
+        for (const k of _apiKeys) {
+          const bufA = Buffer.alloc(64);
+          const bufB = Buffer.alloc(64);
+          Buffer.from(k).copy(bufA);
+          Buffer.from(apiKey).copy(bufB);
+          if (crypto.timingSafeEqual(bufA, bufB) && k.length === apiKey.length) {
+            staticMatch = true;
+          }
+        }
+        if (staticMatch) {
           span?.setAttribute('security.method', 'apikey');
-          log.debug({ keyPrefix: apiKey.slice(0, 8) }, 'API key authenticated');
+          log.debug({ keyPrefix: apiKey.slice(0, 8) }, 'API key authenticated (static)');
           return { sub: 'service', role: 'service', method: 'apikey' };
         }
+
+        // 2. DB-backed dynamic keys: SHA-256 hash lookup.
+        const db = await _getDb();
+        if (db) {
+          try {
+            const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
+            const record = await db('api_keys')
+              .where({ key_hash: keyHash, is_revoked: false })
+              .where(q => q.whereNull('expires_at').orWhere('expires_at', '>', new Date()))
+              .select('id', 'role', 'key_prefix')
+              .first();
+
+            if (record) {
+              // Fire-and-forget audit: update last_used_at without blocking the request.
+              db('api_keys')
+                .where({ id: record.id })
+                .update({ last_used_at: new Date() })
+                .catch(err =>
+                  log.warn({ err: err.message }, 'Failed to update api_key last_used_at')
+                );
+              db('api_key_events')
+                .insert({ key_id: record.id, event_type: 'used', ip_hash: apiKey.slice(0, 8) }) // reuse prefix as IP placeholder
+                .catch(err =>
+                  log.warn(
+                    { err: err.message, keyId: record.id },
+                    'API key audit event insert failed'
+                  )
+                );
+
+              span?.setAttribute('security.method', 'apikey-db');
+              span?.setAttribute('security.api_key_role', record.role);
+              log.debug(
+                { keyPrefix: record.key_prefix, role: record.role },
+                'API key authenticated (db)'
+              );
+              return { sub: `apikey:${record.id}`, role: record.role, method: 'apikey' };
+            }
+          } catch (err) {
+            log.warn({ err: err.message }, 'DB API key lookup failed — falling through to deny');
+          }
+        }
+
         _errCounter.inc({ service: 'security', errorType: 'invalid_api_key' });
         log.warn({ keyPrefix: apiKey.slice(0, 6) }, 'Invalid API key');
         throw new SecurityError('FORBIDDEN', 'Invalid API key');
@@ -110,7 +190,7 @@ export function _makeSecurity(deps = {}) {
         try {
           const payload = _verifyAccess(token);
           span?.setAttribute('security.method', 'jwt');
-          span?.setAttribute('security.sub',    payload.sub);
+          span?.setAttribute('security.sub', payload.sub);
           log.debug({ sub: payload.sub, role: payload.role }, 'JWT authenticated');
           return { sub: payload.sub, role: payload.role ?? 'user', method: 'jwt' };
         } catch (err) {
@@ -129,8 +209,16 @@ export function _makeSecurity(deps = {}) {
   // ── rateLimit ────────────────────────────────────────────────────────────────
 
   /**
-   * Sliding-window rate limiter backed by Redis (or in-memory fallback).
-   * Uses atomic INCR + conditional EXPIRE — consistent with rateLimit.lua.
+   * Fixed-window rate limiter backed by Redis atomic Lua script (or in-memory fallback).
+   *
+   * H6 FIX: Previously used non-atomic INCR + conditional EXPIRE.
+   * If the process crashed between INCR and EXPIRE, the key had no TTL and
+   * the caller was permanently rate-limited (TTL miss leak).
+   *
+   * Now uses the same atomic rateLimit.lua script as the voice pipeline:
+   * INCR and EXPIRE execute in a single EVAL — no race condition possible.
+   * Falls back to non-atomic INCR+EXPIRE only in in-memory mode (single process,
+   * no race) where the Lua path is unavailable.
    *
    * @param {string}  key       — caller identity or IP (used as Redis key prefix)
    * @param {object}  [opts]
@@ -140,22 +228,31 @@ export function _makeSecurity(deps = {}) {
    */
   async function rateLimit(key, opts = {}) {
     const { windowSec, maxHits } = { ...DEFAULT_RATE_LIMIT, ...opts };
-    const redisKey = `rl:${key}:${Math.floor(Date.now() / 1000 / windowSec)}`;
+    const redisKey = `rl:sec:${key}`;
 
     return _spanFn('security.ratelimit', { 'rl.key': key, 'rl.max': maxHits }, async span => {
-      const count = await _cacheIncr(redisKey);
+      let count;
+      let allowed;
 
-      // Set TTL only on first hit (idempotent on subsequent calls).
-      if (count === 1) {
-        await _cacheExpire(redisKey, windowSec);
+      if (isRedisAvailable()) {
+        // Atomic path — Lua script handles INCR + EXPIRE in one EVAL call.
+        const lua = await _getLua();
+        const result = await evalScript(lua, [redisKey], [String(windowSec), String(maxHits)]);
+        // result = [current_count, 1=allowed / 0=blocked]
+        count = result ? result[0] : 1;
+        allowed = result ? result[1] === 1 : true; // fail open if eval returns null
+      } else {
+        // In-memory fallback — single process, no concurrent race condition.
+        count = await _cacheIncr(redisKey);
+        if (count === 1) await _cacheExpire(redisKey, windowSec);
+        allowed = count <= maxHits;
       }
 
-      const allowed   = count <= maxHits;
       const remaining = Math.max(0, maxHits - count);
       const resetInSec = windowSec - (Math.floor(Date.now() / 1000) % windowSec);
 
-      span?.setAttribute('rl.count',     count);
-      span?.setAttribute('rl.allowed',   allowed);
+      span?.setAttribute('rl.count', count);
+      span?.setAttribute('rl.allowed', allowed);
       span?.setAttribute('rl.remaining', remaining);
 
       if (!allowed) {
@@ -207,8 +304,8 @@ export function _makeSecurity(deps = {}) {
   function makeSecurityMiddleware(opts = {}) {
     const {
       resource,
-      windowSec  = DEFAULT_RATE_LIMIT.windowSec,
-      maxHits    = DEFAULT_RATE_LIMIT.maxHits,
+      windowSec = DEFAULT_RATE_LIMIT.windowSec,
+      maxHits = DEFAULT_RATE_LIMIT.maxHits,
       skipRateLimit = false,
     } = opts;
 
@@ -228,13 +325,13 @@ export function _makeSecurity(deps = {}) {
           const rlKey = identity.sub || req.ip || 'anon';
           const result = await rateLimit(rlKey, { windowSec, maxHits });
 
-          res.setHeader('X-RateLimit-Limit',     maxHits);
+          res.setHeader('X-RateLimit-Limit', maxHits);
           res.setHeader('X-RateLimit-Remaining', result.remaining);
-          res.setHeader('X-RateLimit-Reset',     result.resetInSec);
+          res.setHeader('X-RateLimit-Reset', result.resetInSec);
 
           if (!result.allowed) {
             return res.status(429).json({
-              error:   'RATE_LIMITED',
+              error: 'RATE_LIMITED',
               message: 'Too many requests — please slow down.',
               retryAfter: result.resetInSec,
             });
@@ -245,7 +342,7 @@ export function _makeSecurity(deps = {}) {
       } catch (err) {
         if (err instanceof SecurityError) {
           return res.status(err.statusCode).json({
-            error:   err.code,
+            error: err.code,
             message: err.message,
           });
         }
@@ -261,9 +358,9 @@ export function _makeSecurity(deps = {}) {
 
 const _singleton = _makeSecurity();
 
-export const authenticate           = _singleton.authenticate;
-export const rateLimit              = _singleton.rateLimit;
-export const authorise              = _singleton.authorise;
+export const authenticate = _singleton.authenticate;
+export const rateLimit = _singleton.rateLimit;
+export const authorise = _singleton.authorise;
 export const makeSecurityMiddleware = _singleton.makeSecurityMiddleware;
 
 export { ROLE_CAPABILITIES };

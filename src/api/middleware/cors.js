@@ -2,7 +2,7 @@
 // Origins are loaded from config.CORS_ORIGINS (comma-separated list).
 // Audio files served at /audio are always cross-origin (Twilio fetches them).
 
-import corsLib        from 'cors';
+import corsLib from 'cors';
 import { corsOrigins } from '../../core/config.js';
 
 // ── API routes — whitelist only ───────────────────────────────────────────────
@@ -13,7 +13,7 @@ export const cors = corsLib({
     cb(new Error(`CORS: origin "${origin}" not allowed`));
   },
   credentials: true,
-  methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID'],
 });
 

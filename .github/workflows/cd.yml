@@ -46,6 +46,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
     environment: production
 
@@ -57,7 +58,20 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            cd /opt/wolf-engine
+            set -euo pipefail
+            cd /opt/wolf-agenda
+
+            # Pull the new image
             docker compose pull app
-            docker compose up -d --no-deps app
+
+            # Run DB migrations before restarting
+            docker compose run --rm app node -e \
+              "import('./src/infra/db/dbClient.js').then(m => m.db?.migrate.latest())"
+
+            # Restart with zero-downtime (wait for health check to pass)
+            docker compose up -d --no-deps --wait app
+
+            # Cleanup dangling images
             docker image prune -f
+
+            echo "Deploy $(date) OK"

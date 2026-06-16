@@ -3,14 +3,14 @@
 // Tier 2: In-memory LRU Map (FIFO eviction, max 100 entries).
 // Both tiers store { buffer, ext, mimeType }.
 
-import { createHash }                       from 'crypto';
-import { redis, redisAvailable }            from '../../infra/redis/redisClient.js';
-import { ttsCacheHits }                     from '../../core/metrics.js';
-import { childLogger }                      from '../../core/logger.js';
+import { createHash } from 'crypto';
+import { redis, redisAvailable } from '../../infra/redis/redisClient.js';
+import { ttsCacheHits } from '../../core/metrics.js';
+import { childLogger } from '../../core/logger.js';
 
-const log         = childLogger('tts:cache');
-const REDIS_TTL   = 86_400; // 24 h
-const MEM_MAX     = 100;
+const log = childLogger('tts:cache');
+const REDIS_TTL = 86_400; // 24 h
+const MEM_MAX = 100;
 
 const _mem = new Map();
 
@@ -30,7 +30,7 @@ export async function cacheGet(text, provider, locale = 'fr-FR') {
 
   if (redisAvailable) {
     try {
-      const raw  = await redis.getBuffer(key);
+      const raw = await redis.getBuffer(key);
       if (raw) {
         await redis.expire(key, REDIS_TTL); // LRU refresh
         const metaRaw = await redis.get(`${key}:meta`).catch(() => null);
@@ -47,7 +47,10 @@ export async function cacheGet(text, provider, locale = 'fr-FR') {
   }
 
   const cached = _mem.get(key);
-  if (cached) { ttsCacheHits.inc({ type: 'memory' }); return cached; }
+  if (cached) {
+    ttsCacheHits.inc({ type: 'memory' });
+    return cached;
+  }
   return null;
 }
 
@@ -61,12 +64,16 @@ export async function cacheSet(text, provider, result, locale = 'fr-FR') {
   const key = cacheKey(text, provider, locale);
 
   if (redisAvailable) {
-    await redis.setex(key, REDIS_TTL, result.buffer).catch(err =>
-      log.warn({ err: err.message }, 'Redis TTS cache write failed')
-    );
-    await redis.setex(`${key}:meta`, REDIS_TTL,
-      JSON.stringify({ ext: result.ext, mimeType: result.mimeType })
-    ).catch(() => {});
+    await redis
+      .setex(key, REDIS_TTL, result.buffer)
+      .catch(err => log.warn({ err: err.message }, 'Redis TTS cache write failed'));
+    await redis
+      .setex(
+        `${key}:meta`,
+        REDIS_TTL,
+        JSON.stringify({ ext: result.ext, mimeType: result.mimeType })
+      )
+      .catch(() => {});
     return;
   }
 

@@ -9,49 +9,51 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
-const mockAgentLatency  = { startTimer: jest.fn(() => jest.fn()) };
+const mockAgentLatency = { startTimer: jest.fn(() => jest.fn()) };
 const mockIntentCounter = { inc: jest.fn() };
-const mockErrorCounter  = { inc: jest.fn() };
+const mockErrorCounter = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
-  agentLatency:   mockAgentLatency,
-  intentCounter:  mockIntentCounter,
-  errorCounter:   mockErrorCounter,
+  agentLatency: mockAgentLatency,
+  intentCounter: mockIntentCounter,
+  errorCounter: mockErrorCounter,
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 jest.unstable_mockModule('../../../src/features/agent/intent.normalizer.js', () => ({
-  normalizeIntent: (i) => i,
+  normalizeIntent: i => i,
 }));
 
 const mockDbStore = {
-  listEvents:         jest.fn(),
-  createEvent:        jest.fn(),
-  findEventByDate:    jest.fn(),
+  listEvents: jest.fn(),
+  createEvent: jest.fn(),
+  findEventByDate: jest.fn(),
   findEventBySubject: jest.fn(),
-  softDeleteEvent:    jest.fn(),
-  updateEvent:        jest.fn(),
+  softDeleteEvent: jest.fn(),
+  updateEvent: jest.fn(),
 };
 const mockJsonStore = {
-  listEvents:         jest.fn(),
-  createEvent:        jest.fn(),
-  findEventByDate:    jest.fn(),
+  listEvents: jest.fn(),
+  createEvent: jest.fn(),
+  findEventByDate: jest.fn(),
   findEventBySubject: jest.fn(),
-  softDeleteEvent:    jest.fn(),
-  updateEvent:        jest.fn(),
+  softDeleteEvent: jest.fn(),
+  updateEvent: jest.fn(),
 };
 
-jest.unstable_mockModule('../../../src/features/agent/db.store.js',   () => mockDbStore);
+jest.unstable_mockModule('../../../src/features/agent/db.store.js', () => mockDbStore);
 jest.unstable_mockModule('../../../src/features/agent/json.store.js', () => mockJsonStore);
 
 // ── dbAvailable: TRUE → uses dbStore (lines 15-17 TRUE branch) ─────────────
 jest.unstable_mockModule('../../../src/infra/db/dbClient.js', () => ({
-  db:          jest.fn(),
-  dbAvailable: true,   // ← triggers line 15-17 TRUE branch
+  db: jest.fn(),
+  dbAvailable: true, // ← triggers line 15-17 TRUE branch
+  pendingMigrationCount: 0,
 }));
 
 const { dispatch } = await import('../../../src/features/agent/agent.service.js');
 
 const USER = 'user-branch-test';
-const EVT  = { id: 99, subject: 'Dentiste', date: '2026-07-15', time: '14:00' };
+const EVT = { id: 99, subject: 'Dentiste', date: '2026-07-15', time: '14:00' };
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -84,7 +86,14 @@ describe('agent.service — dbStore selection (lines 15-17 TRUE)', () => {
 
   test('uses dbStore.createEvent when dbAvailable is true', async () => {
     const result = await dispatch(
-      { intent: 'create_event', subject: 'Kiné', isoDate: '2026-08-01', isoTime: '09:00', date: '', time: '' },
+      {
+        intent: 'create_event',
+        subject: 'Kiné',
+        isoDate: '2026-08-01',
+        isoTime: '09:00',
+        date: '',
+        time: '',
+      },
       USER
     );
 
@@ -107,12 +116,12 @@ describe('update_event — no effectiveDate (lines 80, 85 FALSE)', () => {
 
     const result = await dispatch(
       {
-        intent:  'update_event',
+        intent: 'update_event',
         subject: 'Kiné',
-        isoDate: null,   // no date → effectiveDate = null || '' = ''  (falsy)
+        isoDate: null, // no date → effectiveDate = null || '' = ''  (falsy)
         isoTime: null,
-        date:    '',
-        time:    '',
+        date: '',
+        time: '',
       },
       USER
     );
@@ -131,12 +140,12 @@ describe('update_event — no effectiveDate (lines 80, 85 FALSE)', () => {
 
     await dispatch(
       {
-        intent:  'update_event',
+        intent: 'update_event',
         subject: '',
         isoDate: null,
-        isoTime: '10:30',  // has time
-        date:    '',
-        time:    '',
+        isoTime: '10:30', // has time
+        date: '',
+        time: '',
       },
       USER
     );

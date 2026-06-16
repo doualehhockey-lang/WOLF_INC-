@@ -3,18 +3,19 @@ groups:
     interval: 30s
     rules:
 
-      # P95 pipeline latency > 3s for 5 minutes
+      # P95 pipeline latency > 3000ms for 5 minutes
+      # Metric is in milliseconds (wolf_pipeline_duration_ms_bucket), threshold in ms.
       - alert: PipelineP95High
         expr: |
           histogram_quantile(0.95,
-            rate(wolf_pipeline_duration_seconds_bucket[5m])
-          ) > 3
+            rate(wolf_pipeline_duration_ms_bucket[5m])
+          ) > 3000
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: "Wolf Engine P95 latency elevated"
-          description: "P95 pipeline latency is {{ $value | humanizeDuration }} (threshold: 3s)"
+          description: "P95 pipeline latency is {{ $value }}ms (threshold: 3000ms)"
 
       # Error rate > 5% over 5 minutes
       - alert: ErrorRateHigh
@@ -39,11 +40,11 @@ groups:
           summary: "Wolf Engine is down"
           description: "Wolf Engine has been unreachable for more than 1 minute"
 
-      # Memory pressure — heap > 85%
+      # Memory pressure — heap used / heap total > 85%
       - alert: MemoryPressure
         expr: |
-          process_heap_bytes{job="wolf-engine"}
-          / process_heap_bytes{job="wolf-engine"} > 0.85
+          wolf_nodejs_heap_size_used_bytes{job="wolf-engine"}
+          / wolf_nodejs_heap_size_total_bytes{job="wolf-engine"} > 0.85
         for: 5m
         labels:
           severity: warning

@@ -12,7 +12,9 @@ import crypto from 'crypto';
 const AUTH_TOKEN = 'test-auth-token-secret';
 
 function buildSignature(url, params, token) {
-  const canonical = Object.keys(params).sort().reduce((acc, k) => acc + k + params[k], url);
+  const canonical = Object.keys(params)
+    .sort()
+    .reduce((acc, k) => acc + k + params[k], url);
   return crypto.createHmac('sha1', token).update(canonical).digest('base64');
 }
 
@@ -21,36 +23,39 @@ function buildSignature(url, params, token) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Twilio HMAC signature logic', () => {
-  const URL    = 'https://example.com/twilio/voice';
+  const URL = 'https://example.com/twilio/voice';
   const PARAMS = { CallSid: 'CA123', From: '+33600000000', To: '+15005550006' };
 
   test('valid signature passes verification', () => {
-    const sig      = buildSignature(URL, PARAMS, AUTH_TOKEN);
+    const sig = buildSignature(URL, PARAMS, AUTH_TOKEN);
     const expected = buildSignature(URL, PARAMS, AUTH_TOKEN);
 
-    const sigBuf      = Buffer.from(sig);
+    const sigBuf = Buffer.from(sig);
     const expectedBuf = Buffer.from(expected);
-    const valid = sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf);
+    const valid =
+      sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf);
     expect(valid).toBe(true);
   });
 
   test('tampered signature fails verification', () => {
-    const sig      = buildSignature(URL, PARAMS, AUTH_TOKEN);
+    const sig = buildSignature(URL, PARAMS, AUTH_TOKEN);
     const tampered = sig.slice(0, -4) + 'XXXX';
 
-    const sigBuf      = Buffer.from(tampered);
+    const sigBuf = Buffer.from(tampered);
     const expectedBuf = Buffer.from(sig);
-    const valid = sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf);
+    const valid =
+      sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf);
     expect(valid).toBe(false);
   });
 
   test('wrong auth token fails verification', () => {
-    const sig      = buildSignature(URL, PARAMS, 'wrong-token');
+    const sig = buildSignature(URL, PARAMS, 'wrong-token');
     const expected = buildSignature(URL, PARAMS, AUTH_TOKEN);
 
-    const sigBuf      = Buffer.from(sig);
+    const sigBuf = Buffer.from(sig);
     const expectedBuf = Buffer.from(expected);
-    const valid = sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf);
+    const valid =
+      sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf);
     expect(valid).toBe(false);
   });
 
@@ -83,12 +88,14 @@ jest.unstable_mockModule('../../src/features/voice/twiml.builder.js', () => ({
 
 // ── Mock config — mutable ─────────────────────────────────────────────────────
 const mockConfig = {
-  NODE_ENV:          'development',
+  NODE_ENV: 'development',
   TWILIO_AUTH_TOKEN: '',
-  BASE_URL:          'https://example.com',
+  BASE_URL: 'https://example.com',
 };
 jest.unstable_mockModule('../../src/core/config.js', () => ({
-  get config() { return mockConfig; },
+  get config() {
+    return mockConfig;
+  },
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
@@ -97,25 +104,25 @@ const { twilioHmac } = await import('../../src/api/middleware/twilioHmac.js');
 function mockRes() {
   const res = {};
   res.status = jest.fn(() => res);
-  res.type   = jest.fn(() => res);
-  res.send   = jest.fn(() => res);
+  res.type = jest.fn(() => res);
+  res.send = jest.fn(() => res);
   return res;
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockConfig.NODE_ENV          = 'development';
+  mockConfig.NODE_ENV = 'development';
   mockConfig.TWILIO_AUTH_TOKEN = '';
-  mockConfig.BASE_URL          = 'https://example.com';
+  mockConfig.BASE_URL = 'https://example.com';
 });
 
 describe('twilioHmac middleware — non-production passthrough', () => {
   test('calls next() in development (even with token configured)', () => {
-    mockConfig.NODE_ENV          = 'development';
+    mockConfig.NODE_ENV = 'development';
     mockConfig.TWILIO_AUTH_TOKEN = 'some-token';
 
-    const req  = { headers: {}, body: {}, originalUrl: '/twilio/voice' };
-    const res  = mockRes();
+    const req = { headers: {}, body: {}, originalUrl: '/twilio/voice' };
+    const res = mockRes();
     const next = jest.fn();
 
     twilioHmac(req, res, next);
@@ -125,7 +132,7 @@ describe('twilioHmac middleware — non-production passthrough', () => {
   });
 
   test('calls next() in test environment', () => {
-    mockConfig.NODE_ENV          = 'test';
+    mockConfig.NODE_ENV = 'test';
     mockConfig.TWILIO_AUTH_TOKEN = 'some-token';
 
     twilioHmac({ headers: {}, body: {}, originalUrl: '/twilio/voice' }, mockRes(), jest.fn());
@@ -136,11 +143,11 @@ describe('twilioHmac middleware — non-production passthrough', () => {
 
 describe('twilioHmac middleware — production, no auth token', () => {
   test('calls next() when TWILIO_AUTH_TOKEN is empty in production', () => {
-    mockConfig.NODE_ENV          = 'production';
+    mockConfig.NODE_ENV = 'production';
     mockConfig.TWILIO_AUTH_TOKEN = '';
 
-    const req  = { headers: {}, body: {}, originalUrl: '/twilio/voice' };
-    const res  = mockRes();
+    const req = { headers: {}, body: {}, originalUrl: '/twilio/voice' };
+    const res = mockRes();
     const next = jest.fn();
 
     twilioHmac(req, res, next);
@@ -152,17 +159,17 @@ describe('twilioHmac middleware — production, no auth token', () => {
 
 describe('twilioHmac middleware — production, invalid signature', () => {
   beforeEach(() => {
-    mockConfig.NODE_ENV          = 'production';
+    mockConfig.NODE_ENV = 'production';
     mockConfig.TWILIO_AUTH_TOKEN = 'ACtest-auth-token';
   });
 
   test('returns 401 XML for missing/empty signature', () => {
     const req = {
-      headers:     { 'x-twilio-signature': '' },
-      body:        { CallSid: 'CA123', From: '+33600000001' },
+      headers: { 'x-twilio-signature': '' },
+      body: { CallSid: 'CA123', From: '+33600000001' },
       originalUrl: '/twilio/voice',
     };
-    const res  = mockRes();
+    const res = mockRes();
     const next = jest.fn();
 
     twilioHmac(req, res, next);
@@ -174,11 +181,11 @@ describe('twilioHmac middleware — production, invalid signature', () => {
 
   test('returns 401 XML for wrong signature', () => {
     const req = {
-      headers:     { 'x-twilio-signature': 'aW52YWxpZHNpZ25hdHVyZQ==' },
-      body:        { CallSid: 'CA456', From: '+33600000002' },
+      headers: { 'x-twilio-signature': 'aW52YWxpZHNpZ25hdHVyZQ==' },
+      body: { CallSid: 'CA456', From: '+33600000002' },
       originalUrl: '/twilio/voice',
     };
-    const res  = mockRes();
+    const res = mockRes();
     const next = jest.fn();
 
     twilioHmac(req, res, next);
@@ -190,18 +197,18 @@ describe('twilioHmac middleware — production, invalid signature', () => {
 
 describe('twilioHmac middleware — production, valid signature', () => {
   beforeEach(() => {
-    mockConfig.NODE_ENV          = 'production';
+    mockConfig.NODE_ENV = 'production';
     mockConfig.TWILIO_AUTH_TOKEN = 'ACtest-auth-token';
   });
 
   test('calls next() when HMAC-SHA1 matches', () => {
-    const body        = { CallSid: 'CA789', From: '+33600000003' };
+    const body = { CallSid: 'CA789', From: '+33600000003' };
     const originalUrl = '/twilio/voice';
-    const fullUrl     = `${mockConfig.BASE_URL}${originalUrl}`;
-    const sig         = buildSignature(fullUrl, body, mockConfig.TWILIO_AUTH_TOKEN);
+    const fullUrl = `${mockConfig.BASE_URL}${originalUrl}`;
+    const sig = buildSignature(fullUrl, body, mockConfig.TWILIO_AUTH_TOKEN);
 
     const req = { headers: { 'x-twilio-signature': sig }, body, originalUrl };
-    const res  = mockRes();
+    const res = mockRes();
     const next = jest.fn();
 
     twilioHmac(req, res, next);
@@ -211,10 +218,10 @@ describe('twilioHmac middleware — production, valid signature', () => {
   });
 
   test('calls next() with empty body and matching signature', () => {
-    const body        = {};
+    const body = {};
     const originalUrl = '/twilio/gather';
-    const fullUrl     = `${mockConfig.BASE_URL}${originalUrl}`;
-    const sig         = buildSignature(fullUrl, body, mockConfig.TWILIO_AUTH_TOKEN);
+    const fullUrl = `${mockConfig.BASE_URL}${originalUrl}`;
+    const sig = buildSignature(fullUrl, body, mockConfig.TWILIO_AUTH_TOKEN);
 
     const req = { headers: { 'x-twilio-signature': sig }, body, originalUrl };
     twilioHmac(req, mockRes(), jest.fn());

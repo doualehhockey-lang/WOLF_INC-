@@ -45,8 +45,12 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <button className="btn-ghost" onClick={onCancel}>Cancel</button>
-          <button className="btn-danger" onClick={onConfirm}>Confirm</button>
+          <button className="btn-ghost" onClick={onCancel}>
+            Cancel
+          </button>
+          <button className="btn-danger" onClick={onConfirm}>
+            Confirm
+          </button>
         </div>
       </div>
     </div>
@@ -68,8 +72,8 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
  */
 function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disabled, onExecute }) {
   const [confirming, setConfirming] = useState(false);
-  const [loading,    setLoading]    = useState(false);
-  const [result,     setResult]     = useState(null); // 'ok' | 'error'
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null); // 'ok' | 'error'
 
   const handleClick = () => {
     if (disabled) return;
@@ -93,8 +97,7 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
   }, [onExecute]);
 
   const btnClass =
-    variant === 'danger'  ? 'btn-danger'  :
-    variant === 'primary' ? 'btn-primary' : 'btn-ghost';
+    variant === 'danger' ? 'btn-danger' : variant === 'primary' ? 'btn-primary' : 'btn-ghost';
 
   return (
     <>
@@ -108,12 +111,16 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
 
       <article className="card flex flex-col gap-4" aria-label={label}>
         <div className="flex items-start gap-3">
-          <div className={clsx(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-            variant === 'danger'  ? 'bg-red-500/10   text-red-500'   :
-            variant === 'primary' ? 'bg-wolf-500/10  text-wolf-500'  :
-                                    'bg-surface       text-text-muted',
-          )}>
+          <div
+            className={clsx(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+              variant === 'danger'
+                ? 'bg-red-500/10   text-red-500'
+                : variant === 'primary'
+                  ? 'bg-wolf-500/10  text-wolf-500'
+                  : 'bg-surface       text-text-muted'
+            )}
+          >
             <Icon className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
@@ -122,7 +129,7 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
           </div>
 
           {/* Result badge */}
-          {result === 'ok'    && <span className="badge-green">Done</span>}
+          {result === 'ok' && <span className="badge-green">Done</span>}
           {result === 'error' && <span className="badge-red">Failed</span>}
         </div>
 
@@ -132,9 +139,11 @@ function ActionCard({ label, description, icon: Icon, confirmMsg, variant, disab
           disabled={disabled || loading}
           aria-busy={loading}
         >
-          {loading
-            ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            : <Icon    className="h-4 w-4" aria-hidden="true" />}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Icon className="h-4 w-4" aria-hidden="true" />
+          )}
           {loading ? 'Working…' : label}
         </button>
       </article>
@@ -201,7 +210,7 @@ export default function DeployControls({
   onTriggerCanary,
   onPromote,
   onRollback,
-  lastStable   = null,
+  lastStable = null,
   canaryActive = false,
 }) {
   const [tag, setTag] = useState('');

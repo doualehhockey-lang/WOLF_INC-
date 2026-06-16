@@ -14,12 +14,12 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 // Mutable config — tests override before each scenario
 const cfg = {
-  TTS_PROVIDER:        'elevenlabs',
-  ELEVENLABS_API_KEY:  'el-test-key',
+  TTS_PROVIDER: 'elevenlabs',
+  ELEVENLABS_API_KEY: 'el-test-key',
   ELEVENLABS_VOICE_ID: '21m00Tcm4TlvDq8ikWAM',
-  AZURE_TTS_KEY:       'azure-test-key',
-  AZURE_TTS_REGION:    'eastus',
-  AZURE_TTS_VOICE:     'fr-FR-DeniseNeural',
+  AZURE_TTS_KEY: 'azure-test-key',
+  AZURE_TTS_REGION: 'eastus',
+  AZURE_TTS_VOICE: 'fr-FR-DeniseNeural',
 };
 jest.unstable_mockModule('../../src/core/config.js', () => ({ config: cfg }));
 
@@ -29,10 +29,11 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest:   jest.fn(),
-  recordFailure:   jest.fn(),
-  recordLatency:   jest.fn(),
+  recordRequest: jest.fn(),
+  recordFailure: jest.fn(),
+  recordLatency: jest.fn(),
   setCircuitState: jest.fn(),
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 const mockSynthesizeMock = jest.fn(async () => Buffer.alloc(44, 0));
@@ -47,7 +48,7 @@ jest.unstable_mockModule('../../src/features/tts/providers/piper.js', () => ({
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 
 const { _makeSynthesize } = await import('../../src/services/tts.client.js');
-const { CircuitBreaker }  = await import('../../src/services/circuitBreaker.js');
+const { CircuitBreaker } = await import('../../src/services/circuitBreaker.js');
 
 function makeClient() {
   const breaker = new CircuitBreaker(`tts-branches-${Math.random()}`, { failureThreshold: 100 });
@@ -56,9 +57,9 @@ function makeClient() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  cfg.TTS_PROVIDER       = 'elevenlabs';
+  cfg.TTS_PROVIDER = 'elevenlabs';
   cfg.ELEVENLABS_API_KEY = 'el-test-key';
-  cfg.AZURE_TTS_KEY      = 'azure-test-key';
+  cfg.AZURE_TTS_KEY = 'azure-test-key';
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -67,14 +68,14 @@ beforeEach(() => {
 
 describe('_elevenlabs — missing API key (line 41)', () => {
   test('throws when ELEVENLABS_API_KEY is undefined', async () => {
-    cfg.TTS_PROVIDER       = 'elevenlabs';
+    cfg.TTS_PROVIDER = 'elevenlabs';
     cfg.ELEVENLABS_API_KEY = undefined;
     const synthesize = makeClient();
     await expect(synthesize('Bonjour', {})).rejects.toThrow('ELEVENLABS_API_KEY not configured');
   });
 
   test('throws when ELEVENLABS_API_KEY is empty string', async () => {
-    cfg.TTS_PROVIDER       = 'elevenlabs';
+    cfg.TTS_PROVIDER = 'elevenlabs';
     cfg.ELEVENLABS_API_KEY = '';
     const synthesize = makeClient();
     await expect(synthesize('Bonjour', {})).rejects.toThrow('ELEVENLABS_API_KEY not configured');
@@ -87,16 +88,16 @@ describe('_elevenlabs — missing API key (line 41)', () => {
 
 describe('_azure — missing API key (line 76)', () => {
   test('throws when AZURE_TTS_KEY is undefined', async () => {
-    cfg.TTS_PROVIDER  = 'azure';
+    cfg.TTS_PROVIDER = 'azure';
     cfg.AZURE_TTS_KEY = undefined;
-    const synthesize  = makeClient();
+    const synthesize = makeClient();
     await expect(synthesize('Bonjour', {})).rejects.toThrow('AZURE_TTS_KEY not configured');
   });
 
   test('throws when AZURE_TTS_KEY is empty string', async () => {
-    cfg.TTS_PROVIDER  = 'azure';
+    cfg.TTS_PROVIDER = 'azure';
     cfg.AZURE_TTS_KEY = '';
-    const synthesize  = makeClient();
+    const synthesize = makeClient();
     await expect(synthesize('Bonjour', {})).rejects.toThrow('AZURE_TTS_KEY not configured');
   });
 });
@@ -107,9 +108,9 @@ describe('_azure — missing API key (line 76)', () => {
 
 describe('synthesize — TTS_PROVIDER ?? "mock" (line 189)', () => {
   test('uses mock provider when TTS_PROVIDER is undefined', async () => {
-    cfg.TTS_PROVIDER = undefined;  // undefined → ?? 'mock' right side taken
+    cfg.TTS_PROVIDER = undefined; // undefined → ?? 'mock' right side taken
     const synthesize = makeClient();
-    const result     = await synthesize('Bonjour', {});
+    const result = await synthesize('Bonjour', {});
     expect(mockSynthesizeMock).toHaveBeenCalledWith('Bonjour');
     expect(result.ext).toBe('.wav');
     expect(result.mimeType).toBe('audio/wav');
@@ -124,9 +125,9 @@ describe('_elevenlabs — res.text().catch fallback (line 59)', () => {
   test('catch(() => "") fires when res.text() rejects on non-ok response', async () => {
     cfg.TTS_PROVIDER = 'elevenlabs';
     mockApiFetch.mockResolvedValueOnce({
-      ok:     false,
+      ok: false,
       status: 500,
-      text:   jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
+      text: jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
     });
     const synthesize = makeClient();
     await expect(synthesize('Bonjour', {})).rejects.toThrow('ElevenLabs 500');
@@ -142,9 +143,9 @@ describe('_azure — res.text().catch fallback (lines 84, 106)', () => {
   test('catch(() => "") fires on token request failure when text() rejects (line 84)', async () => {
     cfg.TTS_PROVIDER = 'azure';
     mockApiFetch.mockResolvedValueOnce({
-      ok:     false,
+      ok: false,
       status: 401,
-      text:   jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
+      text: jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
     });
     const synthesize = makeClient();
     await expect(synthesize('Bonjour', {})).rejects.toThrow('Azure token 401');
@@ -154,14 +155,14 @@ describe('_azure — res.text().catch fallback (lines 84, 106)', () => {
     cfg.TTS_PROVIDER = 'azure';
     // Token request succeeds
     mockApiFetch.mockResolvedValueOnce({
-      ok:   true,
+      ok: true,
       text: jest.fn().mockResolvedValueOnce('Bearer-token-xyz'),
     });
     // TTS synthesis request fails and text() throws
     mockApiFetch.mockResolvedValueOnce({
-      ok:     false,
+      ok: false,
       status: 500,
-      text:   jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
+      text: jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
     });
     const synthesize = makeClient();
     await expect(synthesize('Bonjour', {})).rejects.toThrow('Azure TTS 500');

@@ -1,8 +1,14 @@
 // src/features/tts/providers/elevenlabs.js — ElevenLabs cloud TTS.
 // Produces MP3 via the multilingual v2 model.
 // Requires ELEVENLABS_API_KEY.
+//
+// Voice settings tuned for a warm, natural-sounding French receptionist:
+//   stability: 0.65 — consistent but not monotone (allows natural inflection)
+//   similarity_boost: 0.80 — high fidelity to the chosen voice clone
+//   style: 0.15 — subtle expressiveness (professional warmth, not theatrical)
+//   use_speaker_boost: true — enhanced clarity for phone-quality audio
 
-import { config }   from '../../../core/config.js';
+import { config } from '../../../core/config.js';
 import { TtsError } from '../../../core/errors.js';
 import { apiFetch } from '../../../infra/http/httpClient.js';
 
@@ -15,17 +21,22 @@ export async function synthesizeElevenLabs(text) {
 
   if (!apiKey) throw new TtsError('ELEVENLABS_API_KEY is not configured');
 
-  const res = await apiFetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method:  'POST',
+  const res = await apiFetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+    method: 'POST',
     headers: {
-      'xi-api-key':    apiKey,
-      'Content-Type':  'application/json',
-      'Accept':        'audio/mpeg',
+      'xi-api-key': apiKey,
+      'Content-Type': 'application/json',
+      Accept: 'audio/mpeg',
     },
-    body:   JSON.stringify({
+    body: JSON.stringify({
       text,
       model_id: 'eleven_multilingual_v2',
-      voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
+      voice_settings: {
+        stability: 0.65,
+        similarity_boost: 0.8,
+        style: 0.15,
+        use_speaker_boost: true,
+      },
     }),
     signal: AbortSignal.timeout(20_000),
   });

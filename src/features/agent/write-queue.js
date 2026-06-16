@@ -14,10 +14,10 @@ export class WriteQueue {
    */
   constructor(writeFn, name = 'queue') {
     if (typeof writeFn !== 'function') throw new TypeError('writeFn must be a function');
-    this._writeFn  = writeFn;
-    this._name     = name;
-    this._running  = false;
-    this._pending  = false;
+    this._writeFn = writeFn;
+    this._name = name;
+    this._running = false;
+    this._pending = false;
   }
 
   /**
@@ -52,7 +52,11 @@ export class WriteQueue {
   }
 
   /** True if a write is currently executing. */
-  get isRunning() { return this._running; }
+  get isRunning() {
+    return this._running;
+  }
   /** True if a write is queued behind the current one. */
-  get hasPending() { return this._pending; }
+  get hasPending() {
+    return this._pending;
+  }
 }

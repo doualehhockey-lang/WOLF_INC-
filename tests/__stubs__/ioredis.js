@@ -8,14 +8,32 @@ export default class Redis {
   constructor() {}
   async connect() {}
   async ping() {}
-  async get() { return null; }
-  async set() { return 'OK'; }
-  async setex() { return 'OK'; }
-  async del() { return 1; }
-  async incr() { return 1; }
-  async expire() { return 1; }
-  async ttl() { return -1; }
-  async getBuffer() { return null; }
-  async eval() { return null; }
+  async get() {
+    return null;
+  }
+  async set() {
+    return 'OK';
+  }
+  async setex() {
+    return 'OK';
+  }
+  async del() {
+    return 1;
+  }
+  async incr() {
+    return 1;
+  }
+  async expire() {
+    return 1;
+  }
+  async ttl() {
+    return -1;
+  }
+  async getBuffer() {
+    return null;
+  }
+  async eval() {
+    return null;
+  }
   on() {}
 }

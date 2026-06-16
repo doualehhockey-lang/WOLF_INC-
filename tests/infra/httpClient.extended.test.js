@@ -45,7 +45,7 @@ describe('apiFetch — non-native-fetch branch (lines 41-44)', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       'https://api.example.com/endpoint',
-      expect.objectContaining({ agent: httpsAgent, method: 'GET' }),
+      expect.objectContaining({ agent: httpsAgent, method: 'GET' })
     );
   });
 
@@ -65,7 +65,7 @@ describe('apiFetch — non-native-fetch branch (lines 41-44)', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       'http://internal.service/endpoint',
-      expect.objectContaining({ agent: httpAgent }),
+      expect.objectContaining({ agent: httpAgent })
     );
   });
 
@@ -88,14 +88,21 @@ describe('apiFetch — non-native-fetch branch (lines 41-44)', () => {
 describe('apiFetch — agent selection', () => {
   let originalFetch;
 
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   test('selects httpsAgent for https:// URLs', async () => {
     let readCount = 0;
     const mockFetch = jest.fn().mockResolvedValue({ ok: true });
     Object.defineProperty(globalThis, 'fetch', {
-      get() { readCount++; return readCount === 1 ? undefined : mockFetch; },
+      get() {
+        readCount++;
+        return readCount === 1 ? undefined : mockFetch;
+      },
       configurable: true,
     });
 
@@ -108,7 +115,10 @@ describe('apiFetch — agent selection', () => {
     let readCount = 0;
     const mockFetch = jest.fn().mockResolvedValue({ ok: true });
     Object.defineProperty(globalThis, 'fetch', {
-      get() { readCount++; return readCount === 1 ? undefined : mockFetch; },
+      get() {
+        readCount++;
+        return readCount === 1 ? undefined : mockFetch;
+      },
       configurable: true,
     });
 

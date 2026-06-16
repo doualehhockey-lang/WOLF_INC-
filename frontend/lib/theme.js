@@ -10,9 +10,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 
 /** @typedef {'light'|'dark'} Theme */
 
-const ThemeContext = createContext(
-  /** @type {{ theme: Theme, toggle: () => void }} */ ({}),
-);
+const ThemeContext = createContext(/** @type {{ theme: Theme, toggle: () => void }} */ ({}));
 
 const STORAGE_KEY = 'wolf_theme';
 
@@ -44,16 +42,9 @@ export function ThemeProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
-  const toggle = useCallback(
-    () => setTheme(t => (t === 'dark' ? 'light' : 'dark')),
-    [],
-  );
+  const toggle = useCallback(() => setTheme(t => (t === 'dark' ? 'light' : 'dark')), []);
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggle }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, toggle }}>{children}</ThemeContext.Provider>;
 }
 
 /** @returns {{ theme: Theme, toggle: () => void }} */

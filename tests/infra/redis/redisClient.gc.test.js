@@ -18,11 +18,10 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: { inc: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
-const {
-  cacheSet, cacheGet, cacheDel,
-} = await import('../../../src/infra/redis/redisClient.js');
+const { cacheSet, cacheGet, cacheDel } = await import('../../../src/infra/redis/redisClient.js');
 
 afterAll(() => {
   jest.useRealTimers();

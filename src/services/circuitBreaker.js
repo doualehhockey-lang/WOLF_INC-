@@ -7,8 +7,8 @@
 // ── States ────────────────────────────────────────────────────────────────────
 
 export const STATE = Object.freeze({
-  CLOSED:    'CLOSED',
-  OPEN:      'OPEN',
+  CLOSED: 'CLOSED',
+  OPEN: 'OPEN',
   HALF_OPEN: 'HALF_OPEN',
 });
 
@@ -17,7 +17,7 @@ export const STATE = Object.freeze({
 export class CircuitOpenError extends Error {
   constructor(provider) {
     super(`Circuit breaker OPEN for provider "${provider}"`);
-    this.name     = 'CircuitOpenError';
+    this.name = 'CircuitOpenError';
     this.provider = provider;
   }
 }
@@ -25,8 +25,8 @@ export class CircuitOpenError extends Error {
 export class TimeoutError extends Error {
   constructor(provider, timeoutMs) {
     super(`Request to "${provider}" timed out after ${timeoutMs}ms`);
-    this.name      = 'TimeoutError';
-    this.provider  = provider;
+    this.name = 'TimeoutError';
+    this.provider = provider;
     this.timeoutMs = timeoutMs;
   }
 }
@@ -35,7 +35,7 @@ export class TimeoutError extends Error {
 export class HttpError extends Error {
   constructor(status, message) {
     super(message);
-    this.name   = 'HttpError';
+    this.name = 'HttpError';
     this.status = status;
   }
 }
@@ -43,9 +43,13 @@ export class HttpError extends Error {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function _isAbortError(err) {
-  return err?.name === 'AbortError' ||
+  return (
+    err?.name === 'AbortError' ||
     // Stryker disable next-line all -- DOMException global absent in Node < 18 test envs; branch unreachable in CI
-    (typeof DOMException !== 'undefined' && err instanceof DOMException && err.name === 'AbortError');
+    (typeof DOMException !== 'undefined' &&
+      err instanceof DOMException &&
+      err.name === 'AbortError')
+  );
 }
 
 function _sleep(ms) {
@@ -71,33 +75,35 @@ export class CircuitBreaker {
    * @param {function} [opts.now]                     Clock override — () => number (for tests)
    */
   constructor(name, opts = {}) {
-    this.name                  = name;
-    this._failureThreshold     = opts.failureThreshold     ?? 5;
-    this._errorRateThreshold   = opts.errorRateThreshold   ?? 0.5;
-    this._minCalls             = opts.minCalls             ?? 10;
-    this._windowMs             = opts.windowMs             ?? 60_000;
-    this._openDurationMs       = opts.openDurationMs       ?? 60_000;
-    this._onStateChange        = opts.onStateChange        ?? null;
-    this._now                  = opts.now                  ?? (() => Date.now());
+    this.name = name;
+    this._failureThreshold = opts.failureThreshold ?? 5;
+    this._errorRateThreshold = opts.errorRateThreshold ?? 0.5;
+    this._minCalls = opts.minCalls ?? 10;
+    this._windowMs = opts.windowMs ?? 60_000;
+    this._openDurationMs = opts.openDurationMs ?? 60_000;
+    this._onStateChange = opts.onStateChange ?? null;
+    this._now = opts.now ?? (() => Date.now());
 
-    this._state                = STATE.CLOSED;
-    this._consecutiveFailures  = 0;
-    this._openUntil            = 0;
+    this._state = STATE.CLOSED;
+    this._consecutiveFailures = 0;
+    this._openUntil = 0;
     this._halfOpenProbeInFlight = false;
-    this._calls                = []; // { ts: number, success: boolean }[]
+    this._calls = []; // { ts: number, success: boolean }[]
   }
 
   /** Current breaker state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' */
-  getState() { return this._state; }
+  getState() {
+    return this._state;
+  }
 
   /** Hard-reset to CLOSED, clearing all counters and the sliding window. */
   reset() {
     const wasOpen = this._state !== STATE.CLOSED;
-    this._state                 = STATE.CLOSED;
-    this._consecutiveFailures   = 0;
-    this._openUntil             = 0;
+    this._state = STATE.CLOSED;
+    this._consecutiveFailures = 0;
+    this._openUntil = 0;
     this._halfOpenProbeInFlight = false;
-    this._calls                 = [];
+    this._calls = [];
     if (wasOpen) this._onStateChange?.(STATE.CLOSED, this.name);
   }
 
@@ -112,7 +118,7 @@ export class CircuitBreaker {
    * @throws {CircuitOpenError} When the breaker is open and the timer has not expired.
    * @throws {TimeoutError}     When fn does not resolve within timeoutMs.
    */
-  async exec(fn, { requestId = '', timeoutMs = 10_000 } = {}) { // eslint-disable-line no-unused-vars
+  async exec(fn, { requestId: _requestId = '', timeoutMs = 10_000 } = {}) {
     const now = this._now();
 
     // ── OPEN: guard ──────────────────────────────────────────────────────────
@@ -128,7 +134,7 @@ export class CircuitBreaker {
     }
 
     // ── Execute with timeout ─────────────────────────────────────────────────
-    const ac    = new AbortController();
+    const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), timeoutMs);
 
     try {
@@ -222,12 +228,7 @@ export class CircuitBreaker {
  * @returns {Promise<*>}
  */
 export async function withRetry(fn, opts = {}) {
-  const {
-    maxRetries  = 3,
-    baseMs      = 200,
-    maxMs       = 2_000,
-    shouldRetry = _defaultShouldRetry,
-  } = opts;
+  const { maxRetries = 3, baseMs = 200, maxMs = 2_000, shouldRetry = _defaultShouldRetry } = opts;
 
   let attempt = 0;
   for (;;) {
@@ -236,7 +237,7 @@ export async function withRetry(fn, opts = {}) {
     } catch (err) {
       if (attempt >= maxRetries || !shouldRetry(err, attempt)) throw err;
       const jitter = Math.random() * 100;
-      const delay  = Math.min(baseMs * (2 ** attempt) + jitter, maxMs);
+      const delay = Math.min(baseMs * 2 ** attempt + jitter, maxMs);
       await _sleep(delay);
       attempt++;
     }

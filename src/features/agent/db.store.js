@@ -2,9 +2,9 @@
 // Only active when DB_HOST is configured and dbAvailable is true.
 // All functions mirror json.store.js API for transparent swap.
 
-import { childLogger }                     from '../../core/logger.js';
-import { db }                              from '../../infra/db/dbClient.js';
-import { eventsStoredGauge, errorCounter } from '../../core/metrics.js';
+import { childLogger } from '../../core/logger.js';
+import { db } from '../../infra/db/dbClient.js';
+import { eventsStoredGauge } from '../../core/metrics.js';
 
 const log = childLogger('db-store');
 
@@ -15,7 +15,10 @@ const TABLE = 'events';
 export async function listEvents(userKey) {
   return db(TABLE)
     .where({ user_key: userKey, deleted_at: null })
-    .orderBy([{ column: 'date', order: 'asc' }, { column: 'time', order: 'asc' }])
+    .orderBy([
+      { column: 'date', order: 'asc' },
+      { column: 'time', order: 'asc' },
+    ])
     .select('id', 'subject', 'date', 'time');
 }
 
@@ -29,16 +32,20 @@ export async function createEvent(userKey, { subject, date, time }) {
 }
 
 export async function findEventByDate(userKey, date) {
-  return db(TABLE)
-    .where({ user_key: userKey, date, deleted_at: null })
-    .first('id', 'subject', 'date', 'time') ?? null;
+  return (
+    db(TABLE)
+      .where({ user_key: userKey, date, deleted_at: null })
+      .first('id', 'subject', 'date', 'time') ?? null
+  );
 }
 
 export async function findEventBySubject(userKey, subject) {
-  return db(TABLE)
-    .where({ user_key: userKey, deleted_at: null })
-    .whereILike('subject', `%${subject}%`)
-    .first('id', 'subject', 'date', 'time') ?? null;
+  return (
+    db(TABLE)
+      .where({ user_key: userKey, deleted_at: null })
+      .whereILike('subject', `%${subject.replace(/[%_]/g, '\\$&')}%`)
+      .first('id', 'subject', 'date', 'time') ?? null
+  );
 }
 
 export async function softDeleteEvent(userKey, id) {
@@ -54,8 +61,8 @@ export async function softDeleteEvent(userKey, id) {
 
 export async function updateEvent(userKey, id, patch) {
   const allowed = {};
-  if (patch.date)    allowed.date    = patch.date;
-  if (patch.time)    allowed.time    = patch.time;
+  if (patch.date) allowed.date = patch.date;
+  if (patch.time) allowed.time = patch.time;
   if (patch.subject) allowed.subject = patch.subject;
 
   const [updated] = await db(TABLE)

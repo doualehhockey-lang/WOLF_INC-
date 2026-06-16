@@ -10,8 +10,15 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 // Import AFTER mocks — REDIS_URL not set in test env → in-memory fallback
 const {
-  cacheGet, cacheSet, cacheDel, cacheIncr, cacheExpire, cacheTtl,
-  cacheGetBuffer, cacheSetBuffer, redisAvailable,
+  cacheGet,
+  cacheSet,
+  cacheDel,
+  cacheIncr,
+  cacheExpire,
+  cacheTtl,
+  cacheGetBuffer,
+  cacheSetBuffer,
+  redisAvailable,
 } = await import('../../src/infra/redis/redisClient.js');
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -31,7 +38,9 @@ describe('Redis chaos — fallback mode active', () => {
 describe('Chaos: basic cache operations', () => {
   const KEY = `chaos:basic:${Date.now()}`;
 
-  afterEach(async () => { await cacheDel(KEY); });
+  afterEach(async () => {
+    await cacheDel(KEY);
+  });
 
   test('cacheGet on missing key returns null (no crash)', async () => {
     await expect(cacheGet('chaos:nonexistent:xyz')).resolves.toBeNull();
@@ -144,7 +153,7 @@ describe('Chaos: TTL operations', () => {
 describe('Chaos: buffer cache operations', () => {
   test('cacheSetBuffer + cacheGetBuffer roundtrip', async () => {
     const key = `chaos:buf:${Date.now()}`;
-    const original = Buffer.from([0x01, 0x02, 0x03, 0xFF]);
+    const original = Buffer.from([0x01, 0x02, 0x03, 0xff]);
     await cacheSetBuffer(key, original, 60);
     const retrieved = await cacheGetBuffer(key);
     expect(Buffer.isBuffer(retrieved)).toBe(true);

@@ -10,7 +10,11 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
-  config: { BASE_URL: 'http://localhost:3000', AUDIO_DIR: '/tmp/audio' },
+  config: {
+    BASE_URL: 'http://localhost:3000',
+    AUDIO_DIR: '/tmp/audio',
+    VOICE_GREETING_TEXT: 'Hello, I am your Wolf Inc assistant. How can I help you today?',
+  },
 }));
 
 // ── Mock TTS service ──────────────────────────────────────────────────────────
@@ -67,7 +71,7 @@ describe('prewarmGreeting — success', () => {
     expect(saveAudio).toHaveBeenCalledWith(
       expect.any(Buffer),
       expect.stringContaining('audio'),
-      '.wav',
+      '.wav'
     );
   });
 

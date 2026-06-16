@@ -11,22 +11,23 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   eventsStoredGauge: { inc: jest.fn(), dec: jest.fn(), set: jest.fn() },
-  errorCounter:      { inc: jest.fn() },
+  errorCounter: { inc: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // Chainable builder where first() returns undefined (no record found)
 function makeBuilder(firstResult) {
   return {
-    where:     jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
     whereNull: jest.fn().mockReturnThis(),
     whereILike: jest.fn().mockReturnThis(),
-    orderBy:   jest.fn().mockReturnThis(),
-    select:    jest.fn().mockResolvedValue([]),
-    insert:    jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    select: jest.fn().mockResolvedValue([]),
+    insert: jest.fn().mockReturnThis(),
     returning: jest.fn().mockResolvedValue([]),
-    update:    jest.fn().mockReturnThis(),
-    first:     jest.fn().mockResolvedValue(firstResult),  // configurable
-    count:     jest.fn().mockResolvedValue([{ count: '0' }]),
+    update: jest.fn().mockReturnThis(),
+    first: jest.fn().mockResolvedValue(firstResult), // configurable
+    count: jest.fn().mockResolvedValue([{ count: '0' }]),
   };
 }
 
@@ -35,8 +36,9 @@ const mockDb = jest.fn(() => _builder);
 mockDb.fn = { now: jest.fn(() => 'NOW()') };
 
 jest.unstable_mockModule('../../../src/infra/db/dbClient.js', () => ({
-  db:          mockDb,
+  db: mockDb,
   dbAvailable: true,
+  pendingMigrationCount: 0,
 }));
 
 const { findEventByDate, findEventBySubject, updateEvent } =
@@ -58,7 +60,7 @@ describe('findEventByDate — .first() ?? null right side (lines 32-35)', () => 
     // Actual behavior: async function returns the resolved value directly (undefined when not found).
     _builder = makeBuilder(undefined);
     const result = await findEventByDate(USER, '2026-12-01');
-    expect(result == null).toBe(true); // null or undefined both satisfy "not found"
+    expect(result === null || result === undefined).toBe(true); // null or undefined both satisfy "not found"
   });
 
   test('returns record when .first() returns a value (left side of ??)', async () => {
@@ -77,7 +79,7 @@ describe('findEventBySubject — .first() ?? null right side (lines 37-41)', () 
   test('returns undefined/null when .first() resolves to undefined (no match)', async () => {
     _builder = makeBuilder(undefined);
     const result = await findEventBySubject(USER, 'nonexistent');
-    expect(result == null).toBe(true);
+    expect(result === null || result === undefined).toBe(true);
   });
 
   test('returns record when .first() returns a value (left side of ??)', async () => {
@@ -97,12 +99,12 @@ describe('updateEvent — patch.time TRUE branch (line 58)', () => {
     const updated = { id: 1, subject: 'médecin', date: '2026-10-01', time: '15:00' };
     _builder = {
       ...makeBuilder(null),
-      update:    jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
       returning: jest.fn().mockResolvedValue([updated]),
-      where:     jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
     };
 
-    const result = await updateEvent(USER, 1, { time: '15:00' });  // only time → line 58 TRUE
+    const result = await updateEvent(USER, 1, { time: '15:00' }); // only time → line 58 TRUE
 
     // The update should have been called with time included
     expect(_builder.update).toHaveBeenCalledWith(expect.objectContaining({ time: '15:00' }));
@@ -113,12 +115,12 @@ describe('updateEvent — patch.time TRUE branch (line 58)', () => {
     const updated = { id: 1, subject: 'médecin updated', date: '2026-10-01', time: '09:00' };
     _builder = {
       ...makeBuilder(null),
-      update:    jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
       returning: jest.fn().mockResolvedValue([updated]),
-      where:     jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
     };
 
-    await updateEvent(USER, 1, { subject: 'médecin updated' });  // no time → line 58 FALSE
+    await updateEvent(USER, 1, { subject: 'médecin updated' }); // no time → line 58 FALSE
 
     const updateArg = _builder.update.mock.calls[0]?.[0] ?? {};
     expect(updateArg).not.toHaveProperty('time');

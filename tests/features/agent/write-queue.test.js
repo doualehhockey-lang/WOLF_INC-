@@ -9,7 +9,9 @@ describe('WriteQueue', () => {
 
   test('executes writeFn on enqueue', async () => {
     const calls = [];
-    const q     = new WriteQueue(async () => { calls.push(Date.now()); });
+    const q = new WriteQueue(async () => {
+      calls.push(Date.now());
+    });
     await q.enqueue();
     expect(calls).toHaveLength(1);
   });
@@ -37,7 +39,9 @@ describe('WriteQueue', () => {
       calls.push(Date.now());
       if (calls.length === 1) {
         // Block on first write to observe pending behaviour
-        await new Promise(r => { resolve1 = r; });
+        await new Promise(r => {
+          resolve1 = r;
+        });
       }
     });
 
@@ -55,7 +59,9 @@ describe('WriteQueue', () => {
   test('isRunning and hasPending flags', async () => {
     let unblock;
     const q = new WriteQueue(async () => {
-      await new Promise(r => { unblock = r; });
+      await new Promise(r => {
+        unblock = r;
+      });
     });
 
     const p = q.enqueue();
@@ -67,7 +73,7 @@ describe('WriteQueue', () => {
 
   test('recovers gracefully from writeFn errors', async () => {
     let count = 0;
-    const q   = new WriteQueue(async () => {
+    const q = new WriteQueue(async () => {
       count++;
       if (count === 1) throw new Error('simulated write failure');
     });

@@ -10,25 +10,27 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../src/core/metrics.js', () => ({
   rateLimitCounter: { inc: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // In-memory counter store shared by the mock
 const _counters = {};
 
-const mockIncr = jest.fn(async (key) => {
+const mockIncr = jest.fn(async key => {
   _counters[key] = (_counters[key] ?? 0) + 1;
   return _counters[key];
 });
 
 jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
   redisAvailable: false, // force in-memory fallback path
-  evalScript:     jest.fn(async () => null),
-  cacheIncr:      mockIncr,
-  cacheExpire:    jest.fn(async () => true),
-  cacheGet:       jest.fn(async () => null),
-  cacheSet:       jest.fn(async () => 'OK'),
-  cacheDel:       jest.fn(async () => 1),
-  redis:          null,
+  isRedisAvailable: jest.fn().mockReturnValue(false),
+  evalScript: jest.fn(async () => null),
+  cacheIncr: mockIncr,
+  cacheExpire: jest.fn(async () => true),
+  cacheGet: jest.fn(async () => null),
+  cacheSet: jest.fn(async () => 'OK'),
+  cacheDel: jest.fn(async () => 1),
+  redis: null,
 }));
 
 const { isRateLimited } = await import('../../src/features/voice/rate-limiter.js');

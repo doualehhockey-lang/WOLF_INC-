@@ -34,18 +34,23 @@ describe('CircuitBreaker constructor — default opts (line 71)', () => {
 
 describe('CircuitBreaker — error rate triggers open (line 190)', () => {
   test('opens via error rate when failures/total exceeds threshold after minCalls', async () => {
-    let fakeNow = 0;
+    const fakeNow = 0;
     const breaker = new CircuitBreaker('rate-test', {
-      failureThreshold:   100,       // high → won't open via consecutive failures
-      errorRateThreshold: 0.5,       // 50% error rate
-      minCalls:           4,         // open after 4 calls if rate > 50%
-      windowMs:           60_000,
-      openDurationMs:     60_000,
+      failureThreshold: 100, // high → won't open via consecutive failures
+      errorRateThreshold: 0.5, // 50% error rate
+      minCalls: 4, // open after 4 calls if rate > 50%
+      windowMs: 60_000,
+      openDurationMs: 60_000,
       now: () => fakeNow,
     });
 
     // 3 failures + 1 success = 75% error rate (> 50%) after 4 calls
-    const fail = () => breaker.exec(async () => { throw new Error('boom'); }).catch(() => {});
+    const fail = () =>
+      breaker
+        .exec(async () => {
+          throw new Error('boom');
+        })
+        .catch(() => {});
     const succeed = () => breaker.exec(async () => 'ok');
 
     await fail();
@@ -89,7 +94,9 @@ describe('withRetry — default parameter branches (lines 221-223)', () => {
       throw new HttpError(400, 'Bad Request');
     };
 
-    await expect(withRetry(fn, { maxRetries: 3, baseMs: 0, maxMs: 0 })).rejects.toThrow('Bad Request');
+    await expect(withRetry(fn, { maxRetries: 3, baseMs: 0, maxMs: 0 })).rejects.toThrow(
+      'Bad Request'
+    );
     // Should only be called once — 4xx is not retryable
     expect(calls).toBe(1);
   });

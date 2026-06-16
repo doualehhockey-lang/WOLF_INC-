@@ -8,22 +8,33 @@ import { CircuitBreaker, CircuitOpenError, STATE } from '../../src/services/circ
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function makeBreaker({ failureThreshold = 5, openDurationMs = 1_000, errorRateThreshold = 0.6, minCalls = 10 } = {}) {
+function makeBreaker({
+  failureThreshold = 5,
+  openDurationMs = 1_000,
+  errorRateThreshold = 0.6,
+  minCalls = 10,
+} = {}) {
   let t = 0;
   const b = new CircuitBreaker('test', {
     failureThreshold,
     errorRateThreshold,
     minCalls,
-    windowMs:      60_000,
+    windowMs: 60_000,
     openDurationMs,
     now: () => t,
   });
-  b._tick = (ms) => { t += ms; };
+  b._tick = ms => {
+    t += ms;
+  };
   return b;
 }
 
 async function fail(b) {
-  return b.exec(() => { throw new Error('fail'); }).catch(() => {});
+  return b
+    .exec(() => {
+      throw new Error('fail');
+    })
+    .catch(() => {});
 }
 
 async function succeed(b) {
@@ -100,8 +111,8 @@ describe('INVARIANT: OPEN always throws CircuitOpenError before timer expires', 
   });
 
   test('OPEN breaker never silently passes requests through', async () => {
-    const b      = makeBreaker({ failureThreshold: 3 });
-    const fnSpy  = jest.fn(async () => 'called');
+    const b = makeBreaker({ failureThreshold: 3 });
+    const fnSpy = jest.fn(async () => 'called');
 
     for (let i = 0; i < 3; i++) await fail(b);
     expect(b.getState()).toBe(STATE.OPEN);
@@ -151,7 +162,12 @@ describe('INVARIANT: HALF_OPEN allows exactly one concurrent probe', () => {
     b._tick(1_001);
 
     let resolveProbe;
-    const probe = b.exec(() => new Promise(r => { resolveProbe = r; }));
+    const probe = b.exec(
+      () =>
+        new Promise(r => {
+          resolveProbe = r;
+        })
+    );
 
     // Second concurrent call must be rejected
     await expect(b.exec(() => Promise.resolve('ok'))).rejects.toBeInstanceOf(CircuitOpenError);

@@ -14,23 +14,24 @@ const mockGaugeInc = jest.fn();
 const mockGaugeDec = jest.fn();
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   eventsStoredGauge: { inc: mockGaugeInc, dec: mockGaugeDec, set: jest.fn() },
-  errorCounter:      { inc: jest.fn() },
+  errorCounter: { inc: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Build a chainable Knex mock builder ───────────────────────────────────────
 // Each method returns `this` so chaining works; terminal methods are promises.
 function makeBuilder(terminalResult) {
   const b = {
-    where:     jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
     whereNull: jest.fn().mockReturnThis(),
     whereILike: jest.fn().mockReturnThis(),
-    orderBy:   jest.fn().mockReturnThis(),
-    select:    jest.fn().mockResolvedValue(terminalResult ?? []),
-    insert:    jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    select: jest.fn().mockResolvedValue(terminalResult ?? []),
+    insert: jest.fn().mockReturnThis(),
     returning: jest.fn().mockResolvedValue(terminalResult ?? []),
-    update:    jest.fn().mockReturnThis(),
-    first:     jest.fn().mockResolvedValue(terminalResult ?? null),
-    count:     jest.fn().mockResolvedValue(terminalResult ?? [{ count: '0' }]),
+    update: jest.fn().mockReturnThis(),
+    first: jest.fn().mockResolvedValue(terminalResult ?? null),
+    count: jest.fn().mockResolvedValue(terminalResult ?? [{ count: '0' }]),
   };
   return b;
 }
@@ -40,18 +41,24 @@ const mockDb = jest.fn(() => _builder);
 mockDb.fn = { now: jest.fn(() => 'NOW()') };
 
 jest.unstable_mockModule('../../../src/infra/db/dbClient.js', () => ({
-  db:          mockDb,
+  db: mockDb,
   dbAvailable: true,
+  pendingMigrationCount: 0,
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 const {
-  listEvents, createEvent, findEventByDate, findEventBySubject,
-  softDeleteEvent, updateEvent, getTotalCount,
+  listEvents,
+  createEvent,
+  findEventByDate,
+  findEventBySubject,
+  softDeleteEvent,
+  updateEvent,
+  getTotalCount,
 } = await import('../../../src/features/agent/db.store.js');
 
-const EVT    = { id: 1, subject: 'Médecin', date: '2026-06-01', time: '09:00' };
-const USER   = 'user-key-42';
+const EVT = { id: 1, subject: 'Médecin', date: '2026-06-01', time: '09:00' };
+const USER = 'user-key-42';
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -102,13 +109,18 @@ describe('createEvent', () => {
   test('inserts into events table', async () => {
     await createEvent(USER, { subject: 'Médecin', date: '2026-06-01', time: '09:00' });
     expect(_builder.insert).toHaveBeenCalledWith({
-      user_key: USER, subject: 'Médecin', date: '2026-06-01', time: '09:00',
+      user_key: USER,
+      subject: 'Médecin',
+      date: '2026-06-01',
+      time: '09:00',
     });
   });
 
   test('uses "Rendez-vous" when subject is falsy', async () => {
     await createEvent(USER, { subject: '', date: '2026-06-01', time: '09:00' });
-    expect(_builder.insert).toHaveBeenCalledWith(expect.objectContaining({ subject: 'Rendez-vous' }));
+    expect(_builder.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: 'Rendez-vous' })
+    );
   });
 
   test('returns the inserted event', async () => {
@@ -130,7 +142,11 @@ describe('findEventByDate', () => {
   test('queries with user_key and date', async () => {
     _builder.first.mockResolvedValue(EVT);
     await findEventByDate(USER, '2026-06-01');
-    expect(_builder.where).toHaveBeenCalledWith({ user_key: USER, date: '2026-06-01', deleted_at: null });
+    expect(_builder.where).toHaveBeenCalledWith({
+      user_key: USER,
+      date: '2026-06-01',
+      deleted_at: null,
+    });
   });
 
   test('returns event when found', async () => {
@@ -214,9 +230,16 @@ describe('updateEvent', () => {
 
   test('only includes allowed fields in patch (date/time/subject)', async () => {
     _builder.returning.mockResolvedValue([EVT]);
-    await updateEvent(USER, 1, { date: '2026-07-01', time: '10:00', subject: 'Kiné', extra: 'ignored' });
+    await updateEvent(USER, 1, {
+      date: '2026-07-01',
+      time: '10:00',
+      subject: 'Kiné',
+      extra: 'ignored',
+    });
     expect(_builder.update).toHaveBeenCalledWith(expect.not.objectContaining({ extra: 'ignored' }));
-    expect(_builder.update).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-07-01', time: '10:00', subject: 'Kiné' }));
+    expect(_builder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ date: '2026-07-01', time: '10:00', subject: 'Kiné' })
+    );
   });
 });
 

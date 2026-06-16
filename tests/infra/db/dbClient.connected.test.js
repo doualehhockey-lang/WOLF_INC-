@@ -14,25 +14,25 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 // Provide DB_HOST in config to trigger the init block
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
-    DB_HOST:     'localhost',
-    DB_PORT:     5432,
-    DB_USER:     'postgres',
+    DB_HOST: 'localhost',
+    DB_PORT: 5432,
+    DB_USER: 'postgres',
     DB_PASSWORD: 'secret',
-    DB_NAME:     'wolf_test',
-    BASE_URL:    'http://localhost:3000',
-    PHONE_SALT:  'testsalt1234567890',
-    JWT_SECRET:  'testjwtsecret1234567890testjwtsecret1234567890',
+    DB_NAME: 'wolf_test',
+    BASE_URL: 'http://localhost:3000',
+    PHONE_SALT: 'testsalt1234567890',
+    JWT_SECRET: 'testjwtsecret1234567890testjwtsecret1234567890',
     JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
-    API_KEYS:    ['test-key'],
+    API_KEYS: ['test-key'],
   },
 }));
 
 // ── Mock knex ─────────────────────────────────────────────────────────────────
-const mockRaw     = jest.fn(async () => [{ 1: 1 }]);
+const mockRaw = jest.fn(async () => [{ 1: 1 }]);
 const mockDestroy = jest.fn(async () => {});
 
 const mockKnexInstance = {
-  raw:     mockRaw,
+  raw: mockRaw,
   destroy: mockDestroy,
 };
 
@@ -49,14 +49,16 @@ const { db, dbAvailable, destroyDb } = await import('../../../src/infra/db/dbCli
 
 describe('dbClient — connected initialization', () => {
   test('knex was called with correct pg config', () => {
-    expect(MockKnex).toHaveBeenCalledWith(expect.objectContaining({
-      client: 'pg',
-      connection: expect.objectContaining({
-        host: 'localhost',
-        port: 5432,
-        database: 'wolf_test',
-      }),
-    }));
+    expect(MockKnex).toHaveBeenCalledWith(
+      expect.objectContaining({
+        client: 'pg',
+        connection: expect.objectContaining({
+          host: 'localhost',
+          port: 5432,
+          database: 'wolf_test',
+        }),
+      })
+    );
   });
 
   test('SELECT 1 was issued to verify connection', () => {
@@ -75,7 +77,7 @@ describe('dbClient — connected initialization', () => {
     const poolConfig = MockKnex.mock.calls[0][0].pool;
     expect(poolConfig.min).toBe(2);
     expect(poolConfig.max).toBe(10);
-    expect(poolConfig.acquireTimeoutMillis).toBe(10_000);
+    expect(poolConfig.acquireTimeoutMillis).toBe(3_000);
   });
 });
 

@@ -2,13 +2,13 @@
 // Writes text to a temp file, runs the piper binary, reads the WAV output.
 // Requires PIPER_BINARY and PIPER_MODEL_PATH to be configured.
 
-import { execFile }              from 'child_process';
-import { promisify }             from 'util';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { writeFile, readFile, unlink, mkdir } from 'fs/promises';
-import { resolve }               from 'path';
-import { randomUUID }            from 'crypto';
-import { config }                from '../../../core/config.js';
-import { TtsError }              from '../../../core/errors.js';
+import { resolve } from 'path';
+import { randomUUID } from 'crypto';
+import { config } from '../../../core/config.js';
+import { TtsError } from '../../../core/errors.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -18,15 +18,15 @@ const execFileAsync = promisify(execFile);
  */
 export async function synthesizePiper(text) {
   const modelPath = config.PIPER_MODEL_PATH;
-  const piperBin  = config.PIPER_BINARY;
+  const piperBin = config.PIPER_BINARY;
 
   if (!modelPath) throw new TtsError('PIPER_MODEL_PATH is not configured');
 
-  const tmpDir  = resolve('./tmp/tts');
+  const tmpDir = resolve('./tmp/tts');
   await mkdir(tmpDir, { recursive: true });
 
   const outFile = resolve(tmpDir, `${randomUUID()}.wav`);
-  const inFile  = resolve(tmpDir, `${randomUUID()}.txt`);
+  const inFile = resolve(tmpDir, `${randomUUID()}.txt`);
   await writeFile(inFile, text.slice(0, 1_000), 'utf8');
 
   try {

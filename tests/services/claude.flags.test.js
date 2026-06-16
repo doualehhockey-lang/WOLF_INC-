@@ -4,12 +4,15 @@
 import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('../../src/core/featureFlags.js', () => ({
-  isEnabled: jest.fn(async (flag) => flag !== 'claude.nlu'), // CLAUDE_NLU disabled
+  isEnabled: jest.fn(async flag => flag !== 'claude.nlu'), // CLAUDE_NLU disabled
   FLAGS: {
-    CLAUDE_NLU: 'claude.nlu', OLLAMA_NLU: 'ollama.nlu',
+    CLAUDE_NLU: 'claude.nlu',
     TRANSLATION: 'translation',
   },
-  setFlag: jest.fn(), getAllFlags: jest.fn(), snapshotFlags: jest.fn(() => ({})), clearCache: jest.fn(),
+  setFlag: jest.fn(),
+  getAllFlags: jest.fn(),
+  snapshotFlags: jest.fn(() => ({})),
+  clearCache: jest.fn(),
 }));
 
 jest.unstable_mockModule('../../src/core/logger.js', () => ({
@@ -19,7 +22,7 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
     CLAUDE_API_KEY: 'sk-test-key', // key IS set — flag overrides it
-    CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+    CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
   },
 }));
 
@@ -28,17 +31,25 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest: jest.fn(), recordFailure: jest.fn(),
-  recordLatency: jest.fn(), setCircuitState: jest.fn(),
+  recordRequest: jest.fn(),
+  recordFailure: jest.fn(),
+  recordLatency: jest.fn(),
+  setCircuitState: jest.fn(),
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => ({
-  CircuitBreaker:   jest.fn(() => ({ exec: jest.fn(), getState: jest.fn(() => 'CLOSED') })),
+  CircuitBreaker: jest.fn(() => ({ exec: jest.fn(), getState: jest.fn(() => 'CLOSED') })),
   CircuitOpenError: class extends Error {},
-  TimeoutError:     class extends Error {},
-  HttpError:        class extends Error { constructor(s, m) { super(m); this.status = s; } },
-  withRetry:        jest.fn(async (fn) => fn()),
-  STATE:            { CLOSED: 'CLOSED', HALF_OPEN: 'HALF_OPEN', OPEN: 'OPEN' },
+  TimeoutError: class extends Error {},
+  HttpError: class extends Error {
+    constructor(s, m) {
+      super(m);
+      this.status = s;
+    }
+  },
+  withRetry: jest.fn(async fn => fn()),
+  STATE: { CLOSED: 'CLOSED', HALF_OPEN: 'HALF_OPEN', OPEN: 'OPEN' },
 }));
 
 const { analyze } = await import('../../src/services/claude.client.js');

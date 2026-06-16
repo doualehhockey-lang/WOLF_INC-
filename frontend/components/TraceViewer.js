@@ -15,7 +15,7 @@ import clsx from 'clsx';
 
 // ── Status colour map ─────────────────────────────────────────────────────────
 const STATUS_STYLE = {
-  OK:    'bg-emerald-500',
+  OK: 'bg-emerald-500',
   ERROR: 'bg-red-500',
   UNSET: 'bg-slate-400',
 };
@@ -33,7 +33,7 @@ const STATUS_STYLE = {
 function SpanRow({ span, traceStart, traceDur, depth }) {
   const [tip, setTip] = useState(false);
 
-  const leftPct  = ((span.startMs - traceStart) / traceDur) * 100;
+  const leftPct = ((span.startMs - traceStart) / traceDur) * 100;
   const widthPct = Math.max((span.durationMs / traceDur) * 100, 0.5); // min 0.5% visible
 
   const statusBar = STATUS_STYLE[span.status] ?? STATUS_STYLE.UNSET;
@@ -44,9 +44,7 @@ function SpanRow({ span, traceStart, traceDur, depth }) {
       style={{ paddingLeft: `${depth * 16 + 8}px` }}
     >
       {/* Span name */}
-      <span className="w-48 shrink-0 truncate text-xs text-text-base font-mono">
-        {span.name}
-      </span>
+      <span className="w-48 shrink-0 truncate text-xs text-text-base font-mono">{span.name}</span>
 
       {/* Timeline bar */}
       <div className="relative flex-1 h-5 bg-surface rounded overflow-hidden">
@@ -59,14 +57,23 @@ function SpanRow({ span, traceStart, traceDur, depth }) {
         />
         {/* Tooltip */}
         {tip && (
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-7 z-10 card text-xs
-                          min-w-max shadow-xl pointer-events-none whitespace-nowrap">
+          <div
+            className="absolute left-1/2 -translate-x-1/2 bottom-7 z-10 card text-xs
+                          min-w-max shadow-xl pointer-events-none whitespace-nowrap"
+          >
             <p className="font-semibold">{span.name}</p>
-            <p className="text-text-muted">Duration: <span className="font-mono">{span.durationMs}ms</span></p>
+            <p className="text-text-muted">
+              Duration: <span className="font-mono">{span.durationMs}ms</span>
+            </p>
             <p className="text-text-muted">Status: {span.status}</p>
-            {span.attributes && Object.entries(span.attributes).slice(0, 4).map(([k, v]) => (
-              <p key={k} className="text-text-muted font-mono">{k}: {String(v)}</p>
-            ))}
+            {span.attributes &&
+              Object.entries(span.attributes)
+                .slice(0, 4)
+                .map(([k, v]) => (
+                  <p key={k} className="text-text-muted font-mono">
+                    {k}: {String(v)}
+                  </p>
+                ))}
           </div>
         )}
       </div>
@@ -93,14 +100,10 @@ function TraceRow({ trace, onSelect }) {
   const { traceId, rootName, startMs, durationMs, status, spans = [] } = trace;
 
   const statusClass =
-    status === 'ERROR' ? 'badge-red' :
-    status === 'OK'    ? 'badge-green' : 'badge-gray';
+    status === 'ERROR' ? 'badge-red' : status === 'OK' ? 'badge-green' : 'badge-gray';
 
   // Sort spans by start time for correct Gantt rendering.
-  const sortedSpans = useMemo(
-    () => [...spans].sort((a, b) => a.startMs - b.startMs),
-    [spans],
-  );
+  const sortedSpans = useMemo(() => [...spans].sort((a, b) => a.startMs - b.startMs), [spans]);
 
   return (
     <li className="card p-0 overflow-hidden">
@@ -112,9 +115,11 @@ function TraceRow({ trace, onSelect }) {
         aria-expanded={expanded}
         aria-controls={`trace-${traceId}`}
       >
-        {expanded
-          ? <ChevronDown  className="h-4 w-4 text-text-muted shrink-0" />
-          : <ChevronRight className="h-4 w-4 text-text-muted shrink-0" />}
+        {expanded ? (
+          <ChevronDown className="h-4 w-4 text-text-muted shrink-0" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-text-muted shrink-0" />
+        )}
 
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-medium truncate">{rootName}</span>
@@ -133,7 +138,10 @@ function TraceRow({ trace, onSelect }) {
         {onSelect && (
           <button
             className="btn-ghost text-xs py-1 px-2 ml-2"
-            onClick={e => { e.stopPropagation(); onSelect(traceId); }}
+            onClick={e => {
+              e.stopPropagation();
+              onSelect(traceId);
+            }}
             aria-label="Open in Tempo"
           >
             Tempo ↗
@@ -199,7 +207,9 @@ export default function TraceViewer({ traces = [], loading, error, onSelect }) {
     return (
       <div className="card text-center py-12">
         <p className="text-text-muted text-sm">No traces found.</p>
-        <p className="text-xs text-text-muted mt-1">Run a pipeline request to generate trace data.</p>
+        <p className="text-xs text-text-muted mt-1">
+          Run a pipeline request to generate trace data.
+        </p>
       </div>
     );
   }

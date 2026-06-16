@@ -4,25 +4,31 @@
 // Renders a red "ADMIN" badge to make it visually distinct from normal views.
 // Wraps children with AdminGuard so every admin page is protected automatically.
 
-import Link          from 'next/link';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {
-  Users, Key, ShieldAlert, Rocket, Server,
-  BarChart3, ChevronLeft, Lock,
+  Users,
+  Key,
+  ShieldAlert,
+  Rocket,
+  Server,
+  BarChart3,
+  ChevronLeft,
+  Lock,
 } from 'lucide-react';
-import { useTheme }   from '../../lib/theme.js';
-import AdminGuard     from './AdminGuard.js';
-import { Sun, Moon, Menu, X, Zap } from 'lucide-react';
+import { useTheme } from '../../lib/theme.js';
+import AdminGuard from './AdminGuard.js';
+import { Sun, Moon, Menu, X } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import clsx from 'clsx';
 
 const ADMIN_NAV = [
-  { href: '/admin/users',         label: 'Users & Roles',   icon: Users      },
-  { href: '/admin/api-keys',      label: 'API Keys',        icon: Key        },
-  { href: '/admin/security-logs', label: 'Security Logs',   icon: ShieldAlert },
-  { href: '/admin/deploy',        label: 'Deployments',     icon: Rocket     },
-  { href: '/admin/cluster',       label: 'Cluster',         icon: Server     },
-  { href: '/admin/observability', label: 'Observability',   icon: BarChart3  },
+  { href: '/admin/users', label: 'Users & Roles', icon: Users },
+  { href: '/admin/api-keys', label: 'API Keys', icon: Key },
+  { href: '/admin/security-logs', label: 'Security Logs', icon: ShieldAlert },
+  { href: '/admin/deploy', label: 'Deployments', icon: Rocket },
+  { href: '/admin/cluster', label: 'Cluster', icon: Server },
+  { href: '/admin/observability', label: 'Observability', icon: BarChart3 },
 ];
 
 /**
@@ -33,15 +39,14 @@ const ADMIN_NAV = [
  * }} props
  */
 export default function AdminLayout({ children, title, description }) {
-  const router            = useRouter();
+  const router = useRouter();
   const { theme, toggle } = useTheme();
-  const [open, setOpen]   = useState(false);
-  const close             = useCallback(() => setOpen(false), []);
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
 
   return (
     <AdminGuard>
       <div className="flex h-screen overflow-hidden bg-surface">
-
         {/* Mobile overlay */}
         {open && (
           <div
@@ -57,7 +62,7 @@ export default function AdminLayout({ children, title, description }) {
             'fixed inset-y-0 left-0 z-30 flex w-64 flex-col',
             'border-r border-border bg-surface-2 transition-transform duration-200',
             'lg:static lg:translate-x-0',
-            open ? 'translate-x-0' : '-translate-x-full',
+            open ? 'translate-x-0' : '-translate-x-full'
           )}
           aria-label="Admin navigation"
         >
@@ -111,7 +116,7 @@ export default function AdminLayout({ children, title, description }) {
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                     active
                       ? 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400'
-                      : 'text-text-muted hover:bg-surface hover:text-text-base',
+                      : 'text-text-muted hover:bg-surface hover:text-text-base'
                   )}
                   aria-current={active ? 'page' : undefined}
                 >
@@ -130,9 +135,11 @@ export default function AdminLayout({ children, title, description }) {
                          text-text-muted hover:bg-surface hover:text-text-base transition-colors"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
-              {theme === 'dark'
-                ? <Sun  className="h-4 w-4" aria-hidden="true" />
-                : <Moon className="h-4 w-4" aria-hidden="true" />}
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Moon className="h-4 w-4" aria-hidden="true" />
+              )}
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </button>
           </div>
@@ -140,10 +147,11 @@ export default function AdminLayout({ children, title, description }) {
 
         {/* ── Main content ────────────────────────────────────────────── */}
         <div className="flex flex-1 flex-col overflow-hidden">
-
           {/* Top bar */}
-          <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border
-                             bg-surface-2 px-4 lg:px-6">
+          <header
+            className="flex h-16 shrink-0 items-center gap-4 border-b border-border
+                             bg-surface-2 px-4 lg:px-6"
+          >
             <button
               className="text-text-muted hover:text-text-base lg:hidden"
               onClick={() => setOpen(true)}
@@ -154,23 +162,21 @@ export default function AdminLayout({ children, title, description }) {
 
             <div>
               <h1 className="text-base font-semibold text-text-base leading-tight">{title}</h1>
-              {description && (
-                <p className="text-xs text-text-muted">{description}</p>
-              )}
+              {description && <p className="text-xs text-text-muted">{description}</p>}
             </div>
 
             {/* Admin badge */}
-            <span className="ml-auto flex items-center gap-1.5 rounded-full
+            <span
+              className="ml-auto flex items-center gap-1.5 rounded-full
                              bg-red-100 px-2.5 py-1 text-xs font-semibold
-                             text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                             text-red-600 dark:bg-red-900/30 dark:text-red-400"
+            >
               <Lock className="h-3 w-3" aria-hidden="true" />
               Admin
             </span>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 lg:p-6 animate-fade-in">
-            {children}
-          </main>
+          <main className="flex-1 overflow-y-auto p-4 lg:p-6 animate-fade-in">{children}</main>
         </div>
       </div>
     </AdminGuard>

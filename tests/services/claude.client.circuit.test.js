@@ -20,7 +20,7 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
     CLAUDE_API_KEY: 'sk-circuit-key',
-    CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+    CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
   },
 }));
 
@@ -29,15 +29,16 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
   apiFetch: mockApiFetch,
 }));
 
-const mockRecordRequest   = jest.fn();
-const mockRecordFailure   = jest.fn();
-const mockRecordLatency   = jest.fn();
+const mockRecordRequest = jest.fn();
+const mockRecordFailure = jest.fn();
+const mockRecordLatency = jest.fn();
 const mockSetCircuitState = jest.fn();
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest:   mockRecordRequest,
-  recordFailure:   mockRecordFailure,
-  recordLatency:   mockRecordLatency,
+  recordRequest: mockRecordRequest,
+  recordFailure: mockRecordFailure,
+  recordLatency: mockRecordLatency,
   setCircuitState: mockSetCircuitState,
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 const { analyze } = await import('../../src/services/claude.client.js');
@@ -69,8 +70,8 @@ describe('CircuitOpenError paths — lines 44, 51, 57', () => {
     jest.clearAllMocks();
     // After call-1: consecutive=3. Now fail-4 and fail-5 open the circuit.
     mockApiFetch
-      .mockRejectedValueOnce(new Error('ECONNRESET-2a'))   // fail 4 → count=4
-      .mockRejectedValueOnce(new Error('ECONNRESET-2b'));   // fail 5 → count=5 → CIRCUIT OPENS
+      .mockRejectedValueOnce(new Error('ECONNRESET-2a')) // fail 4 → count=4
+      .mockRejectedValueOnce(new Error('ECONNRESET-2b')); // fail 5 → count=5 → CIRCUIT OPENS
 
     const result = await analyze('test message 2');
     expect(result.strategy).toBe('rule-based');
@@ -103,7 +104,7 @@ describe('analyze — json.content empty → ?? "" right side (line 195)', () =>
     // To test line 195 specifically, we'd need a fresh module. This test validates
     // graceful handling when API returns no content array (covered in translate test).
     // Check that after circuit opens, analyze still returns rule-based strategy.
-    const result = await analyze("planifier un rendez-vous");
+    const result = await analyze('planifier un rendez-vous');
     expect(result.strategy).toBe('rule-based');
   });
 });

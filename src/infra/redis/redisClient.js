@@ -3,14 +3,14 @@
 // Instruments hit/miss via Prometheus and logs connection lifecycle with Pino.
 // All helpers are safe to await in any context — real Redis or fallback.
 
-import { childLogger }      from '../../core/logger.js';
-import { rateLimitCounter } from '../../core/metrics.js';
+import { childLogger } from '../../core/logger.js';
+import { rateLimitCounter as _rateLimitCounter } from '../../core/metrics.js';
 
 const log = childLogger('redis');
 
 // ── Real Redis client ─────────────────────────────────────────────────────────
 
-let _redis     = null;
+let _redis = null;
 let _available = false;
 
 if (process.env.REDIS_URL) {
@@ -19,10 +19,11 @@ if (process.env.REDIS_URL) {
 
     _redis = new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: 3,
-      retryStrategy:        times => Math.min(times * 100, 3_000),
-      lazyConnect:          true,
-      enableReadyCheck:     true,
-      connectTimeout:       5_000,
+      retryStrategy: times => Math.min(times * 100, 3_000),
+      lazyConnect: true,
+      enableReadyCheck: true,
+      connectTimeout: 5_000,
+      commandTimeout: 2_000, // individual command timeout — prevents slow Redis blocking pipelines
     });
 
     await _redis.connect();
@@ -32,13 +33,19 @@ if (process.env.REDIS_URL) {
     const safeUrl = process.env.REDIS_URL.replace(/:\/\/[^@]*@/, '://***@');
     log.info({ url: safeUrl }, 'Redis connected');
 
-    _redis.on('error',       err => log.error({ err: err.message }, 'Redis error'));
-    _redis.on('reconnecting',    () => log.warn('Redis reconnecting…'));
-    _redis.on('ready',           () => { _available = true;  log.info('Redis ready'); });
-    _redis.on('close',           () => { _available = false; log.warn('Redis connection closed'); });
+    _redis.on('error', err => log.error({ err: err.message }, 'Redis error'));
+    _redis.on('reconnecting', () => log.warn('Redis reconnecting…'));
+    _redis.on('ready', () => {
+      _available = true;
+      log.info('Redis ready');
+    });
+    _redis.on('close', () => {
+      _available = false;
+      log.warn('Redis connection closed');
+    });
   } catch (err) {
     log.warn({ err: err.message }, 'Redis unavailable — falling back to in-memory');
-    _redis     = null;
+    _redis = null;
     _available = false;
   }
 } else {
@@ -46,8 +53,29 @@ if (process.env.REDIS_URL) {
 }
 
 /** Raw ioredis instance — null when running in fallback mode. */
-export const redis          = _redis;
-/** True when a real Redis connection is active. */
+export const redis = _redis;
+
+/**
+ * True when a real Redis connection is currently active.
+ *
+ * M4 FIX: Previously exported as `export const redisAvailable = _available` which
+ * captured the boolean by value at module load time. After a Redis disconnect or
+ * reconnect, the exported constant never updated — callers saw stale state.
+ *
+ * This getter reads `_available` on every call, so it reflects the live
+ * connection state. All callers (rate-limiter, security, health probe) now get
+ * accurate information after Redis reconnects or goes down post-startup.
+ *
+ * @returns {boolean}
+ */
+export function isRedisAvailable() {
+  return _available;
+}
+
+/**
+ * @deprecated Use isRedisAvailable() — this constant is frozen at startup and
+ * does not update when Redis disconnects or reconnects.
+ */
 export const redisAvailable = _available;
 
 // ── In-memory fallback ────────────────────────────────────────────────────────
@@ -62,7 +90,10 @@ function _expired(entry) {
 
 function _memGet(key) {
   const e = _store.get(key);
-  if (!e || _expired(e)) { _store.delete(key); return null; }
+  if (!e || _expired(e)) {
+    _store.delete(key);
+    return null;
+  }
   return e.value;
 }
 
@@ -89,7 +120,7 @@ export async function cacheGet(key) {
 export async function cacheGetBuffer(key) {
   if (_available) return _redis.getBuffer(key);
   const v = _memGet(key);
-  return v != null ? Buffer.from(v) : null;
+  return v !== null && v !== undefined ? Buffer.from(v) : null;
 }
 
 export async function cacheSet(key, value, ttlSec = null) {
@@ -109,7 +140,7 @@ export async function cacheDel(key) {
 
 export async function cacheIncr(key) {
   if (_available) return _redis.incr(key);
-  const current  = Number(_memGet(key) ?? 0) + 1;
+  const current = Number(_memGet(key) ?? 0) + 1;
   const existing = _store.get(key);
   _store.set(key, { value: String(current), expiresAt: existing?.expiresAt ?? null });
   return current;

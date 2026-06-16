@@ -6,7 +6,7 @@ import { AppError, ValidationError, NotFoundError } from '../../src/core/errors.
 
 // Stub the logger to prevent noise in test output
 jest.unstable_mockModule('../../src/core/logger.js', () => ({
-  logger:      { info: () => {}, error: () => {}, warn: () => {}, debug: () => {} },
+  logger: { info: () => {}, error: () => {}, warn: () => {}, debug: () => {} },
   childLogger: () => ({ info: () => {}, error: () => {}, warn: () => {}, debug: () => {} }),
 }));
 
@@ -14,8 +14,14 @@ const { errorHandler, notFound } = await import('../../src/api/middleware/errorH
 
 function _mockRes() {
   const res = { _status: 200, _body: null };
-  res.status  = (s) => { res._status = s; return res; };
-  res.json    = (b) => { res._body   = b; return res; };
+  res.status = s => {
+    res._status = s;
+    return res;
+  };
+  res.json = b => {
+    res._body = b;
+    return res;
+  };
   return res;
 }
 

@@ -4,13 +4,17 @@
 import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('../../../src/core/featureFlags.js', () => ({
-  isEnabled: jest.fn(async (flag) => flag !== 'rate-limit'), // default: RATE_LIMIT disabled
+  isEnabled: jest.fn(async flag => flag !== 'rate-limit'), // default: RATE_LIMIT disabled
   FLAGS: {
     RATE_LIMIT: 'rate-limit',
-    PIPELINE_VOICE: 'pipeline.voice', PIPELINE_SMS: 'pipeline.sms',
-    CLAUDE_NLU: 'claude.nlu',         OLLAMA_NLU:  'ollama.nlu',
+    PIPELINE_VOICE: 'pipeline.voice',
+    PIPELINE_SMS: 'pipeline.sms',
+    CLAUDE_NLU: 'claude.nlu',
   },
-  setFlag: jest.fn(), getAllFlags: jest.fn(), snapshotFlags: jest.fn(() => ({})), clearCache: jest.fn(),
+  setFlag: jest.fn(),
+  getAllFlags: jest.fn(),
+  snapshotFlags: jest.fn(() => ({})),
+  clearCache: jest.fn(),
 }));
 
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
@@ -19,22 +23,24 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: { inc: jest.fn() },
-  pipelineLatency:  { startTimer: jest.fn(() => jest.fn()) },
-  errorCounter:     { inc: jest.fn() },
-  activeSessions:   { set: jest.fn() },
+  pipelineLatency: { startTimer: jest.fn(() => jest.fn()) },
+  errorCounter: { inc: jest.fn() },
+  activeSessions: { set: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   evalScript: jest.fn(async () => [1, 0]), // would normally rate-limit
-  cacheIncr:  jest.fn(async () => 999),    // counter way above limit
+  cacheIncr: jest.fn(async () => 999), // counter way above limit
   cacheExpire: jest.fn(),
-  cacheGet:   jest.fn(async () => null),
-  cacheSet:   jest.fn(),
-  cacheDel:   jest.fn(),
+  cacheGet: jest.fn(async () => null),
+  cacheSet: jest.fn(),
+  cacheDel: jest.fn(),
   cacheGetBuffer: jest.fn(),
   cacheSetBuffer: jest.fn(),
-  cacheTtl:   jest.fn(),
+  cacheTtl: jest.fn(),
   redisAvailable: true,
+  isRedisAvailable: jest.fn().mockReturnValue(true),
   redis: null,
 }));
 

@@ -11,27 +11,31 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 // ── Redis mock — controllable per-key store ───────────────────────────────────
 const _store = {};
 
-const mockCacheGet = jest.fn(async (key) => _store[key] ?? null);
-const mockCacheSet = jest.fn(async (key, value) => { _store[key] = value; return 'OK'; });
+const mockCacheGet = jest.fn(async key => _store[key] ?? null);
+const mockCacheSet = jest.fn(async (key, value) => {
+  _store[key] = value;
+  return 'OK';
+});
 
 jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
-  cacheGet:       mockCacheGet,
-  cacheSet:       mockCacheSet,
-  cacheDel:       jest.fn(async (key) => { delete _store[key]; return 1; }),
-  cacheIncr:      jest.fn(),
-  cacheExpire:    jest.fn(),
+  cacheGet: mockCacheGet,
+  cacheSet: mockCacheSet,
+  cacheDel: jest.fn(async key => {
+    delete _store[key];
+    return 1;
+  }),
+  cacheIncr: jest.fn(),
+  cacheExpire: jest.fn(),
   cacheGetBuffer: jest.fn(),
   cacheSetBuffer: jest.fn(),
-  cacheTtl:       jest.fn(),
-  evalScript:     jest.fn(),
-  redis:          null,
+  cacheTtl: jest.fn(),
+  evalScript: jest.fn(),
+  redis: null,
   redisAvailable: false,
 }));
 
-const {
-  isEnabled, setFlag, killSwitch, restore,
-  getAllFlags, snapshotFlags, clearCache, FLAGS,
-} = await import('../../src/core/featureFlags.js');
+const { isEnabled, setFlag, killSwitch, restore, getAllFlags, snapshotFlags, clearCache, FLAGS } =
+  await import('../../src/core/featureFlags.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,9 +60,16 @@ describe('FLAGS constants', () => {
 
   test('FLAGS contains all expected keys', () => {
     const expected = [
-      'CLAUDE_NLU', 'OLLAMA_NLU', 'TTS_ELEVENLABS', 'TTS_AZURE', 'TTS_PIPER',
-      'PIPELINE_VOICE', 'PIPELINE_SMS', 'MEMORY_CONTEXT', 'RATE_LIMIT',
-      'OTEL_TRACES', 'AUDIT_LOG', 'TRANSLATION',
+      'CLAUDE_NLU',
+      'TTS_ELEVENLABS',
+      'TTS_AZURE',
+      'TTS_PIPER',
+      'PIPELINE_VOICE',
+      'PIPELINE_SMS',
+      'MEMORY_CONTEXT',
+      'RATE_LIMIT',
+      'AUDIT_LOG',
+      'TRANSLATION',
     ];
     for (const key of expected) {
       expect(FLAGS).toHaveProperty(key);
@@ -151,16 +162,12 @@ describe('isEnabled — Redis failure falls back to default', () => {
 describe('setFlag', () => {
   test('setFlag(name, false) writes "0" to Redis', async () => {
     await setFlag(FLAGS.CLAUDE_NLU, false);
-    expect(mockCacheSet).toHaveBeenCalledWith(
-      'ff:wolf:claude.nlu', '0', expect.any(Number)
-    );
+    expect(mockCacheSet).toHaveBeenCalledWith('ff:wolf:claude.nlu', '0', expect.any(Number));
   });
 
   test('setFlag(name, true) writes "1" to Redis', async () => {
     await setFlag(FLAGS.AUDIT_LOG, true);
-    expect(mockCacheSet).toHaveBeenCalledWith(
-      'ff:wolf:audit.log', '1', expect.any(Number)
-    );
+    expect(mockCacheSet).toHaveBeenCalledWith('ff:wolf:audit.log', '1', expect.any(Number));
   });
 
   test('setFlag invalidates local cache — next isEnabled reads Redis', async () => {
@@ -186,16 +193,12 @@ describe('setFlag', () => {
 describe('killSwitch and restore', () => {
   test('killSwitch disables the flag', async () => {
     await killSwitch(FLAGS.RATE_LIMIT);
-    expect(mockCacheSet).toHaveBeenCalledWith(
-      'ff:wolf:rate-limit', '0', expect.any(Number)
-    );
+    expect(mockCacheSet).toHaveBeenCalledWith('ff:wolf:rate-limit', '0', expect.any(Number));
   });
 
   test('restore re-enables the flag', async () => {
     await restore(FLAGS.RATE_LIMIT);
-    expect(mockCacheSet).toHaveBeenCalledWith(
-      'ff:wolf:rate-limit', '1', expect.any(Number)
-    );
+    expect(mockCacheSet).toHaveBeenCalledWith('ff:wolf:rate-limit', '1', expect.any(Number));
   });
 
   test('kill then restore → flag is enabled again', async () => {
@@ -268,10 +271,10 @@ describe('snapshotFlags', () => {
   });
 
   test('reflects killed flag in snapshot', async () => {
-    _store['ff:wolf:otel.traces'] = '0';
-    await isEnabled(FLAGS.OTEL_TRACES); // warm cache with false
+    _store['ff:wolf:claude.nlu'] = '0';
+    await isEnabled(FLAGS.CLAUDE_NLU); // warm cache with false
     const snap = snapshotFlags();
-    expect(snap[FLAGS.OTEL_TRACES]).toBe(false);
+    expect(snap[FLAGS.CLAUDE_NLU]).toBe(false);
   });
 });
 

@@ -17,11 +17,17 @@
 //   onDeletePod   — (name: string) => Promise<void>
 //   grafanaPanels — GrafanaPanel[]
 
-import { useState, useMemo }    from 'react';
+import { useState, useMemo } from 'react';
 import {
-  Server, Cpu, HardDrive, AlertCircle,
-  CheckCircle2, XCircle, Clock, Trash2,
-  Loader2, AlertTriangle, ExternalLink,
+  Server,
+  HardDrive,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Trash2,
+  Loader2,
+  AlertTriangle,
+  ExternalLink,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -37,34 +43,28 @@ function NodeRow({ node }) {
   const healthy = node.status === 'Ready';
 
   // Summarise conditions to a tooltip string.
-  const conditionSummary = node.conditions
-    ?.map(c => `${c.type}=${c.status}`)
-    .join(', ') ?? '';
+  const conditionSummary = node.conditions?.map(c => `${c.type}=${c.status}`).join(', ') ?? '';
 
   return (
     <tr className="hover:bg-surface transition-colors">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <Server className={clsx('h-4 w-4 shrink-0',
-            healthy ? 'text-emerald-500' : 'text-red-500')} aria-hidden="true" />
+          <Server
+            className={clsx('h-4 w-4 shrink-0', healthy ? 'text-emerald-500' : 'text-red-500')}
+            aria-hidden="true"
+          />
           <div>
             <p className="text-sm font-mono font-medium">{node.name}</p>
-            {node.version && (
-              <p className="text-xs text-text-muted font-mono">{node.version}</p>
-            )}
+            {node.version && <p className="text-xs text-text-muted font-mono">{node.version}</p>}
           </div>
         </div>
       </td>
 
       <td className="px-4 py-3">
-        <span className={healthy ? 'badge-green' : 'badge-red'}>
-          {node.status ?? 'Unknown'}
-        </span>
+        <span className={healthy ? 'badge-green' : 'badge-red'}>{node.status ?? 'Unknown'}</span>
       </td>
 
-      <td className="px-4 py-3 text-xs text-text-muted">
-        {node.roles?.join(', ') ?? '—'}
-      </td>
+      <td className="px-4 py-3 text-xs text-text-muted">{node.roles?.join(', ') ?? '—'}</td>
 
       <td className="px-4 py-3">
         <UsageBar pct={node.cpuUsagePct} label={`CPU ${node.cpuUsagePct ?? '—'}%`} />
@@ -78,24 +78,22 @@ function NodeRow({ node }) {
         {node.conditions?.length ?? 0} conditions
       </td>
 
-      <td className="px-4 py-3 text-xs text-text-muted">
-        {node.age ?? '—'}
-      </td>
+      <td className="px-4 py-3 text-xs text-text-muted">{node.age ?? '—'}</td>
     </tr>
   );
 }
 
-function UsageBar({ pct, label }) {
+function UsageBar({ pct, label: _label }) {
   const safeP = Math.min(pct ?? 0, 100);
-  const color  =
-    safeP > 85 ? 'bg-red-500' :
-    safeP > 70 ? 'bg-amber-500' : 'bg-emerald-500';
+  const color = safeP > 85 ? 'bg-red-500' : safeP > 70 ? 'bg-amber-500' : 'bg-emerald-500';
 
   return (
     <div className="flex items-center gap-2">
       <div className="w-20 bg-surface rounded-full h-1.5 overflow-hidden" aria-hidden="true">
-        <div className={clsx('h-1.5 rounded-full transition-all', color)}
-             style={{ width: `${safeP}%` }} />
+        <div
+          className={clsx('h-1.5 rounded-full transition-all', color)}
+          style={{ width: `${safeP}%` }}
+        />
       </div>
       <span className="text-xs font-mono tabular-nums text-text-muted">
         {pct !== undefined ? `${pct}%` : '—'}
@@ -110,12 +108,12 @@ function QuotaPanel({ quota }) {
   if (!quota) return null;
 
   const items = [
-    { label: 'CPU Request',    used: quota.cpuRequestUsed,  max: quota.cpuRequestLimit  },
-    { label: 'CPU Limit',      used: quota.cpuLimitUsed,    max: quota.cpuLimitMax       },
-    { label: 'Mem Request',    used: quota.memRequestUsed,  max: quota.memRequestLimit   },
-    { label: 'Mem Limit',      used: quota.memLimitUsed,    max: quota.memLimitMax       },
-    { label: 'Pods',           used: quota.podsUsed,        max: quota.podsMax           },
-    { label: 'Services',       used: quota.servicesUsed,    max: quota.servicesMax       },
+    { label: 'CPU Request', used: quota.cpuRequestUsed, max: quota.cpuRequestLimit },
+    { label: 'CPU Limit', used: quota.cpuLimitUsed, max: quota.cpuLimitMax },
+    { label: 'Mem Request', used: quota.memRequestUsed, max: quota.memRequestLimit },
+    { label: 'Mem Limit', used: quota.memLimitUsed, max: quota.memLimitMax },
+    { label: 'Pods', used: quota.podsUsed, max: quota.podsMax },
+    { label: 'Services', used: quota.servicesUsed, max: quota.servicesMax },
   ];
 
   return (
@@ -128,12 +126,16 @@ function QuotaPanel({ quota }) {
             <div key={label} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-text-muted">{label}</span>
-                <span className="font-mono tabular-nums">{used ?? '—'} / {max ?? '—'}</span>
+                <span className="font-mono tabular-nums">
+                  {used ?? '—'} / {max ?? '—'}
+                </span>
               </div>
               <div className="w-full bg-surface rounded-full h-1.5 overflow-hidden">
                 <div
-                  className={clsx('h-1.5 rounded-full',
-                    pct > 90 ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-wolf-500')}
+                  className={clsx(
+                    'h-1.5 rounded-full',
+                    pct > 90 ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-wolf-500'
+                  )}
                   style={{ width: `${pct}%` }}
                   role="progressbar"
                   aria-valuenow={pct}
@@ -153,21 +155,25 @@ function QuotaPanel({ quota }) {
 // ── Pod card with delete action ───────────────────────────────────────────────
 
 const PHASE_STYLE = {
-  Running:   'badge-green',
-  Pending:   'badge-yellow',
-  Failed:    'badge-red',
+  Running: 'badge-green',
+  Pending: 'badge-yellow',
+  Failed: 'badge-red',
   Succeeded: 'badge-blue',
-  Unknown:   'badge-gray',
+  Unknown: 'badge-gray',
 };
 
 function PodCard({ pod, onDelete }) {
-  const [confirm,  setConfirm]  = useState(false);
+  const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await onDelete(pod.name); }
-    finally { setDeleting(false); setConfirm(false); }
+    try {
+      await onDelete(pod.name);
+    } finally {
+      setDeleting(false);
+      setConfirm(false);
+    }
   };
 
   return (
@@ -191,8 +197,15 @@ function PodCard({ pod, onDelete }) {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button className="btn-ghost" onClick={() => setConfirm(false)} disabled={deleting}>Cancel</button>
-              <button className="btn-danger" onClick={handleDelete} disabled={deleting} aria-busy={deleting}>
+              <button className="btn-ghost" onClick={() => setConfirm(false)} disabled={deleting}>
+                Cancel
+              </button>
+              <button
+                className="btn-danger"
+                onClick={handleDelete}
+                disabled={deleting}
+                aria-busy={deleting}
+              >
                 {deleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Delete
               </button>
@@ -202,8 +215,10 @@ function PodCard({ pod, onDelete }) {
       )}
 
       <article
-        className={clsx('card flex flex-col gap-3',
-          pod.phase === 'Failed' && 'border-red-300 dark:border-red-800')}
+        className={clsx(
+          'card flex flex-col gap-3',
+          pod.phase === 'Failed' && 'border-red-300 dark:border-red-800'
+        )}
         aria-label={`Pod: ${pod.name}`}
       >
         <div className="flex items-start justify-between gap-2">
@@ -226,15 +241,18 @@ function PodCard({ pod, onDelete }) {
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-xs">
-          <MiniStat label="Restarts" value={pod.restarts ?? 0}
-                    warn={(pod.restarts ?? 0) > 3} />
-          <MiniStat label="CPU" value={pod.cpuM ? `${pod.cpuM}m` : '—'}
-                    warn={pod.cpuM > pod.cpuRequestM * 0.9} />
+          <MiniStat label="Restarts" value={pod.restarts ?? 0} warn={(pod.restarts ?? 0) > 3} />
+          <MiniStat
+            label="CPU"
+            value={pod.cpuM ? `${pod.cpuM}m` : '—'}
+            warn={pod.cpuM > pod.cpuRequestM * 0.9}
+          />
           <MiniStat label="Mem" value={pod.memMi ? `${pod.memMi}Mi` : '—'} />
         </div>
 
         <p className="text-xs text-text-muted">
-          Ready: <span className={pod.ready ? 'text-emerald-500' : 'text-red-500'}>
+          Ready:{' '}
+          <span className={pod.ready ? 'text-emerald-500' : 'text-red-500'}>
             {pod.ready ? 'Yes' : 'No'}
           </span>
         </p>
@@ -245,10 +263,20 @@ function PodCard({ pod, onDelete }) {
 
 function MiniStat({ label, value, warn }) {
   return (
-    <div className={clsx('rounded-md px-2 py-1 bg-surface text-center',
-      warn && 'bg-amber-50 dark:bg-amber-900/20')}>
-      <p className={clsx('font-mono font-medium tabular-nums text-xs',
-        warn && 'text-amber-600 dark:text-amber-400')}>{value}</p>
+    <div
+      className={clsx(
+        'rounded-md px-2 py-1 bg-surface text-center',
+        warn && 'bg-amber-50 dark:bg-amber-900/20'
+      )}
+    >
+      <p
+        className={clsx(
+          'font-mono font-medium tabular-nums text-xs',
+          warn && 'text-amber-600 dark:text-amber-400'
+        )}
+      >
+        {value}
+      </p>
       <p className="text-text-muted text-[10px]">{label}</p>
     </div>
   );
@@ -287,17 +315,24 @@ function GrafanaPanels({ panels }) {
 function ClusterSummary({ pods, nodes }) {
   const podCounts = useMemo(() => {
     const c = { Running: 0, Pending: 0, Failed: 0, total: pods.length };
-    pods.forEach(p => { c[p.phase] = (c[p.phase] ?? 0) + 1; });
+    pods.forEach(p => {
+      c[p.phase] = (c[p.phase] ?? 0) + 1;
+    });
     return c;
   }, [pods]);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {[
-        { label: 'Total Pods',   value: podCounts.total,          icon: Server,        color: 'text-wolf-500'    },
-        { label: 'Running',      value: podCounts.Running ?? 0,   icon: CheckCircle2,  color: 'text-emerald-500' },
-        { label: 'Pending',      value: podCounts.Pending  ?? 0,  icon: Clock,         color: 'text-amber-500'   },
-        { label: 'Nodes',        value: nodes.length,             icon: HardDrive,     color: 'text-wolf-500'    },
+        { label: 'Total Pods', value: podCounts.total, icon: Server, color: 'text-wolf-500' },
+        {
+          label: 'Running',
+          value: podCounts.Running ?? 0,
+          icon: CheckCircle2,
+          color: 'text-emerald-500',
+        },
+        { label: 'Pending', value: podCounts.Pending ?? 0, icon: Clock, color: 'text-amber-500' },
+        { label: 'Nodes', value: nodes.length, icon: HardDrive, color: 'text-wolf-500' },
       ].map(({ label, value, icon: Icon, color }) => (
         <div key={label} className="card flex items-center gap-3">
           <Icon className={clsx('h-5 w-5 shrink-0', color)} aria-hidden="true" />
@@ -326,12 +361,21 @@ function ClusterSummary({ pods, nodes }) {
  * }} props
  */
 export default function ClusterAdminView({
-  pods = [], hpa = [], nodes = [], quota = null,
-  loading, error, onDeletePod, grafanaPanels = [],
+  pods = [],
+  hpa = [],
+  nodes = [],
+  quota = null,
+  loading,
+  error,
+  onDeletePod,
+  grafanaPanels = [],
 }) {
   const grouped = useMemo(() => {
     const map = {};
-    pods.forEach(p => { const k = p.component ?? 'other'; (map[k] = map[k] ?? []).push(p); });
+    pods.forEach(p => {
+      const k = p.component ?? 'other';
+      (map[k] = map[k] ?? []).push(p);
+    });
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
   }, [pods]);
 
@@ -369,10 +413,17 @@ export default function ClusterAdminView({
           <table className="w-full text-sm" aria-label="Kubernetes nodes">
             <thead className="bg-surface border-b border-border">
               <tr>
-                {['Node', 'Status', 'Roles', 'CPU Usage', 'Mem Usage', 'Conditions', 'Age'].map(h => (
-                  <th key={h} scope="col"
-                    className="px-4 py-2.5 text-left text-xs font-medium text-text-muted">{h}</th>
-                ))}
+                {['Node', 'Status', 'Roles', 'CPU Usage', 'Mem Usage', 'Conditions', 'Age'].map(
+                  h => (
+                    <th
+                      key={h}
+                      scope="col"
+                      className="px-4 py-2.5 text-left text-xs font-medium text-text-muted"
+                    >
+                      {h}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -382,9 +433,9 @@ export default function ClusterAdminView({
                     No nodes found.
                   </td>
                 </tr>
-              ) : nodes.map((node, i) => (
-                <NodeRow key={node.name ?? i} node={node} />
-              ))}
+              ) : (
+                nodes.map((node, i) => <NodeRow key={node.name ?? i} node={node} />)
+              )}
             </tbody>
           </table>
         </div>
@@ -398,8 +449,13 @@ export default function ClusterAdminView({
             <thead className="bg-surface border-b border-border">
               <tr>
                 {['Component', 'Current', 'Desired', 'Min', 'Max', 'CPU %', 'Target %'].map(h => (
-                  <th key={h} scope="col"
-                    className="px-4 py-2.5 text-left text-xs font-medium text-text-muted">{h}</th>
+                  <th
+                    key={h}
+                    scope="col"
+                    className="px-4 py-2.5 text-left text-xs font-medium text-text-muted"
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -410,22 +466,34 @@ export default function ClusterAdminView({
                     No HPA resources found.
                   </td>
                 </tr>
-              ) : hpa.map((h, i) => (
-                <tr key={h.name ?? i} className="hover:bg-surface transition-colors">
-                  <td className="px-4 py-2.5 font-medium">{h.component ?? h.name}</td>
-                  <td className="px-4 py-2.5 font-mono tabular-nums">{h.currentReplicas}</td>
-                  <td className="px-4 py-2.5 font-mono tabular-nums">{h.desiredReplicas}</td>
-                  <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">{h.minReplicas}</td>
-                  <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">{h.maxReplicas}</td>
-                  <td className={clsx('px-4 py-2.5 font-mono tabular-nums',
-                    h.cpuUtilization > h.targetCpuUtilization ? 'text-amber-500' : 'text-text-base')}>
-                    {h.cpuUtilization ?? '—'}%
-                  </td>
-                  <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">
-                    {h.targetCpuUtilization ?? '—'}%
-                  </td>
-                </tr>
-              ))}
+              ) : (
+                hpa.map((h, i) => (
+                  <tr key={h.name ?? i} className="hover:bg-surface transition-colors">
+                    <td className="px-4 py-2.5 font-medium">{h.component ?? h.name}</td>
+                    <td className="px-4 py-2.5 font-mono tabular-nums">{h.currentReplicas}</td>
+                    <td className="px-4 py-2.5 font-mono tabular-nums">{h.desiredReplicas}</td>
+                    <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">
+                      {h.minReplicas}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">
+                      {h.maxReplicas}
+                    </td>
+                    <td
+                      className={clsx(
+                        'px-4 py-2.5 font-mono tabular-nums',
+                        h.cpuUtilization > h.targetCpuUtilization
+                          ? 'text-amber-500'
+                          : 'text-text-base'
+                      )}
+                    >
+                      {h.cpuUtilization ?? '—'}%
+                    </td>
+                    <td className="px-4 py-2.5 font-mono tabular-nums text-text-muted">
+                      {h.targetCpuUtilization ?? '—'}%
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

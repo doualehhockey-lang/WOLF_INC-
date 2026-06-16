@@ -13,7 +13,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
     EVENTS_FILE: '/tmp/json-store-ext-test.json',
-    MAX_EVENTS:  100,
+    MAX_EVENTS: 100,
   },
 }));
 
@@ -21,28 +21,45 @@ const mockGaugeSet = jest.fn();
 const mockErrorCounterInc = jest.fn();
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   eventsStoredGauge: { inc: jest.fn(), dec: jest.fn(), set: mockGaugeSet },
-  errorCounter:      { inc: mockErrorCounterInc },
+  errorCounter: { inc: mockErrorCounterInc },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Mock fs — readFileSync returns valid JSON (line 29 success path) ──────────
 // Store structure: { events: { "userKey": [ ...eventArray ] }, counter: N }
-const mockReadFileSync = jest.fn(() => JSON.stringify({
-  events: {
-    'user:alice': [
-      { id: 'evt-001', subject: 'dentiste', date: '2026-06-01', time: null, iso: null, createdAt: Date.now() },
-      { id: 'evt-002', subject: 'reunion',  date: '2026-07-01', time: null, iso: null, createdAt: Date.now() },
-    ],
-  },
-  counter: 3,
-}));
+const mockReadFileSync = jest.fn(() =>
+  JSON.stringify({
+    events: {
+      'user:alice': [
+        {
+          id: 'evt-001',
+          subject: 'dentiste',
+          date: '2026-06-01',
+          time: null,
+          iso: null,
+          createdAt: Date.now(),
+        },
+        {
+          id: 'evt-002',
+          subject: 'reunion',
+          date: '2026-07-01',
+          time: null,
+          iso: null,
+          createdAt: Date.now(),
+        },
+      ],
+    },
+    counter: 3,
+  })
+);
 
-const mockMkdirSync  = jest.fn();
+const mockMkdirSync = jest.fn();
 const mockExistsSync = jest.fn(() => true);
-const mockWriteFile  = jest.fn(async () => {});
+const mockWriteFile = jest.fn(async () => {});
 jest.unstable_mockModule('fs', () => ({
   readFileSync: mockReadFileSync,
-  mkdirSync:    mockMkdirSync,
-  existsSync:   mockExistsSync,
+  mkdirSync: mockMkdirSync,
+  existsSync: mockExistsSync,
 }));
 jest.unstable_mockModule('fs/promises', () => ({
   writeFile: mockWriteFile,
@@ -52,7 +69,9 @@ jest.unstable_mockModule('fs/promises', () => ({
 let _enqueueShouldFail = false;
 jest.unstable_mockModule('../../../src/features/agent/write-queue.js', () => ({
   WriteQueue: class MockWriteQueue {
-    constructor(fn) { this._fn = fn; }
+    constructor(fn) {
+      this._fn = fn;
+    }
     async enqueue() {
       if (_enqueueShouldFail) throw new Error('Disk full');
       await this._fn();
@@ -61,13 +80,12 @@ jest.unstable_mockModule('../../../src/features/agent/write-queue.js', () => ({
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
-const {
-  listEvents, createEvent, getTotalCount,
-} = await import('../../../src/features/agent/json.store.js');
+const { listEvents, createEvent, getTotalCount } =
+  await import('../../../src/features/agent/json.store.js');
 
 // Track call counts at initialization time (before clearAllMocks runs)
 const _initReadFileSyncCalls = mockReadFileSync.mock.calls.slice();
-const _initGaugeSetCalls     = mockGaugeSet.mock.calls.slice();
+const _initGaugeSetCalls = mockGaugeSet.mock.calls.slice();
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -116,13 +134,18 @@ describe('_save — error handler (lines 62-63)', () => {
     mockWriteFile.mockRejectedValueOnce(new Error('ENOSPC: No space left on device'));
 
     // createEvent triggers a _save()
-    await createEvent('user:bob', { subject: 'test', date: '2026-06-15', time: '10:00', iso: null });
+    await createEvent('user:bob', {
+      subject: 'test',
+      date: '2026-06-15',
+      time: '10:00',
+      iso: null,
+    });
 
     // Wait for the async enqueue chain to settle
     await new Promise(resolve => setTimeout(resolve, 10));
 
     expect(mockErrorCounterInc).toHaveBeenCalledWith(
-      expect.objectContaining({ service: 'agent', errorType: 'persist_failed' }),
+      expect.objectContaining({ service: 'agent', errorType: 'persist_failed' })
     );
   });
 

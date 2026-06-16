@@ -13,17 +13,19 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 const mockRateLimitCounter = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: mockRateLimitCounter,
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Mock Redis helpers — redisAvailable: false (in-memory path) ───────────────
-const mockCacheIncr   = jest.fn();
+const mockCacheIncr = jest.fn();
 const mockCacheExpire = jest.fn();
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   redisAvailable: false, // hardcoded — keeps in-memory path always
-  evalScript:     jest.fn(),
-  cacheIncr:      mockCacheIncr,
-  cacheExpire:    mockCacheExpire,
+  isRedisAvailable: jest.fn().mockReturnValue(false),
+  evalScript: jest.fn(),
+  cacheIncr: mockCacheIncr,
+  cacheExpire: mockCacheExpire,
 }));
 
 // ── Mock fs/promises (Lua script reader) ─────────────────────────────────────
@@ -77,7 +79,7 @@ describe('isRateLimited — in-memory fallback', () => {
     await isRateLimited('+33600000002');
     expect(mockCacheExpire).toHaveBeenCalledWith(
       expect.stringMatching(/^rl:twilio:/),
-      60, // RATE_WINDOW
+      60 // RATE_WINDOW
     );
   });
 

@@ -17,44 +17,50 @@
 //   prometheusData  — object (security metric values from PromQL)
 //   tempoUrl        — (traceId: string) => string
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
-  Search, Download, RefreshCw,
-  ShieldCheck, ShieldX, ShieldAlert,
-  Clock, AlertCircle, ExternalLink,
+  Search,
+  Download,
+  RefreshCw,
+  ShieldCheck,
+  ShieldX,
+  ShieldAlert,
+  Clock,
+  AlertCircle,
+  ExternalLink,
 } from 'lucide-react';
 import clsx from 'clsx';
 
 // ── Event type config ─────────────────────────────────────────────────────────
 
 const EVENT_TYPES = [
-  { value: '',              label: 'All types' },
-  { value: 'jwt_ok',        label: 'JWT OK'       },
-  { value: 'jwt_expired',   label: 'JWT Expired'  },
-  { value: 'jwt_invalid',   label: 'JWT Invalid'  },
-  { value: 'apikey_ok',     label: 'API Key OK'   },
-  { value: 'apikey_bad',    label: 'API Key Bad'  },
-  { value: 'rbac_deny',     label: 'RBAC Deny'    },
-  { value: 'rate_limited',  label: 'Rate Limited' },
+  { value: '', label: 'All types' },
+  { value: 'jwt_ok', label: 'JWT OK' },
+  { value: 'jwt_expired', label: 'JWT Expired' },
+  { value: 'jwt_invalid', label: 'JWT Invalid' },
+  { value: 'apikey_ok', label: 'API Key OK' },
+  { value: 'apikey_bad', label: 'API Key Bad' },
+  { value: 'rbac_deny', label: 'RBAC Deny' },
+  { value: 'rate_limited', label: 'Rate Limited' },
 ];
 
 const TYPE_BADGE = {
-  jwt_ok:       'badge-green',
-  jwt_expired:  'badge-yellow',
-  jwt_invalid:  'badge-red',
-  apikey_ok:    'badge-blue',
-  apikey_bad:   'badge-red',
-  rbac_deny:    'badge-red',
+  jwt_ok: 'badge-green',
+  jwt_expired: 'badge-yellow',
+  jwt_invalid: 'badge-red',
+  apikey_ok: 'badge-blue',
+  apikey_bad: 'badge-red',
+  rbac_deny: 'badge-red',
   rate_limited: 'badge-yellow',
 };
 
 const TYPE_ICON = {
-  jwt_ok:       ShieldCheck,
-  apikey_ok:    ShieldCheck,
-  jwt_expired:  ShieldAlert,
-  jwt_invalid:  ShieldX,
-  apikey_bad:   ShieldX,
-  rbac_deny:    ShieldX,
+  jwt_ok: ShieldCheck,
+  apikey_ok: ShieldCheck,
+  jwt_expired: ShieldAlert,
+  jwt_invalid: ShieldX,
+  apikey_bad: ShieldX,
+  rbac_deny: ShieldX,
   rate_limited: Clock,
 };
 
@@ -64,10 +70,10 @@ function MetricsStrip({ data }) {
   if (!data) return null;
 
   const items = [
-    { label: 'Auth Failures',  value: data.auth_failures  ?? '—' },
-    { label: 'Rate Limited',   value: data.rate_limited   ?? '—' },
-    { label: 'RBAC Denials',   value: data.rbac_denials   ?? '—' },
-    { label: 'Active Sessions',value: data.active_sessions ?? '—' },
+    { label: 'Auth Failures', value: data.auth_failures ?? '—' },
+    { label: 'Rate Limited', value: data.rate_limited ?? '—' },
+    { label: 'RBAC Denials', value: data.rbac_denials ?? '—' },
+    { label: 'Active Sessions', value: data.active_sessions ?? '—' },
   ];
 
   return (
@@ -89,8 +95,10 @@ function FilterBar({ params, onChange, onRefresh }) {
     <div className="flex flex-wrap items-end gap-3">
       {/* Text search */}
       <div className="relative flex-1 min-w-[160px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5
-                           text-text-muted pointer-events-none" />
+        <Search
+          className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5
+                           text-text-muted pointer-events-none"
+        />
         <input
           type="search"
           placeholder="Search sub, IP…"
@@ -114,7 +122,9 @@ function FilterBar({ params, onChange, onRefresh }) {
           aria-label="Filter by event type"
         >
           {EVENT_TYPES.map(t => (
-            <option key={t.value} value={t.value}>{t.label}</option>
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
           ))}
         </select>
       </div>
@@ -145,11 +155,7 @@ function FilterBar({ params, onChange, onRefresh }) {
         />
       </div>
 
-      <button
-        onClick={onRefresh}
-        className="btn-ghost self-end"
-        aria-label="Refresh logs"
-      >
+      <button onClick={onRefresh} className="btn-ghost self-end" aria-label="Refresh logs">
         <RefreshCw className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
@@ -159,15 +165,13 @@ function FilterBar({ params, onChange, onRefresh }) {
 // ── Event row ─────────────────────────────────────────────────────────────────
 
 function EventRow({ event, tempoUrl }) {
-  const badgeClass = TYPE_BADGE[event.type]  ?? 'badge-gray';
-  const Icon       = TYPE_ICON[event.type]   ?? ShieldAlert;
+  const badgeClass = TYPE_BADGE[event.type] ?? 'badge-gray';
+  const Icon = TYPE_ICON[event.type] ?? ShieldAlert;
 
   return (
     <tr className="hover:bg-surface transition-colors text-xs">
       <td className="px-4 py-2.5 font-mono text-text-muted whitespace-nowrap">
-        {event.ts
-          ? new Date(event.ts).toLocaleString('fr-FR', { hour12: false })
-          : '—'}
+        {event.ts ? new Date(event.ts).toLocaleString('fr-FR', { hour12: false }) : '—'}
       </td>
       <td className="px-4 py-2.5">
         <span className={clsx(badgeClass, 'flex items-center gap-1 w-fit')}>
@@ -175,18 +179,10 @@ function EventRow({ event, tempoUrl }) {
           {event.type ?? '—'}
         </span>
       </td>
-      <td className="px-4 py-2.5 font-mono truncate max-w-[100px]">
-        {event.sub ?? '—'}
-      </td>
-      <td className="px-4 py-2.5 text-text-muted">
-        {event.resource ?? '—'}
-      </td>
-      <td className="px-4 py-2.5 font-mono text-text-muted">
-        {event.ip ?? '—'}
-      </td>
-      <td className="px-4 py-2.5 text-text-muted truncate max-w-[180px]">
-        {event.detail ?? '—'}
-      </td>
+      <td className="px-4 py-2.5 font-mono truncate max-w-[100px]">{event.sub ?? '—'}</td>
+      <td className="px-4 py-2.5 text-text-muted">{event.resource ?? '—'}</td>
+      <td className="px-4 py-2.5 font-mono text-text-muted">{event.ip ?? '—'}</td>
+      <td className="px-4 py-2.5 text-text-muted truncate max-w-[180px]">{event.detail ?? '—'}</td>
       <td className="px-4 py-2.5">
         {event.traceId && tempoUrl && (
           <a
@@ -208,14 +204,16 @@ function EventRow({ event, tempoUrl }) {
 
 function exportCsv(events) {
   const header = 'timestamp,type,sub,resource,ip,detail,traceId';
-  const rows   = events.map(e => [
-    e.ts, e.type, e.sub, e.resource, e.ip, e.detail, e.traceId,
-  ].map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`).join(','));
+  const rows = events.map(e =>
+    [e.ts, e.type, e.sub, e.resource, e.ip, e.detail, e.traceId]
+      .map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`)
+      .join(',')
+  );
 
   const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
   a.download = `wolf-security-logs-${Date.now()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
@@ -237,17 +235,25 @@ const PAGE_SIZE = 50;
  * }} props
  */
 export default function SecurityLogViewer({
-  events = [], total = 0, loading, error,
-  onFilter, prometheusData, tempoUrl,
+  events = [],
+  total = 0,
+  loading,
+  error,
+  onFilter,
+  prometheusData,
+  tempoUrl,
 }) {
   const [params, setParams] = useState({ limit: PAGE_SIZE, page: 1 });
 
-  const handleParamsChange = useCallback(next => {
-    setParams(next);
-    onFilter?.(next);
-  }, [onFilter]);
+  const handleParamsChange = useCallback(
+    next => {
+      setParams(next);
+      onFilter?.(next);
+    },
+    [onFilter]
+  );
 
-  const totalPages  = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = params.page ?? 1;
 
   if (error) {
@@ -275,8 +281,11 @@ export default function SecurityLogViewer({
           <thead className="bg-surface border-b border-border">
             <tr>
               {['Time', 'Type', 'Subject', 'Resource', 'IP', 'Detail', 'Trace'].map(h => (
-                <th key={h} scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium text-text-muted">
+                <th
+                  key={h}
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-medium text-text-muted"
+                >
                   {h}
                 </th>
               ))}
@@ -297,9 +306,9 @@ export default function SecurityLogViewer({
                   No events match the current filter.
                 </td>
               </tr>
-            ) : events.map((ev, i) => (
-              <EventRow key={ev.id ?? i} event={ev} tempoUrl={tempoUrl} />
-            ))}
+            ) : (
+              events.map((ev, i) => <EventRow key={ev.id ?? i} event={ev} tempoUrl={tempoUrl} />)
+            )}
           </tbody>
         </table>
       </div>

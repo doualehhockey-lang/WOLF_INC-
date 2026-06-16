@@ -10,13 +10,13 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   apiKeys: ['key-test'],
-  config:  { JWT_REFRESH_SECRET: 'test-refresh-secret-very-long-32ch' },
+  config: { JWT_REFRESH_SECRET: 'test-refresh-secret-very-long-32ch' },
 }));
 
 jest.unstable_mockModule('../../../src/features/auth/token.service.js', () => ({
-  issueTokens:   jest.fn(),
+  issueTokens: jest.fn(),
   refreshTokens: jest.fn(),
-  verifyAccess:  jest.fn(),
+  verifyAccess: jest.fn(),
 }));
 
 const mockCacheDel = jest.fn(async () => {});
@@ -34,9 +34,9 @@ const { handleLogout } = await import('../../../src/features/auth/auth.controlle
 
 function mockRes() {
   const res = {};
-  res.status      = jest.fn(() => res);
-  res.json        = jest.fn(() => res);
-  res.cookie      = jest.fn(() => res);
+  res.status = jest.fn(() => res);
+  res.json = jest.fn(() => res);
+  res.cookie = jest.fn(() => res);
   res.clearCookie = jest.fn(() => res);
   return res;
 }
@@ -58,9 +58,15 @@ describe('handleLogout — valid RT with jti (lines 76-79)', () => {
 
     await handleLogout(req, res);
 
-    expect(mockJwtVerify).toHaveBeenCalledWith('valid.refresh.token', 'test-refresh-secret-very-long-32ch');
+    expect(mockJwtVerify).toHaveBeenCalledWith(
+      'valid.refresh.token',
+      'test-refresh-secret-very-long-32ch'
+    );
     expect(mockCacheDel).toHaveBeenCalledWith('rt:abc-uuid-456');
-    expect(res.clearCookie).toHaveBeenCalledWith('wolf_rt', expect.objectContaining({ path: '/auth' }));
+    expect(res.clearCookie).toHaveBeenCalledWith(
+      'wolf_rt',
+      expect.objectContaining({ path: '/auth' })
+    );
     expect(res.json).toHaveBeenCalledWith({ ok: true });
   });
 
@@ -90,7 +96,9 @@ describe('handleLogout — valid RT with jti (lines 76-79)', () => {
   });
 
   test('silently ignores jwt.verify errors and still clears cookie', async () => {
-    mockJwtVerify.mockImplementationOnce(() => { throw new Error('invalid token'); });
+    mockJwtVerify.mockImplementationOnce(() => {
+      throw new Error('invalid token');
+    });
 
     const req = { cookies: { wolf_rt: 'malformed.token' }, ip: '127.0.0.1' };
     const res = mockRes();

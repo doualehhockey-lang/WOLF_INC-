@@ -7,17 +7,24 @@ import supertest from 'supertest';
 // ── Mock external dependencies before importing app ───────────────────────────
 
 jest.unstable_mockModule('../../src/core/tracing.js', () => ({
-  initTracing:    jest.fn(() => Promise.resolve()),
+  initTracing: jest.fn(() => Promise.resolve()),
   shutdownTracing: jest.fn(() => Promise.resolve()),
-  startSpan:      jest.fn(() => ({ setAttributes: jest.fn(), setStatus: jest.fn(), recordException: jest.fn(), end: jest.fn() })),
-  withSpan:       jest.fn((_n, _a, fn) => fn({ end: jest.fn() })),
+  startSpan: jest.fn(() => ({
+    setAttributes: jest.fn(),
+    setStatus: jest.fn(),
+    recordException: jest.fn(),
+    end: jest.fn(),
+  })),
+  withSpan: jest.fn((_n, _a, fn) => fn({ end: jest.fn() })),
 }));
 
 const refreshStore = new Map();
 
 jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
-  redis: null, redisAvailable: false,
-  cacheGet: jest.fn(async key => refreshStore.has(key) ? refreshStore.get(key) : null),
+  redis: null,
+  redisAvailable: false,
+  isRedisAvailable: jest.fn().mockReturnValue(false),
+  cacheGet: jest.fn(async key => (refreshStore.has(key) ? refreshStore.get(key) : null)),
   cacheSet: jest.fn(async (key, value) => {
     refreshStore.set(key, value);
     return 'OK';
@@ -26,37 +33,57 @@ jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
     refreshStore.delete(key);
     return 1;
   }),
-  cacheIncr:   jest.fn(() => Promise.resolve(1)),
+  cacheIncr: jest.fn(() => Promise.resolve(1)),
   cacheExpire: jest.fn(() => Promise.resolve()),
-  cacheTtl:    jest.fn(() => Promise.resolve(60)),
-  evalScript:  jest.fn(() => Promise.resolve([1, 1])),
+  cacheTtl: jest.fn(() => Promise.resolve(60)),
+  evalScript: jest.fn(() => Promise.resolve([1, 1])),
 }));
 
 jest.unstable_mockModule('../../src/infra/db/dbClient.js', () => ({
-  db: null, dbAvailable: false, destroyDb: jest.fn(() => Promise.resolve()),
+  db: null,
+  dbAvailable: false,
+  destroyDb: jest.fn(() => Promise.resolve()),
+  pendingMigrationCount: 0,
 }));
 
 jest.unstable_mockModule('../../src/features/tts/tts.service.js', () => ({
-  synthesize: jest.fn(() => Promise.resolve({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav', fallback: false })),
+  synthesize: jest.fn(() =>
+    Promise.resolve({
+      buffer: Buffer.alloc(10),
+      ext: '.wav',
+      mimeType: 'audio/wav',
+      fallback: false,
+    })
+  ),
 }));
 
 jest.unstable_mockModule('../../src/services/audio.utils.js', () => ({
-  saveAudio:           jest.fn(() => Promise.resolve({ filepath: '/tmp/t.wav', filename: 't.wav' })),
+  saveAudio: jest.fn(() => Promise.resolve({ filepath: '/tmp/t.wav', filename: 't.wav' })),
   downloadTwilioMedia: jest.fn(),
-  mulawToWav:          jest.fn(b => b),
-  pcm16ToWav:          jest.fn(b => b),
+  mulawToWav: jest.fn(b => b),
+  pcm16ToWav: jest.fn(b => b),
 }));
 
 jest.unstable_mockModule('../../src/features/nlu/nlu.service.js', () => ({
-  understand: jest.fn(() => Promise.resolve({
-    ok: true, intent: 'list_events', confidence: 0.9, subject: '',
-    isoDate: null, isoTime: null, needsClarification: false, missing: [], errors: [], strategy: 'mock',
-  })),
+  understand: jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      intent: 'list_events',
+      confidence: 0.9,
+      subject: '',
+      isoDate: null,
+      isoTime: null,
+      needsClarification: false,
+      missing: [],
+      errors: [],
+      strategy: 'mock',
+    })
+  ),
 }));
 
 jest.unstable_mockModule('../../src/features/responder/responder.service.js', () => ({
   autoReply: jest.fn(() => Promise.resolve('Réponse mockée')),
-  getTones:  jest.fn(() => ['friendly', 'pro', 'sec', 'sarcastique', 'wolf-inc']),
+  getTones: jest.fn(() => ['friendly', 'pro', 'sec', 'sarcastique', 'wolf-inc']),
 }));
 
 // ── Import app after mocks ────────────────────────────────────────────────────
@@ -99,23 +126,32 @@ describe('POST /auth/token', () => {
 
 describe('POST /auth/refresh', () => {
   let refreshCookie;
+  let csrfToken;
 
   beforeAll(async () => {
     const res = await request.post('/auth/token').send({ apiKey: 'test-key-abc123' });
     const rawCookie = res.headers['set-cookie']?.find(c => c.startsWith('wolf_rt='));
     refreshCookie = rawCookie?.split(';')[0];
+
+    // Obtain a CSRF token — GET /auth/csrf sets the wolf_csrf cookie
+    const csrfRes = await request.get('/auth/csrf');
+    const csrfCookie = csrfRes.headers['set-cookie']?.find(c => c.startsWith('wolf_csrf='));
+    csrfToken = csrfCookie?.split(';')[0]?.replace('wolf_csrf=', '');
   });
 
   test('issues new accessToken with valid refresh cookie', async () => {
-    if (!refreshCookie) return; // guard for CI without cookie support
-    const res = await request.post('/auth/refresh').set('Cookie', refreshCookie);
+    if (!refreshCookie || !csrfToken) return; // guard for CI without cookie support
+    const res = await request
+      .post('/auth/refresh')
+      .set('Cookie', `${refreshCookie}; wolf_csrf=${csrfToken}`)
+      .set('X-CSRF-Token', csrfToken);
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('accessToken');
   });
 
-  test('rejects with 401 when no cookie', async () => {
+  test('rejects with 403 when CSRF token missing', async () => {
     const res = await request.post('/auth/refresh');
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 });
 
@@ -124,10 +160,22 @@ describe('POST /auth/refresh', () => {
 // ═══════════════════════════════════════════════════════════
 
 describe('POST /auth/logout', () => {
-  test('clears cookie and returns ok', async () => {
-    const res = await request.post('/auth/logout');
+  test('clears cookie and returns ok with CSRF token', async () => {
+    const csrfRes = await request.get('/auth/csrf');
+    const csrfCookie = csrfRes.headers['set-cookie']?.find(c => c.startsWith('wolf_csrf='));
+    const csrfToken = csrfCookie?.split(';')[0]?.replace('wolf_csrf=', '');
+
+    const res = await request
+      .post('/auth/logout')
+      .set('Cookie', `wolf_csrf=${csrfToken}`)
+      .set('X-CSRF-Token', csrfToken);
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
+  });
+
+  test('rejects with 403 when CSRF token missing', async () => {
+    const res = await request.post('/auth/logout');
+    expect(res.status).toBe(403);
   });
 });
 
@@ -149,14 +197,16 @@ describe('Protected routes', () => {
   });
 
   test('POST /reply returns 401 with invalid token', async () => {
-    const res = await request.post('/reply')
+    const res = await request
+      .post('/reply')
       .set('Authorization', 'Bearer invalid.token.here')
       .send({ content: 'test' });
     expect(res.status).toBe(401);
   });
 
   test('POST /reply succeeds (200 or 503) with valid Bearer token', async () => {
-    const res = await request.post('/reply')
+    const res = await request
+      .post('/reply')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ content: 'Bonjour' });
     // 200 = LLM answered  |  503 = LLM unavailable (Ollama not running in test)

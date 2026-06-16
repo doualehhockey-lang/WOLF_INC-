@@ -6,15 +6,15 @@ import { jest } from '@jest/globals';
 // Prevent real Redis connection
 jest.unstable_mockModule('ioredis', () => {
   const Redis = jest.fn(() => ({
-    get:    jest.fn(async () => null),
-    set:    jest.fn(async () => 'OK'),
-    setex:  jest.fn(async () => 'OK'),
-    del:    jest.fn(async () => 1),
-    incr:   jest.fn(async () => 1),
+    get: jest.fn(async () => null),
+    set: jest.fn(async () => 'OK'),
+    setex: jest.fn(async () => 'OK'),
+    del: jest.fn(async () => 1),
+    incr: jest.fn(async () => 1),
     expire: jest.fn(async () => 1),
-    ttl:    jest.fn(async () => -1),
+    ttl: jest.fn(async () => -1),
     getBuffer: jest.fn(async () => null),
-    on:     jest.fn(),
+    on: jest.fn(),
     status: 'end',
   }));
   return { default: Redis };
@@ -22,9 +22,9 @@ jest.unstable_mockModule('ioredis', () => {
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
-    REDIS_URL:  '',   // no Redis → in-memory fallback
-    REDIS_TLS:  false,
-    NODE_ENV:   'test',
+    REDIS_URL: '', // no Redis → in-memory fallback
+    REDIS_TLS: false,
+    NODE_ENV: 'test',
   },
 }));
 

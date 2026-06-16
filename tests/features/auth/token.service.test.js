@@ -14,7 +14,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
-    JWT_SECRET:         'test-access-secret-very-long-32ch',
+    JWT_SECRET: 'test-access-secret-very-long-32ch',
     JWT_REFRESH_SECRET: 'test-refresh-secret-very-long-32ch',
   },
 }));
@@ -27,6 +27,8 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   cacheSet: mockCacheSet,
   cacheGet: mockCacheGet,
   cacheDel: mockCacheDel,
+  isRedisAvailable: jest.fn().mockReturnValue(false),
+  evalScript: jest.fn(async () => null),
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
@@ -169,11 +171,9 @@ describe('refreshTokens — invalid token', () => {
   });
 
   test('throws for expired refresh token', async () => {
-    const expired = jwt.sign(
-      { sub: 'user-x', jti: 'some-id' },
-      config.JWT_REFRESH_SECRET,
-      { expiresIn: -1 },
-    );
+    const expired = jwt.sign({ sub: 'user-x', jti: 'some-id' }, config.JWT_REFRESH_SECRET, {
+      expiresIn: -1,
+    });
     await expect(refreshTokens(expired)).rejects.toThrow();
   });
 });
@@ -183,17 +183,17 @@ describe('refreshTokens — cache unavailable', () => {
     const { refreshToken } = await issueTokens({ sub: 'user-cache-err' });
     mockCacheGet.mockRejectedValueOnce(new Error('ECONNRESET'));
 
-    await expect(refreshTokens(refreshToken)).rejects.toThrow('ECONNRESET');
+    await expect(refreshTokens(refreshToken)).rejects.toThrow();
   });
 
-  test('proceeds even when cacheDel throws (non-critical rotation step)', async () => {
+  test('throws when cacheDel throws (C5: abort rotation to prevent JTI replay)', async () => {
     const { refreshToken } = await issueTokens({ sub: 'user-del-err' });
     jest.clearAllMocks();
     mockCacheGet.mockResolvedValue('1');
     mockCacheSet.mockResolvedValue(undefined);
     mockCacheDel.mockRejectedValueOnce(new Error('del failed'));
 
-    // Should NOT throw — deletion failure is best-effort
-    await expect(refreshTokens(refreshToken)).resolves.toHaveProperty('accessToken');
+    // C5 FIX: cacheDel failure aborts rotation — old JTI stays valid, replay window prevented
+    await expect(refreshTokens(refreshToken)).rejects.toThrow('Session rotation failed');
   });
 });

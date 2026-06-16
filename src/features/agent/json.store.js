@@ -3,12 +3,12 @@
 // All mutations are atomic within a single Node.js process.
 
 import { readFileSync, mkdirSync, existsSync } from 'fs';
-import { writeFile }                            from 'fs/promises';
-import { resolve, dirname }                     from 'path';
-import { childLogger }                          from '../../core/logger.js';
-import { config }                               from '../../core/config.js';
-import { eventsStoredGauge, errorCounter }      from '../../core/metrics.js';
-import { WriteQueue }                           from './write-queue.js';
+import { writeFile } from 'fs/promises';
+import { resolve, dirname } from 'path';
+import { childLogger } from '../../core/logger.js';
+import { config } from '../../core/config.js';
+import { eventsStoredGauge, errorCounter } from '../../core/metrics.js';
+import { WriteQueue } from './write-queue.js';
 
 const log = childLogger('json-store');
 
@@ -67,7 +67,7 @@ function _save() {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function listEvents(userKey) {
-  return [...(_userEvents(userKey))].sort(
+  return [..._userEvents(userKey)].sort(
     (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)
   );
 }
@@ -94,7 +94,7 @@ export async function findEventBySubject(userKey, subject) {
 
 export async function softDeleteEvent(userKey, id) {
   const events = _userEvents(userKey);
-  const idx    = events.findIndex(e => e.id === id);
+  const idx = events.findIndex(e => e.id === id);
   if (idx === -1) return null;
   const [removed] = events.splice(idx, 1);
   eventsStoredGauge.dec();

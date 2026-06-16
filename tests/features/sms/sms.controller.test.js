@@ -9,11 +9,26 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 }));
 
 // ── Mock metrics ──────────────────────────────────────────────────────────────
-const mockSmsTotal    = { inc: jest.fn() };
+const mockSmsTotal = { inc: jest.fn() };
 const mockErrorCounter = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
-  smsTotal:     mockSmsTotal,
+  smsTotal: mockSmsTotal,
   errorCounter: mockErrorCounter,
+  auditLogFailures: { inc: jest.fn() },
+  pipelineLatency: { observe: jest.fn() },
+  nluLatency: { observe: jest.fn() },
+  ttsLatency: { observe: jest.fn() },
+  agentLatency: { observe: jest.fn() },
+  intentCounter: { inc: jest.fn() },
+  rateLimitCounter: { inc: jest.fn() },
+  callsTotal: { inc: jest.fn() },
+  activeSessions: { inc: jest.fn(), dec: jest.fn(), set: jest.fn() },
+}));
+
+// ── Mock featureFlags ─────────────────────────────────────────────────────────
+jest.unstable_mockModule('../../../src/core/featureFlags.js', () => ({
+  isEnabled: jest.fn(async () => true),
+  FLAGS: { PIPELINE_SMS: 'pipeline_sms' },
 }));
 
 // ── Mock rate-limiter ─────────────────────────────────────────────────────────
@@ -22,15 +37,15 @@ jest.unstable_mockModule('../../../src/features/voice/rate-limiter.js', () => ({
   isRateLimited: mockIsRateLimited,
 }));
 
-// ── Mock autoReply ────────────────────────────────────────────────────────────
-const mockAutoReply = jest.fn(async () => 'Réponse automatique');
-jest.unstable_mockModule('../../../src/features/responder/responder.service.js', () => ({
-  autoReply: mockAutoReply,
+// ── Mock sms.pipeline ─────────────────────────────────────────────────────────
+const mockRunSmsPipeline = jest.fn(async () => 'Automatic reply');
+jest.unstable_mockModule('../../../src/features/sms/sms.pipeline.js', () => ({
+  runSmsPipeline: mockRunSmsPipeline,
 }));
 
 // ── Mock sanitizeText (passthrough) ──────────────────────────────────────────
 jest.unstable_mockModule('../../../src/api/middleware/validation.js', () => ({
-  sanitizeText: jest.fn((t) => t ?? ''),
+  sanitizeText: jest.fn(t => t ?? ''),
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
@@ -39,7 +54,7 @@ const { handleSms } = await import('../../../src/features/sms/sms.controller.js'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function mockRes() {
   const res = {};
-  res.set  = jest.fn();
+  res.set = jest.fn();
   res.send = jest.fn();
   return res;
 }
@@ -47,7 +62,7 @@ function mockRes() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockIsRateLimited.mockResolvedValue(false);
-  mockAutoReply.mockResolvedValue('Réponse automatique');
+  mockRunSmsPipeline.mockResolvedValue('Automatic reply');
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -78,10 +93,8 @@ describe('handleSms — empty body', () => {
     const req = { body: { Body: '', From: '+33600000001' } };
     const res = mockRes();
     await handleSms(req, res);
-    expect(res.send).toHaveBeenCalledWith(
-      expect.stringContaining('<Response></Response>'),
-    );
-    expect(mockAutoReply).not.toHaveBeenCalled();
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('<Response></Response>'));
+    expect(mockRunSmsPipeline).not.toHaveBeenCalled();
   });
 
   test('sends empty XML when Body is absent', async () => {
@@ -89,7 +102,7 @@ describe('handleSms — empty body', () => {
     const res = mockRes();
     await handleSms(req, res);
     expect(res.send).toHaveBeenCalledWith(expect.stringContaining('<Response>'));
-    expect(mockAutoReply).not.toHaveBeenCalled();
+    expect(mockRunSmsPipeline).not.toHaveBeenCalled();
   });
 });
 
@@ -103,10 +116,8 @@ describe('handleSms — rate limited', () => {
     const req = { body: { Body: 'Hello', From: '+33600000002' } };
     const res = mockRes();
     await handleSms(req, res);
-    expect(res.send).toHaveBeenCalledWith(
-      expect.stringContaining('Trop de messages'),
-    );
-    expect(mockAutoReply).not.toHaveBeenCalled();
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Too many messages'));
+    expect(mockRunSmsPipeline).not.toHaveBeenCalled();
   });
 
   test('checks rate limit with the From number', async () => {
@@ -121,19 +132,21 @@ describe('handleSms — rate limited', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('handleSms — success', () => {
-  test('calls autoReply with the sanitized body', async () => {
-    const req = { body: { Body: 'Bonjour', From: '+33600000004' } };
+  test('calls runSmsPipeline with text, from, sid', async () => {
+    const req = { body: { Body: 'Hello', From: '+33600000004', MessageSid: 'SM123' } };
     await handleSms(req, mockRes());
-    expect(mockAutoReply).toHaveBeenCalledWith('Bonjour');
+    expect(mockRunSmsPipeline).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'Hello', from: '+33600000004', sid: 'SM123' })
+    );
   });
 
-  test('wraps autoReply result in XML <Message>', async () => {
-    mockAutoReply.mockResolvedValueOnce('Bonjour!');
-    const req = { body: { Body: 'Salut', From: '+33600000005' } };
+  test('wraps pipeline result in XML <Message>', async () => {
+    mockRunSmsPipeline.mockResolvedValueOnce('Hello back!');
+    const req = { body: { Body: 'Hi', From: '+33600000005' } };
     const res = mockRes();
     await handleSms(req, res);
     expect(res.send).toHaveBeenCalledWith(
-      expect.stringContaining('<Message>Bonjour!</Message>'),
+      expect.stringContaining('<Message>Hello back!</Message>')
     );
   });
 
@@ -152,24 +165,22 @@ describe('handleSms — success', () => {
 // 5. Error path — autoReply throws
 // ═════════════════════════════════════════════════════════════════════════════
 
-describe('handleSms — autoReply error', () => {
-  test('sends fallback XML message when autoReply throws', async () => {
-    mockAutoReply.mockRejectedValueOnce(new Error('LLM unavailable'));
+describe('handleSms — pipeline error', () => {
+  test('sends fallback XML message when pipeline throws', async () => {
+    mockRunSmsPipeline.mockRejectedValueOnce(new Error('LLM unavailable'));
     const req = { body: { Body: 'Hi', From: '+33600000007' } };
     const res = mockRes();
     await handleSms(req, res);
     expect(res.send).toHaveBeenCalledWith(
-      expect.stringContaining('Service temporairement indisponible'),
+      expect.stringContaining('Service temporarily unavailable')
     );
   });
 
-  test('increments errorCounter when autoReply throws', async () => {
-    mockAutoReply.mockRejectedValueOnce(new Error('crash'));
+  test('increments errorCounter when pipeline throws', async () => {
+    mockRunSmsPipeline.mockRejectedValueOnce(new Error('crash'));
     const req = { body: { Body: 'Hi', From: '+33600000008' } };
     await handleSms(req, mockRes());
-    expect(mockErrorCounter.inc).toHaveBeenCalledWith(
-      expect.objectContaining({ service: 'sms' }),
-    );
+    expect(mockErrorCounter.inc).toHaveBeenCalledWith(expect.objectContaining({ service: 'sms' }));
   });
 });
 
@@ -179,7 +190,7 @@ describe('handleSms — autoReply error', () => {
 
 describe('handleSms — XML escaping', () => {
   test('escapes & in reply', async () => {
-    mockAutoReply.mockResolvedValueOnce('Cookies & Cream');
+    mockRunSmsPipeline.mockResolvedValueOnce('Cookies & Cream');
     const req = { body: { Body: 'Test', From: '+33600000009' } };
     const res = mockRes();
     await handleSms(req, res);
@@ -187,7 +198,7 @@ describe('handleSms — XML escaping', () => {
   });
 
   test('escapes < and > in reply', async () => {
-    mockAutoReply.mockResolvedValueOnce('a<b>c');
+    mockRunSmsPipeline.mockResolvedValueOnce('a<b>c');
     const req = { body: { Body: 'Test', From: '+33600000010' } };
     const res = mockRes();
     await handleSms(req, res);
@@ -197,7 +208,7 @@ describe('handleSms — XML escaping', () => {
   });
 
   test('escapes " in reply', async () => {
-    mockAutoReply.mockResolvedValueOnce('say "hello"');
+    mockRunSmsPipeline.mockResolvedValueOnce('say "hello"');
     const req = { body: { Body: 'Test', From: '+33600000011' } };
     const res = mockRes();
     await handleSms(req, res);

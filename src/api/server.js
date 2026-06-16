@@ -5,7 +5,6 @@
 
 import express from 'express';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { resolve } from 'path';
 import { logger } from '../core/logger.js';
@@ -15,6 +14,10 @@ import { requestId } from './middleware/requestId.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { router } from './router.js';
 import { adminRouter } from '../features/admin/admin.router.js';
+import { i18nMiddleware } from '../core/i18n.js';
+import { gdprRouter } from '../features/gdpr/gdpr.router.js';
+import { billingRouter } from '../features/billing/billing.router.js';
+import { mountSwagger } from './swagger.js';
 
 /**
  * Build and return the configured Express application.
@@ -23,20 +26,28 @@ import { adminRouter } from '../features/admin/admin.router.js';
  */
 export function createApp() {
   const app = express();
-  app.set('trust proxy', true);
+  // Trust exactly one proxy hop (the load balancer / ingress).
+  // 'true' trusts any X-Forwarded-For value, enabling IP spoofing for rate limit bypass.
+  app.set('trust proxy', 1);
 
   // ── Security headers ─────────────────────────────────────────────────────────
   app.use(
     helmet({
-      contentSecurityPolicy: isProd ? {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: ["'self'", 'https:'],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'", 'https:'],
-        },
-      } : false,
+      contentSecurityPolicy: isProd
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              // 'unsafe-inline' removed — it negates XSS protection entirely (C8 fix).
+              // If Swagger UI or any page requires inline scripts, use a nonce instead.
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'", 'https:'],
+              imgSrc: ["'self'", 'data:', 'https:'],
+              connectSrc: ["'self'", 'https:'],
+              frameAncestors: ["'none'"],
+              upgradeInsecureRequests: [],
+            },
+          }
+        : false,
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
   );
@@ -44,20 +55,39 @@ export function createApp() {
   // ── CORS — strict whitelist on API routes ─────────────────────────────────────
   app.use(cors);
 
+  // ── i18n — language detection from Accept-Language header ────────────────────
+  app.use(i18nMiddleware);
+
   // ── Request ID for log correlation ────────────────────────────────────────────
   app.use(requestId);
+
+  // ── Stripe webhook — mount BEFORE express.json() to preserve raw body ────────
+  // The billing router applies express.raw() only on /billing/webhook.
+  app.use('/billing', billingRouter);
 
   // ── Body parsers ──────────────────────────────────────────────────────────────
   app.use(cookieParser());
   app.use(express.json({ limit: '64kb' }));
   app.use(express.urlencoded({ extended: true, limit: '64kb' }));
 
-  // ── HTTP access log (Pino-backed) ─────────────────────────────────────────────
-  app.use(
-    morgan('combined', {
-      stream: { write: msg => logger.info({ type: 'http' }, msg.trim()) },
-    })
-  );
+  // ── HTTP access log ───────────────────────────────────────────────────────────
+  // M6 FIX: Morgan removed. It piped into Pino, creating two log entries per
+  // request (one unstructured Morgan string, one from Pino directly). In addition,
+  // Morgan logged full URLs including query strings — a PII leak vector when phone
+  // numbers appeared in query params. Pino handles structured request logging directly.
+  app.use((req, _res, next) => {
+    logger.info(
+      {
+        type: 'http',
+        method: req.method,
+        path: req.path, // path only — never query string — to avoid PII in logs
+        reqId: req.id,
+        ip: req.ip,
+      },
+      'request'
+    );
+    next();
+  });
 
   // ── HTTPS redirect in production ──────────────────────────────────────────────
   if (isProd) {
@@ -83,6 +113,10 @@ export function createApp() {
   app.use('/', router);
   // Mount admin surface separately so it can reside at /admin and be protected.
   app.use('/admin', adminRouter);
+  // GDPR compliance endpoints (JWT-protected)
+  app.use('/api/user', gdprRouter);
+  // OpenAPI docs (Swagger UI at /api-docs, raw spec at /api-docs.json)
+  mountSwagger(app);
 
   // ── Error handling — must come last ──────────────────────────────────────────
   app.use(notFound);

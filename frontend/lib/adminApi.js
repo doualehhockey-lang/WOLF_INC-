@@ -13,16 +13,18 @@ import { apiFetch, apiPost, apiDelete, ApiError } from './api.js';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const adm = (path, init) => apiFetch(`/admin${path}`, init);
-const admPost   = (path, body) => apiPost(`/admin${path}`, body);
-const admDelete = (path)       => apiDelete(`/admin${path}`);
-const admPatch  = (path, body) => apiFetch(`/admin${path}`, {
-  method: 'PATCH',
-  body:   JSON.stringify(body),
-});
-const admPut = (path, body) => apiFetch(`/admin${path}`, {
-  method: 'PUT',
-  body:   JSON.stringify(body),
-});
+const admPost = (path, body) => apiPost(`/admin${path}`, body);
+const admDelete = path => apiDelete(`/admin${path}`);
+const admPatch = (path, body) =>
+  apiFetch(`/admin${path}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+const admPut = (path, body) =>
+  apiFetch(`/admin${path}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
 
 // ── JWT client-side decode (NO verification — server owns that) ───────────────
 
@@ -35,7 +37,7 @@ const admPut = (path, body) => apiFetch(`/admin${path}`, {
 export function decodeJwtPayload(token) {
   try {
     const [, b64] = token.split('.');
-    const json     = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+    const json = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
     return JSON.parse(json);
   } catch {
     return null;
@@ -45,8 +47,8 @@ export function decodeJwtPayload(token) {
 /** @returns {boolean} true when the stored token belongs to an admin. */
 export function isAdmin() {
   if (typeof window === 'undefined') return false;
-  const token   = sessionStorage.getItem('wolf_token');
-  if (!token)   return false;
+  const token = sessionStorage.getItem('wolf_token');
+  if (!token) return false;
   const payload = decodeJwtPayload(token);
   if (!payload) return false;
   // Check expiry client-side (server will also check).
@@ -60,12 +62,12 @@ export function isAdmin() {
  * @returns {Promise<{ users: UserRecord[] }>}
  * @typedef {{ id: string, sub: string, email: string, role: string, createdAt: string, lastLogin: string|null }} UserRecord
  */
-export const fetchUsers     = ()              => adm('/users');
-export const createUser     = (data)          => admPost('/users', data);
-export const updateUser     = (id, data)      => admPut(`/users/${id}`, data);
-export const deleteUser     = (id)            => admDelete(`/users/${id}`);
-export const updateUserRole = (id, role)      => admPatch(`/users/${id}/role`, { role });
-export const resetUserPassword = (id)         => admPost(`/users/${id}/reset-password`, {});
+export const fetchUsers = () => adm('/users');
+export const createUser = data => admPost('/users', data);
+export const updateUser = (id, data) => admPut(`/users/${id}`, data);
+export const deleteUser = id => admDelete(`/users/${id}`);
+export const updateUserRole = (id, role) => admPatch(`/users/${id}/role`, { role });
+export const resetUserPassword = id => admPost(`/users/${id}/reset-password`, {});
 
 // ── API key management ────────────────────────────────────────────────────────
 
@@ -77,12 +79,12 @@ export const resetUserPassword = (id)         => admPost(`/users/${id}/reset-pas
  *   expiresAt: string|null, revoked: boolean
  * }} ApiKeyRecord
  */
-export const fetchApiKeys  = ()         => adm('/api-keys');
+export const fetchApiKeys = () => adm('/api-keys');
 /** Returns the full key once — store it; it cannot be retrieved again. */
-export const createApiKey  = (data)     => admPost('/api-keys', data);
-export const revokeApiKey  = (id)       => admDelete(`/api-keys/${id}`);
+export const createApiKey = data => admPost('/api-keys', data);
+export const revokeApiKey = id => admDelete(`/api-keys/${id}`);
 /** Returns the NEW full key — store it; old key is invalidated immediately. */
-export const rotateApiKey  = (id)       => admPost(`/api-keys/${id}/rotate`, {});
+export const rotateApiKey = id => admPost(`/api-keys/${id}/rotate`, {});
 
 // ── Security logs ─────────────────────────────────────────────────────────────
 
@@ -92,7 +94,7 @@ export const rotateApiKey  = (id)       => admPost(`/api-keys/${id}/rotate`, {})
  */
 export function fetchSecurityLogs(params = {}) {
   const qs = new URLSearchParams(
-    Object.fromEntries(Object.entries(params).filter(([, v]) => v != null)),
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v !== null && v !== undefined))
   ).toString();
   return adm(`/security-logs${qs ? `?${qs}` : ''}`);
 }
@@ -117,7 +119,7 @@ export function prometheusQuery(query, time) {
  */
 export function fetchTempoTraces(params = {}) {
   const qs = new URLSearchParams(
-    Object.fromEntries(Object.entries(params).filter(([, v]) => v != null)),
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v !== null && v !== undefined))
   ).toString();
   return adm(`/observability/traces${qs ? `?${qs}` : ''}`);
 }
@@ -130,20 +132,20 @@ export const fetchGrafanaPanels = () => adm('/observability/grafana/panels');
 
 // ── Deployment (admin overrides) ─────────────────────────────────────────────
 
-export const adminTriggerCanary  = (tag)         => admPost('/deploy/canary',  { tag });
-export const adminPromoteCanary  = ()            => admPost('/deploy/promote', {});
-export const adminRollback       = (tag)         => admPost('/deploy/rollback', { tag });
-export const adminFullDeploy     = (tag, force)  => admPost('/deploy/full',    { tag, force });
-export const fetchDeployStatus   = ()            => adm('/deploy/status');
-export const fetchDeployHistory  = (limit = 20)  => adm(`/deploy/history?limit=${limit}`);
+export const adminTriggerCanary = tag => admPost('/deploy/canary', { tag });
+export const adminPromoteCanary = () => admPost('/deploy/promote', {});
+export const adminRollback = tag => admPost('/deploy/rollback', { tag });
+export const adminFullDeploy = (tag, force) => admPost('/deploy/full', { tag, force });
+export const fetchDeployStatus = () => adm('/deploy/status');
+export const fetchDeployHistory = (limit = 20) => adm(`/deploy/history?limit=${limit}`);
 
 // ── Cluster (extended with nodes) ────────────────────────────────────────────
 
-export const fetchAdminPods  = ()    => adm('/k8s/pods');
-export const fetchAdminHpa   = ()    => adm('/k8s/hpa');
-export const fetchNodes      = ()    => adm('/k8s/nodes');
-export const fetchNamespaceQuota = ()=> adm('/k8s/quota');
-export const deletePod       = (name)=> admDelete(`/k8s/pods/${name}`);
+export const fetchAdminPods = () => adm('/k8s/pods');
+export const fetchAdminHpa = () => adm('/k8s/hpa');
+export const fetchNodes = () => adm('/k8s/nodes');
+export const fetchNamespaceQuota = () => adm('/k8s/quota');
+export const deletePod = name => admDelete(`/k8s/pods/${name}`);
 
 // Re-export shared error type for convenience.
 export { ApiError };

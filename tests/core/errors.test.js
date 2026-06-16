@@ -315,13 +315,13 @@ describe('isUserFacingError', () => {
 
 describe('Inheritance chain', () => {
   test.each([
-    ['ValidationError',    new ValidationError('x')],
-    ['NotFoundError',      new NotFoundError('x')],
-    ['RateLimitError',     new RateLimitError()],
+    ['ValidationError', new ValidationError('x')],
+    ['NotFoundError', new NotFoundError('x')],
+    ['RateLimitError', new RateLimitError()],
     ['ExternalServiceError', new ExternalServiceError('x', 'y')],
-    ['NluError',           new NluError('x')],
-    ['TtsError',           new TtsError('x')],
-    ['DatabaseError',      new DatabaseError('x')],
+    ['NluError', new NluError('x')],
+    ['TtsError', new TtsError('x')],
+    ['DatabaseError', new DatabaseError('x')],
     ['PipelineTimeoutError', new PipelineTimeoutError(1000)],
   ])('%s instanceof AppError', (_name, err) => {
     expect(err).toBeInstanceOf(AppError);

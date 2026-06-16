@@ -7,10 +7,10 @@
 export class AppError extends Error {
   constructor(code, statusCode = 500, context = {}) {
     super(code);
-    this.name       = 'AppError';
-    this.code       = code;
+    this.name = 'AppError';
+    this.code = code;
     this.statusCode = statusCode;
-    this.context    = context;
+    this.context = context;
   }
 }
 
@@ -33,7 +33,7 @@ export class NotFoundError extends AppError {
 export class RateLimitError extends AppError {
   constructor(retryAfterSec = 60) {
     super('RATE_LIMITED', 429, { retryAfterSec });
-    this.message      = 'Too many requests';
+    this.message = 'Too many requests';
     this.retryAfterSec = retryAfterSec;
   }
 }

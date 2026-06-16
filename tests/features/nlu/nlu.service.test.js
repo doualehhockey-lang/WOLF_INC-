@@ -8,16 +8,18 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
-    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   }),
 }));
 
-// ── Mock config — mutable so tests can toggle CLAUDE_API_KEY ─────────────────
+// ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
     CLAUDE_API_KEY: 'test-api-key',
-    CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
-    OLLAMA_MODEL:   'llama3.2:3b',
+    CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
   },
 }));
 
@@ -25,6 +27,7 @@ jest.unstable_mockModule('../../../src/core/config.js', () => ({
 const mockTimer = jest.fn();
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   nluLatency: { startTimer: jest.fn(() => mockTimer) },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Mock intent normalizer ────────────────────────────────────────────────────
@@ -33,13 +36,13 @@ jest.unstable_mockModule('../../../src/features/agent/intent.normalizer.js', () 
 }));
 
 // ── Mock memory service ───────────────────────────────────────────────────────
-const mockBuildContext    = jest.fn(async () => '');
+const mockBuildContext = jest.fn(async () => '');
 const mockGetLastEntities = jest.fn(async () => null);
 const mockDetectShortAnswer = jest.fn(() => null);
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
-  buildContext:       mockBuildContext,
-  getLastEntities:    mockGetLastEntities,
-  detectShortAnswer:  mockDetectShortAnswer,
+  buildContext: mockBuildContext,
+  getLastEntities: mockGetLastEntities,
+  detectShortAnswer: mockDetectShortAnswer,
 }));
 
 // ── Mock Claude client ────────────────────────────────────────────────────────
@@ -48,15 +51,13 @@ jest.unstable_mockModule('../../../src/services/claude.client.js', () => ({
   analyze: mockAnalyzeClaude,
 }));
 
-// ── Mock Ollama client ────────────────────────────────────────────────────────
-const mockAnalyzeOllama = jest.fn();
-jest.unstable_mockModule('../../../src/services/ollama.client.js', () => ({
-  analyze: mockAnalyzeOllama,
-}));
-
 // ── Mock dateparser ───────────────────────────────────────────────────────────
 const mockResolveDate = jest.fn(async () => ({
-  date: null, time: null, iso: null, hasDate: false, hasTime: false,
+  date: null,
+  time: null,
+  iso: null,
+  hasDate: false,
+  hasTime: false,
 }));
 jest.unstable_mockModule('../../../src/services/dateparser.js', () => ({
   resolve: mockResolveDate,
@@ -64,20 +65,20 @@ jest.unstable_mockModule('../../../src/services/dateparser.js', () => ({
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 const { understand } = await import('../../../src/features/nlu/nlu.service.js');
-const { config }     = await import('../../../src/core/config.js');
+const { config } = await import('../../../src/core/config.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Default successful LLM response. */
 function llmOk(overrides = {}) {
   return {
-    intent:     'list_events',
-    subject:    '',
-    date:       '',
-    time:       '',
+    intent: 'list_events',
+    subject: '',
+    date: '',
+    time: '',
     confidence: 0.9,
-    errors:     [],
-    strategy:   'claude',
+    errors: [],
+    strategy: 'claude',
     ...overrides,
   };
 }
@@ -86,11 +87,16 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockTimer.mockReset();
   mockAnalyzeClaude.mockReset();
-  mockAnalyzeOllama.mockReset();
   mockBuildContext.mockResolvedValue('');
   mockGetLastEntities.mockResolvedValue(null);
   mockDetectShortAnswer.mockReturnValue(null);
-  mockResolveDate.mockResolvedValue({ date: null, time: null, iso: null, hasDate: false, hasTime: false });
+  mockResolveDate.mockResolvedValue({
+    date: null,
+    time: null,
+    iso: null,
+    hasDate: false,
+    hasTime: false,
+  });
   config.CLAUDE_API_KEY = 'test-api-key'; // default: use Claude
   // Default Claude response
   mockAnalyzeClaude.mockResolvedValue(llmOk());
@@ -119,10 +125,9 @@ describe('Input validation', () => {
     expect(result.ok).toBe(false);
   });
 
-  test('does not call Claude or Ollama for empty input', async () => {
+  test('does not call Claude for empty input', async () => {
     await understand('');
     expect(mockAnalyzeClaude).not.toHaveBeenCalled();
-    expect(mockAnalyzeOllama).not.toHaveBeenCalled();
   });
 });
 
@@ -131,18 +136,9 @@ describe('Input validation', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Backend selection', () => {
-  test('calls Claude when CLAUDE_API_KEY is set', async () => {
+  test('calls Claude for NLU analysis', async () => {
     await understand('Bonjour');
     expect(mockAnalyzeClaude).toHaveBeenCalledTimes(1);
-    expect(mockAnalyzeOllama).not.toHaveBeenCalled();
-  });
-
-  test('calls Ollama when CLAUDE_API_KEY is absent', async () => {
-    config.CLAUDE_API_KEY = '';
-    mockAnalyzeOllama.mockResolvedValueOnce(llmOk({ strategy: 'ollama' }));
-    await understand('Bonjour');
-    expect(mockAnalyzeOllama).toHaveBeenCalledTimes(1);
-    expect(mockAnalyzeClaude).not.toHaveBeenCalled();
   });
 
   test('passes trimmed text to LLM (no leading/trailing spaces)', async () => {
@@ -241,7 +237,10 @@ describe('Implicit reference resolution', () => {
     const callSid = 'CA-resolve-test';
     mockDetectShortAnswer.mockReturnValue('confirm');
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'cancel_event', isoDate: '2026-06-10', isoTime: '10:00', subject: 'dentiste',
+      intent: 'cancel_event',
+      isoDate: '2026-06-10',
+      isoTime: '10:00',
+      subject: 'dentiste',
     });
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'unknown', confidence: 0.9 }));
 
@@ -254,7 +253,10 @@ describe('Implicit reference resolution', () => {
     const callSid = 'CA-deny-test';
     mockDetectShortAnswer.mockReturnValue('deny');
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'create_event', isoDate: '2026-06-10', isoTime: null, subject: null,
+      intent: 'create_event',
+      isoDate: '2026-06-10',
+      isoTime: null,
+      subject: null,
     });
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'unknown', confidence: 0.9 }));
 
@@ -266,7 +268,10 @@ describe('Implicit reference resolution', () => {
     const callSid = 'CA-implicit-cancel';
     mockDetectShortAnswer.mockReturnValue(null);
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'list_events', isoDate: '2026-07-01', isoTime: null, subject: null,
+      intent: 'list_events',
+      isoDate: '2026-07-01',
+      isoTime: null,
+      subject: null,
     });
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'unknown', confidence: 0.2 }));
 
@@ -289,7 +294,10 @@ describe('Implicit reference resolution', () => {
     const callSid = 'CA-implicit-update-71';
     mockDetectShortAnswer.mockReturnValue(null);
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'update_event', isoDate: '2026-08-15', isoTime: '10:00', subject: 'médecin',
+      intent: 'update_event',
+      isoDate: '2026-08-15',
+      isoTime: '10:00',
+      subject: 'médecin',
     });
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'unknown', confidence: 0.2 }));
 
@@ -328,7 +336,13 @@ describe('Memory context injection', () => {
 describe('Missing field detection', () => {
   test('create_event with no date/time → missing: [date, heure]', async () => {
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'create_event', confidence: 0.9 }));
-    mockResolveDate.mockResolvedValueOnce({ date: null, time: null, iso: null, hasDate: false, hasTime: false });
+    mockResolveDate.mockResolvedValueOnce({
+      date: null,
+      time: null,
+      iso: null,
+      hasDate: false,
+      hasTime: false,
+    });
     const result = await understand('Créer un rendez-vous');
     expect(result.missing).toContain('date');
     expect(result.missing).toContain('heure');
@@ -336,8 +350,16 @@ describe('Missing field detection', () => {
   });
 
   test('create_event with date but no time → missing: [heure]', async () => {
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'create_event', date: '2026-06-01', confidence: 0.9 }));
-    mockResolveDate.mockResolvedValueOnce({ date: '2026-06-01', time: null, iso: null, hasDate: true, hasTime: false });
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({ intent: 'create_event', date: '2026-06-01', confidence: 0.9 })
+    );
+    mockResolveDate.mockResolvedValueOnce({
+      date: '2026-06-01',
+      time: null,
+      iso: null,
+      hasDate: true,
+      hasTime: false,
+    });
     const result = await understand('Créer RDV demain');
     expect(result.missing).toContain('heure');
     expect(result.missing).not.toContain('date');
@@ -352,7 +374,13 @@ describe('Missing field detection', () => {
 
   test('cancel_event with no date → missing: [date]', async () => {
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'cancel_event', confidence: 0.9 }));
-    mockResolveDate.mockResolvedValueOnce({ date: null, time: null, iso: null, hasDate: false, hasTime: false });
+    mockResolveDate.mockResolvedValueOnce({
+      date: null,
+      time: null,
+      iso: null,
+      hasDate: false,
+      hasTime: false,
+    });
     const result = await understand('Annuler mon rendez-vous');
     expect(result.missing).toContain('date');
   });
@@ -363,8 +391,22 @@ describe('Missing field detection', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Result shape', () => {
-  const REQUIRED_KEYS = ['ok', 'intent', 'rawIntent', 'subject', 'date', 'time',
-    'isoDate', 'isoTime', 'iso', 'confidence', 'needsClarification', 'missing', 'errors', 'strategy'];
+  const REQUIRED_KEYS = [
+    'ok',
+    'intent',
+    'rawIntent',
+    'subject',
+    'date',
+    'time',
+    'isoDate',
+    'isoTime',
+    'iso',
+    'confidence',
+    'needsClarification',
+    'missing',
+    'errors',
+    'strategy',
+  ];
 
   test('success result contains all required keys', async () => {
     const result = await understand('Test text');
@@ -389,9 +431,14 @@ describe('_resolveDateTime catch block (line 36)', () => {
   test('dateparser.resolve throwing → best-effort fallback (rawDate/rawTime used)', async () => {
     // Make dateparser.resolve throw → _resolveDateTime catch fires → fallback result
     mockResolveDate.mockRejectedValueOnce(new Error('dateparser unavailable'));
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'create_event', date: 'demain', time: '14h00', confidence: 0.9,
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'create_event',
+        date: 'demain',
+        time: '14h00',
+        confidence: 0.9,
+      })
+    );
 
     // understand() calls _resolveDateTime → which calls dateparser → throws → catch block
     const result = await understand('rendez-vous demain à 14h00');
@@ -404,9 +451,14 @@ describe('_resolveDateTime catch block (line 36)', () => {
     // rawDate='' and rawTime='' → both are falsy → rawDate||null = null, rawTime||null = null
     // This covers the TRUE (right-side) branches of the || operators at line 36
     mockResolveDate.mockRejectedValueOnce(new Error('dateparser unavailable'));
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'create_event', date: '', time: '', confidence: 0.9,
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'create_event',
+        date: '',
+        time: '',
+        confidence: 0.9,
+      })
+    );
 
     const result = await understand('un rendez-vous');
     expect(result.ok).toBe(true);
@@ -425,9 +477,12 @@ describe('_resolveImplicit — line 71 regex FALSE branch', () => {
     // Covers line 71 FALSE: /change|decal|deplace|repousse|modif/.test(normalised) = FALSE
     // Requires: low confidence, lastEntities non-null, no yes/no, text doesn't match any implicit pattern
     const callSid = 'CA-implicit-fallthrough';
-    mockDetectShortAnswer.mockReturnValue(null);   // not yes/no
+    mockDetectShortAnswer.mockReturnValue(null); // not yes/no
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'list_events', isoDate: '2026-09-01', isoTime: null, subject: null,
+      intent: 'list_events',
+      isoDate: '2026-09-01',
+      isoTime: null,
+      subject: null,
     });
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'unknown', confidence: 0.2 }));
 

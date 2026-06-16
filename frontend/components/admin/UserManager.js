@@ -17,20 +17,25 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import {
-  Plus, Trash2, Key, Search, UserCircle2,
-  Loader2, AlertCircle, ChevronDown, RotateCcw,
+  Plus,
+  Trash2,
+  Search,
+  UserCircle2,
+  Loader2,
+  AlertCircle,
+  ChevronDown,
+  RotateCcw,
 } from 'lucide-react';
-import clsx from 'clsx';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const ROLES = ['admin', 'service', 'user', 'guest'];
 
-const ROLE_BADGE = {
-  admin:   'badge-red',
+const _ROLE_BADGE = {
+  admin: 'badge-red',
   service: 'badge-blue',
-  user:    'badge-green',
-  guest:   'badge-gray',
+  user: 'badge-green',
+  guest: 'badge-gray',
 };
 
 const PAGE_SIZE = 20;
@@ -38,9 +43,9 @@ const PAGE_SIZE = 20;
 // ── Create user modal ─────────────────────────────────────────────────────────
 
 function CreateUserModal({ onClose, onCreate }) {
-  const [form,    setForm]    = useState({ email: '', sub: '', role: 'user', password: '' });
+  const [form, setForm] = useState({ email: '', sub: '', role: 'user', password: '' });
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -69,38 +74,52 @@ function CreateUserModal({ onClose, onCreate }) {
       <div className="card max-w-md w-full shadow-2xl space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Create User</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-base text-lg leading-none"
-            aria-label="Close">×</button>
+          <button
+            onClick={onClose}
+            className="text-text-muted hover:text-text-base text-lg leading-none"
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
 
-        {error && (
-          <p className="badge-red text-xs w-full text-center py-1">{error}</p>
-        )}
+        {error && <p className="badge-red text-xs w-full text-center py-1">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <Field label="Email" id="cu-email" required>
             <input
-              id="cu-email" type="email" required
-              value={form.email} onChange={e => set('email', e.target.value)}
-              className="input-base" placeholder="alice@wolf-inc.io"
+              id="cu-email"
+              type="email"
+              required
+              value={form.email}
+              onChange={e => set('email', e.target.value)}
+              className="input-base"
+              placeholder="alice@wolf-inc.io"
               aria-label="Email address"
             />
           </Field>
 
           <Field label="Username / sub" id="cu-sub">
             <input
-              id="cu-sub" type="text"
-              value={form.sub} onChange={e => set('sub', e.target.value)}
-              className="input-base" placeholder="alice"
+              id="cu-sub"
+              type="text"
+              value={form.sub}
+              onChange={e => set('sub', e.target.value)}
+              className="input-base"
+              placeholder="alice"
               aria-label="Username"
             />
           </Field>
 
           <Field label="Initial password" id="cu-pwd" required>
             <input
-              id="cu-pwd" type="password" required
-              value={form.password} onChange={e => set('password', e.target.value)}
-              className="input-base" placeholder="min 12 characters"
+              id="cu-pwd"
+              type="password"
+              required
+              value={form.password}
+              onChange={e => set('password', e.target.value)}
+              className="input-base"
+              placeholder="min 12 characters"
               aria-label="Initial password"
             />
           </Field>
@@ -110,7 +129,9 @@ function CreateUserModal({ onClose, onCreate }) {
           </Field>
 
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn-ghost" onClick={onClose}>
+              Cancel
+            </button>
             <button
               type="submit"
               className="btn-primary"
@@ -143,13 +164,15 @@ function DeleteConfirm({ user, onConfirm, onCancel, loading }) {
           <div>
             <p className="text-sm font-medium">Delete user?</p>
             <p className="text-xs text-text-muted mt-1">
-              <span className="font-mono font-bold">{user.email}</span> will be
-              permanently deleted. This cannot be undone.
+              <span className="font-mono font-bold">{user.email}</span> will be permanently deleted.
+              This cannot be undone.
             </p>
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <button className="btn-ghost" onClick={onCancel} disabled={loading}>Cancel</button>
+          <button className="btn-ghost" onClick={onCancel} disabled={loading}>
+            Cancel
+          </button>
           <button className="btn-danger" onClick={onConfirm} disabled={loading} aria-busy={loading}>
             {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Delete
@@ -166,7 +189,8 @@ function Field({ label, id, required, children }) {
   return (
     <div className="space-y-1">
       <label htmlFor={id} className="block text-xs font-medium text-text-muted">
-        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {children}
     </div>
@@ -183,10 +207,17 @@ function RoleSelect({ value, onChange, id }) {
         className="input-base appearance-none pr-8"
         aria-label="Role"
       >
-        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+        {ROLES.map(r => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2
-                              h-3.5 w-3.5 text-text-muted" aria-hidden="true" />
+      <ChevronDown
+        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2
+                              h-3.5 w-3.5 text-text-muted"
+        aria-hidden="true"
+      />
     </div>
   );
 }
@@ -195,19 +226,26 @@ function RoleSelect({ value, onChange, id }) {
 
 function UserRow({ user, onRoleChange, onDelete, onReset }) {
   const [savingRole, setSavingRole] = useState(false);
-  const [deleting,   setDeleting]   = useState(false);
-  const [showDel,    setShowDel]    = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDel, setShowDel] = useState(false);
 
   const handleRoleChange = async role => {
     setSavingRole(true);
-    try { await onRoleChange(user.id, role); }
-    finally { setSavingRole(false); }
+    try {
+      await onRoleChange(user.id, role);
+    } finally {
+      setSavingRole(false);
+    }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await onDelete(user.id); setShowDel(false); }
-    finally { setDeleting(false); }
+    try {
+      await onDelete(user.id);
+      setShowDel(false);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -234,27 +272,17 @@ function UserRow({ user, onRoleChange, onDelete, onReset }) {
 
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
-            {savingRole
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted" />
-              : null}
-            <RoleSelect
-              id={`role-${user.id}`}
-              value={user.role}
-              onChange={handleRoleChange}
-            />
+            {savingRole ? <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted" /> : null}
+            <RoleSelect id={`role-${user.id}`} value={user.role} onChange={handleRoleChange} />
           </div>
         </td>
 
         <td className="px-4 py-3 text-xs text-text-muted">
-          {user.createdAt
-            ? new Date(user.createdAt).toLocaleDateString('fr-FR')
-            : '—'}
+          {user.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR') : '—'}
         </td>
 
         <td className="px-4 py-3 text-xs text-text-muted">
-          {user.lastLogin
-            ? new Date(user.lastLogin).toLocaleString('fr-FR')
-            : 'Never'}
+          {user.lastLogin ? new Date(user.lastLogin).toLocaleString('fr-FR') : 'Never'}
         </td>
 
         <td className="px-4 py-3">
@@ -296,25 +324,33 @@ function UserRow({ user, onRoleChange, onDelete, onReset }) {
  * }} props
  */
 export default function UserManager({
-  users = [], loading, error,
-  onCreate, onRoleChange, onDelete, onReset,
+  users = [],
+  loading,
+  error,
+  onCreate,
+  onRoleChange,
+  onDelete,
+  onReset,
 }) {
-  const [search,  setSearch]  = useState('');
-  const [page,    setPage]    = useState(1);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return users;
     const q = search.toLowerCase();
-    return users.filter(u =>
-      u.email?.toLowerCase().includes(q) || u.sub?.toLowerCase().includes(q),
+    return users.filter(
+      u => u.email?.toLowerCase().includes(q) || u.sub?.toLowerCase().includes(q)
     );
   }, [users, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged      = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const handleSearch = useCallback(v => { setSearch(v); setPage(1); }, []);
+  const handleSearch = useCallback(v => {
+    setSearch(v);
+    setPage(1);
+  }, []);
 
   if (loading) {
     return (
@@ -340,7 +376,10 @@ export default function UserManager({
       {showAdd && (
         <CreateUserModal
           onClose={() => setShowAdd(false)}
-          onCreate={async data => { await onCreate(data); setShowAdd(false); }}
+          onCreate={async data => {
+            await onCreate(data);
+            setShowAdd(false);
+          }}
         />
       )}
 
@@ -348,8 +387,10 @@ export default function UserManager({
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5
-                               text-text-muted pointer-events-none" />
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5
+                               text-text-muted pointer-events-none"
+            />
             <input
               type="search"
               placeholder="Search by email or username…"
@@ -382,8 +423,11 @@ export default function UserManager({
             <thead className="bg-surface border-b border-border">
               <tr>
                 {['User', 'Role', 'Created', 'Last Login', 'Actions'].map(h => (
-                  <th key={h} scope="col"
-                    className="px-4 py-3 text-left text-xs font-medium text-text-muted">
+                  <th
+                    key={h}
+                    scope="col"
+                    className="px-4 py-3 text-left text-xs font-medium text-text-muted"
+                  >
                     {h}
                   </th>
                 ))}
@@ -396,15 +440,17 @@ export default function UserManager({
                     {search ? 'No users match your search.' : 'No users found.'}
                   </td>
                 </tr>
-              ) : paged.map(user => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  onRoleChange={onRoleChange}
-                  onDelete={onDelete}
-                  onReset={onReset}
-                />
-              ))}
+              ) : (
+                paged.map(user => (
+                  <UserRow
+                    key={user.id}
+                    user={user}
+                    onRoleChange={onRoleChange}
+                    onDelete={onDelete}
+                    onReset={onReset}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>

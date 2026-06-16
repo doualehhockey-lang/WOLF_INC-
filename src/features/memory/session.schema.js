@@ -5,24 +5,28 @@
 import { z } from 'zod';
 
 const TurnSchema = z.object({
-  role:    z.enum(['user', 'agent']),
+  role: z.enum(['user', 'agent']),
   content: z.string(),
-  ts:      z.number().int().positive(),
-  intent:  z.string().optional(),
+  ts: z.number().int().positive(),
+  intent: z.string().optional(),
   isoDate: z.string().nullable().optional(),
   isoTime: z.string().nullable().optional(),
   subject: z.string().optional(),
 });
 
 export const SessionSchema = z.object({
-  callSid:        z.string().min(1),
-  turns:          z.array(TurnSchema).default([]),
-  lang:           z.string().default('fr'),
-  pendingIntent:  z.string().nullable().default(null),
-  pendingDate:    z.string().nullable().default(null),
-  pendingTime:    z.string().nullable().default(null),
+  callSid: z.string().min(1),
+  turns: z.array(TurnSchema).default([]),
+  lang: z.string().default('fr'),
+  pendingIntent: z.string().nullable().default(null),
+  pendingDate: z.string().nullable().default(null),
+  pendingTime: z.string().nullable().default(null),
   pendingSubject: z.string().nullable().default(null),
-  lastActivity:   z.number().int().positive().default(() => Date.now()),
+  lastActivity: z
+    .number()
+    .int()
+    .positive()
+    .default(() => Date.now()),
 });
 
 /** @typedef {z.infer<typeof SessionSchema>} Session */

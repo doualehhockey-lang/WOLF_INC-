@@ -3,26 +3,34 @@
 // Resolves implicit references using conversational memory context.
 // Returns a fully-typed NluResult with confidence, missing fields, and ISO dates.
 
-import { childLogger }                       from '../../core/logger.js';
-import { config }                            from '../../core/config.js';
-import { nluLatency }                        from '../../core/metrics.js';
-import { normalizeIntent }                   from '../agent/intent.normalizer.js';
+import { childLogger } from '../../core/logger.js';
+import { config } from '../../core/config.js';
+import { nluLatency } from '../../core/metrics.js';
+import { normalizeIntent } from '../agent/intent.normalizer.js';
 import { buildContext, getLastEntities, detectShortAnswer } from '../memory/memory.service.js';
+import { CircuitBreaker, CircuitOpenError } from '../../services/circuitBreaker.js';
 
 const log = childLogger('nlu');
 const CONFIDENCE_THRESHOLD = 0.3;
 
-// ── LLM backend (dynamic import — avoids crashing when API key is absent) ─────
+// ── Circuit breakers — one per LLM provider ───────────────────────────────────
+
+const _claudeBreaker = new CircuitBreaker('claude', {
+  failureThreshold: 3,
+  openDurationMs: 30_000,
+  onStateChange: (state, name) => log.warn({ state, name }, 'NLU circuit breaker state change'),
+});
+
+const NLU_TIMEOUT_MS = 7_000;
 
 async function _analyze(message) {
-  // Prefer Claude when API key is configured
-  if (config.CLAUDE_API_KEY) {
-    const { analyze } = await import('../../services/claude.client.js');
-    return analyze(message, { model: config.CLAUDE_MODEL, temperature: 0.05 });
-  }
-  // Fall back to local Ollama
-  const { analyze } = await import('../../services/ollama.client.js');
-  return analyze(message, { model: config.OLLAMA_MODEL, temperature: 0.05 });
+  return _claudeBreaker.exec(
+    async () => {
+      const { analyze } = await import('../../services/claude.client.js');
+      return analyze(message, { model: config.CLAUDE_MODEL, temperature: 0.05 });
+    },
+    { timeoutMs: NLU_TIMEOUT_MS }
+  );
 }
 
 // ── Date resolver (dynamic import — dateparser may not exist in all envs) ─────
@@ -33,7 +41,13 @@ async function _resolveDateTime(rawDate, rawTime, referenceDate) {
     return await resolve(rawDate, rawTime, referenceDate);
   } catch {
     // dateparser not available — return a best-effort result
-    return { date: rawDate || null, time: rawTime || null, iso: null, hasDate: !!rawDate, hasTime: !!rawTime };
+    return {
+      date: rawDate || null,
+      time: rawTime || null,
+      iso: null,
+      hasDate: !!rawDate,
+      hasTime: !!rawTime,
+    };
   }
 }
 
@@ -42,17 +56,20 @@ async function _resolveDateTime(rawDate, rawTime, referenceDate) {
 async function _resolveImplicit(nlu, text, callSid) {
   if (!callSid) return nlu;
 
-  const shortAnswer  = detectShortAnswer(text);
+  const shortAnswer = detectShortAnswer(text);
   const lastEntities = await getLastEntities(callSid);
   if (!lastEntities) return nlu;
 
   if (shortAnswer === 'confirm' && lastEntities.intent) {
     log.debug({ resolved: 'confirm', intent: lastEntities.intent }, 'Implicit reference resolved');
-    return { ...nlu, intent: lastEntities.intent,
-      date:    lastEntities.isoDate ?? nlu.date,
-      time:    lastEntities.isoTime ?? nlu.time,
+    return {
+      ...nlu,
+      intent: lastEntities.intent,
+      date: lastEntities.isoDate ?? nlu.date,
+      time: lastEntities.isoTime ?? nlu.time,
       subject: lastEntities.subject ?? nlu.subject,
-      _resolved: 'confirm' };
+      _resolved: 'confirm',
+    };
   }
 
   if (shortAnswer === 'deny') {
@@ -61,17 +78,26 @@ async function _resolveImplicit(nlu, text, callSid) {
   }
 
   if (nlu.intent === 'unknown' || nlu.confidence < 0.4) {
-    const lower      = text.toLowerCase();
+    const lower = text.toLowerCase();
     const normalised = lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     if (/annul|supprim|efface/.test(lower) && lastEntities.isoDate) {
-      return { ...nlu, intent: 'cancel_event',
-        date: lastEntities.isoDate, time: lastEntities.isoTime, _resolved: 'implicit-cancel' };
+      return {
+        ...nlu,
+        intent: 'cancel_event',
+        date: lastEntities.isoDate,
+        time: lastEntities.isoTime,
+        _resolved: 'implicit-cancel',
+      };
     }
     if (/change|decal|deplace|repousse|modif/.test(normalised)) {
-      return { ...nlu, intent: 'update_event',
+      return {
+        ...nlu,
+        intent: 'update_event',
         date: nlu.date || lastEntities.isoDate,
-        time: nlu.time || lastEntities.isoTime, _resolved: 'implicit-update' };
+        time: nlu.time || lastEntities.isoTime,
+        _resolved: 'implicit-update',
+      };
     }
   }
 
@@ -122,10 +148,10 @@ function _getMissing(intent, resolved) {
 export async function understand(text, callSid = null, referenceDate = new Date()) {
   if (!text?.trim()) return _fail('empty-transcript');
 
-  const provider = config.CLAUDE_API_KEY ? 'claude' : 'ollama';
-  const timer    = nluLatency.startTimer({ provider });
+  const provider = 'claude';
+  const timer = nluLatency.startTimer({ provider });
 
-  const context     = callSid ? await buildContext(callSid) : '';
+  const context = callSid ? await buildContext(callSid) : '';
   const fullMessage = context
     ? `${context}\n\nNouveau message à analyser : "${text.trim()}"`
     : text.trim();
@@ -138,7 +164,11 @@ export async function understand(text, callSid = null, referenceDate = new Date(
     timer({ success: 'true' });
   } catch (err) {
     timer({ success: 'false' });
-    log.error({ err: err.message, callSid }, 'NLU analyze() failed');
+    if (err instanceof CircuitOpenError) {
+      log.warn({ provider: err.provider, callSid }, 'NLU circuit breaker open — rejecting request');
+    } else {
+      log.error({ err: err.message, callSid }, 'NLU analyze() failed');
+    }
     return _fail(`analyze-error: ${err.message}`);
   }
 
@@ -146,35 +176,46 @@ export async function understand(text, callSid = null, referenceDate = new Date(
 
   if (nlu.confidence < CONFIDENCE_THRESHOLD && !nlu._resolved) {
     return {
-      ok: false, intent: 'unknown', rawIntent: nlu.intent,
-      subject: '', date: '', time: '',
-      isoDate: null, isoTime: null, iso: null,
-      confidence: nlu.confidence, needsClarification: true,
-      missing: [], errors: ['low-confidence'], strategy: nlu.strategy,
+      ok: false,
+      intent: 'unknown',
+      rawIntent: nlu.intent,
+      subject: '',
+      date: '',
+      time: '',
+      isoDate: null,
+      isoTime: null,
+      iso: null,
+      confidence: nlu.confidence,
+      needsClarification: true,
+      missing: [],
+      errors: ['low-confidence'],
+      strategy: nlu.strategy,
     };
   }
 
-  const intent       = normalizeIntent(nlu.intent);
+  const intent = normalizeIntent(nlu.intent);
   const lastEntities = callSid ? await getLastEntities(callSid) : null;
-  const rawDate      = nlu.date   || (lastEntities?.isoDate ?? '');
-  const rawTime      = nlu.time   || (lastEntities?.isoTime ?? '');
-  const resolved     = await _resolveDateTime(rawDate, rawTime, referenceDate);
-  const missing      = _getMissing(intent, resolved);
+  const rawDate = nlu.date || (lastEntities?.isoDate ?? '');
+  const rawTime = nlu.time || (lastEntities?.isoTime ?? '');
+  const resolved = await _resolveDateTime(rawDate, rawTime, referenceDate);
+  const missing = _getMissing(intent, resolved);
 
   log.info({ callSid, intent, confidence: Math.round(nlu.confidence * 100) }, 'NLU complete');
 
   return {
-    ok: true, intent, rawIntent: nlu.intent,
-    subject:  nlu.subject ?? '',
-    date:     nlu.date    ?? '',
-    time:     nlu.time    ?? '',
-    isoDate:  resolved.date,
-    isoTime:  resolved.time,
-    iso:      resolved.iso,
-    confidence:         nlu.confidence,
+    ok: true,
+    intent,
+    rawIntent: nlu.intent,
+    subject: nlu.subject ?? '',
+    date: nlu.date ?? '',
+    time: nlu.time ?? '',
+    isoDate: resolved.date,
+    isoTime: resolved.time,
+    iso: resolved.iso,
+    confidence: nlu.confidence,
     needsClarification: missing.length > 0,
     missing,
-    errors:   nlu.errors ?? [],
+    errors: nlu.errors ?? [],
     strategy: nlu.strategy,
     _resolved: nlu._resolved,
   };
@@ -182,9 +223,19 @@ export async function understand(text, callSid = null, referenceDate = new Date(
 
 function _fail(reason) {
   return {
-    ok: false, intent: 'unknown', rawIntent: '', subject: '',
-    date: '', time: '', isoDate: null, isoTime: null, iso: null,
-    confidence: 0, needsClarification: false, missing: [],
-    errors: [reason], strategy: 'none',
+    ok: false,
+    intent: 'unknown',
+    rawIntent: '',
+    subject: '',
+    date: '',
+    time: '',
+    isoDate: null,
+    isoTime: null,
+    iso: null,
+    confidence: 0,
+    needsClarification: false,
+    missing: [],
+    errors: [reason],
+    strategy: 'none',
   };
 }

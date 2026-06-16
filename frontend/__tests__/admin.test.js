@@ -25,77 +25,92 @@ jest.mock('swr', () => ({ __esModule: true, default: jest.fn() }));
 
 jest.mock('next/router', () => ({
   useRouter: () => ({
-    pathname:  '/admin/users',
-    push:      jest.fn(),
-    replace:   jest.fn(),
-    back:      jest.fn(),
-    prefetch:  jest.fn().mockResolvedValue(undefined),
-    query:     {},
-    asPath:    '/admin/users',
-    events:    { on: jest.fn(), off: jest.fn() },
+    pathname: '/admin/users',
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+    prefetch: jest.fn().mockResolvedValue(undefined),
+    query: {},
+    asPath: '/admin/users',
+    events: { on: jest.fn(), off: jest.fn() },
   }),
 }));
 
 jest.mock('next/link', () => {
-  const Link = ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>;
+  const Link = ({ href, children, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  );
   Link.displayName = 'Link';
   return Link;
 });
 
 jest.mock('../lib/adminApi.js', () => ({
-  decodeJwtPayload:    jest.fn(),
-  isAdmin:             jest.fn().mockReturnValue(true),
-  fetchUsers:          jest.fn().mockResolvedValue({ users: [] }),
-  createUser:          jest.fn().mockResolvedValue({ id: 'new-1' }),
-  updateUserRole:      jest.fn().mockResolvedValue({}),
-  deleteUser:          jest.fn().mockResolvedValue({}),
-  resetUserPassword:   jest.fn().mockResolvedValue({}),
-  fetchApiKeys:        jest.fn().mockResolvedValue({ keys: [] }),
-  createApiKey:        jest.fn().mockResolvedValue({ key: 'secret-key-abc123' }),
-  revokeApiKey:        jest.fn().mockResolvedValue({}),
-  rotateApiKey:        jest.fn().mockResolvedValue({ key: 'new-rotated-key' }),
-  fetchSecurityLogs:   jest.fn().mockResolvedValue({ events: [], total: 0 }),
-  prometheusQuery:     jest.fn().mockResolvedValue({}),
-  fetchTempoTraces:    jest.fn().mockResolvedValue({ traces: [] }),
-  fetchGrafanaPanels:  jest.fn().mockResolvedValue({ panels: [] }),
-  adminTriggerCanary:  jest.fn().mockResolvedValue({}),
-  adminPromoteCanary:  jest.fn().mockResolvedValue({}),
-  adminRollback:       jest.fn().mockResolvedValue({}),
-  adminFullDeploy:     jest.fn().mockResolvedValue({}),
-  fetchDeployStatus:   jest.fn().mockResolvedValue(null),
-  fetchDeployHistory:  jest.fn().mockResolvedValue({ runs: [] }),
-  fetchAdminPods:      jest.fn().mockResolvedValue([]),
-  fetchAdminHpa:       jest.fn().mockResolvedValue([]),
-  fetchNodes:          jest.fn().mockResolvedValue([]),
+  decodeJwtPayload: jest.fn(),
+  isAdmin: jest.fn().mockReturnValue(true),
+  fetchUsers: jest.fn().mockResolvedValue({ users: [] }),
+  createUser: jest.fn().mockResolvedValue({ id: 'new-1' }),
+  updateUserRole: jest.fn().mockResolvedValue({}),
+  deleteUser: jest.fn().mockResolvedValue({}),
+  resetUserPassword: jest.fn().mockResolvedValue({}),
+  fetchApiKeys: jest.fn().mockResolvedValue({ keys: [] }),
+  createApiKey: jest.fn().mockResolvedValue({ key: 'secret-key-abc123' }),
+  revokeApiKey: jest.fn().mockResolvedValue({}),
+  rotateApiKey: jest.fn().mockResolvedValue({ key: 'new-rotated-key' }),
+  fetchSecurityLogs: jest.fn().mockResolvedValue({ events: [], total: 0 }),
+  prometheusQuery: jest.fn().mockResolvedValue({}),
+  fetchTempoTraces: jest.fn().mockResolvedValue({ traces: [] }),
+  fetchGrafanaPanels: jest.fn().mockResolvedValue({ panels: [] }),
+  adminTriggerCanary: jest.fn().mockResolvedValue({}),
+  adminPromoteCanary: jest.fn().mockResolvedValue({}),
+  adminRollback: jest.fn().mockResolvedValue({}),
+  adminFullDeploy: jest.fn().mockResolvedValue({}),
+  fetchDeployStatus: jest.fn().mockResolvedValue(null),
+  fetchDeployHistory: jest.fn().mockResolvedValue({ runs: [] }),
+  fetchAdminPods: jest.fn().mockResolvedValue([]),
+  fetchAdminHpa: jest.fn().mockResolvedValue([]),
+  fetchNodes: jest.fn().mockResolvedValue([]),
   fetchNamespaceQuota: jest.fn().mockResolvedValue(null),
-  deletePod:           jest.fn().mockResolvedValue({}),
-  ApiError:            class ApiError extends Error {
+  deletePod: jest.fn().mockResolvedValue({}),
+  ApiError: class ApiError extends Error {
     constructor(status, code, message) {
-      super(message); this.status = status; this.code = code;
+      super(message);
+      this.status = status;
+      this.code = code;
     }
   },
 }));
 
 jest.mock('../lib/api.js', () => ({
   apiFetcher: jest.fn(),
-  getToken:   jest.fn().mockReturnValue(null),
+  getToken: jest.fn().mockReturnValue(null),
   storeToken: jest.fn(),
   clearToken: jest.fn(),
 }));
 
 jest.mock('../lib/theme.js', () => ({
   ThemeProvider: ({ children }) => children,
-  useTheme:      () => ({ theme: 'light', toggle: jest.fn() }),
+  useTheme: () => ({ theme: 'light', toggle: jest.fn() }),
 }));
 
 jest.mock('recharts', () => {
   const React = require('react');
-  const stub  = name => ({ children, ...p }) =>
-    React.createElement('div', { 'data-testid': `recharts-${name}`, ...p }, children);
+  const stub =
+    name =>
+    ({ children, ...p }) =>
+      React.createElement('div', { 'data-testid': `recharts-${name}`, ...p }, children);
   return {
-    ResponsiveContainer: stub('rc'), LineChart: stub('lc'), BarChart: stub('bc'),
-    Line: stub('l'), Bar: stub('b'), XAxis: stub('x'), YAxis: stub('y'),
-    CartesianGrid: stub('cg'), Tooltip: stub('tt'), ReferenceLine: stub('ref'),
+    ResponsiveContainer: stub('rc'),
+    LineChart: stub('lc'),
+    BarChart: stub('bc'),
+    Line: stub('l'),
+    Bar: stub('b'),
+    XAxis: stub('x'),
+    YAxis: stub('y'),
+    CartesianGrid: stub('cg'),
+    Tooltip: stub('tt'),
+    ReferenceLine: stub('ref'),
   };
 });
 
@@ -104,46 +119,173 @@ jest.mock('recharts', () => {
 import useSWR from 'swr';
 import { decodeJwtPayload } from '../lib/adminApi.js';
 
-import AdminGuard          from '../components/admin/AdminGuard.js';
-import UserManager         from '../components/admin/UserManager.js';
-import ApiKeyManager       from '../components/admin/ApiKeyManager.js';
-import SecurityLogViewer   from '../components/admin/SecurityLogViewer.js';
+import AdminGuard from '../components/admin/AdminGuard.js';
+import UserManager from '../components/admin/UserManager.js';
+import ApiKeyManager from '../components/admin/ApiKeyManager.js';
+import SecurityLogViewer from '../components/admin/SecurityLogViewer.js';
 import DeployAdminControls from '../components/admin/DeployAdminControls.js';
-import ClusterAdminView    from '../components/admin/ClusterAdminView.js';
+import ClusterAdminView from '../components/admin/ClusterAdminView.js';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const USERS = [
-  { id: 'u1', email: 'alice@wolf.io', sub: 'alice', role: 'admin',   createdAt: '2025-01-10', lastLogin: '2026-05-17' },
-  { id: 'u2', email: 'bob@wolf.io',   sub: 'bob',   role: 'user',    createdAt: '2025-03-22', lastLogin: null         },
-  { id: 'u3', email: 'carol@wolf.io', sub: 'carol', role: 'service', createdAt: '2025-06-01', lastLogin: '2026-04-30' },
+  {
+    id: 'u1',
+    email: 'alice@wolf.io',
+    sub: 'alice',
+    role: 'admin',
+    createdAt: '2025-01-10',
+    lastLogin: '2026-05-17',
+  },
+  {
+    id: 'u2',
+    email: 'bob@wolf.io',
+    sub: 'bob',
+    role: 'user',
+    createdAt: '2025-03-22',
+    lastLogin: null,
+  },
+  {
+    id: 'u3',
+    email: 'carol@wolf.io',
+    sub: 'carol',
+    role: 'service',
+    createdAt: '2025-06-01',
+    lastLogin: '2026-04-30',
+  },
 ];
 
 const API_KEYS = [
-  { id: 'k1', name: 'ci-pipeline', prefix: 'wolf_abc', role: 'service', expiresAt: '2027-01-01', lastUsed: '2026-05-17', revoked: false },
-  { id: 'k2', name: 'old-key',     prefix: 'wolf_xyz', role: 'user',    expiresAt: null,          lastUsed: null,          revoked: true  },
+  {
+    id: 'k1',
+    name: 'ci-pipeline',
+    prefix: 'wolf_abc',
+    role: 'service',
+    expiresAt: '2027-01-01',
+    lastUsed: '2026-05-17',
+    revoked: false,
+  },
+  {
+    id: 'k2',
+    name: 'old-key',
+    prefix: 'wolf_xyz',
+    role: 'user',
+    expiresAt: null,
+    lastUsed: null,
+    revoked: true,
+  },
 ];
 
 const SEC_EVENTS = [
-  { id: 1, type: 'jwt_ok',      sub: 'alice', resource: 'agent',   ip: '1.2.3.4',    ts: Date.now(), detail: 'OK',           traceId: 'trace-abc' },
-  { id: 2, type: 'jwt_invalid', sub: 'eve',   resource: 'metrics', ip: '5.6.7.8',    ts: Date.now(), detail: 'Invalid sig',   traceId: null        },
-  { id: 3, type: 'rate_limited',sub: 'alice', resource: null,       ip: '1.2.3.4',    ts: Date.now(), detail: null,           traceId: null        },
-  { id: 4, type: 'rbac_deny',   sub: 'bob',   resource: 'metrics', ip: '9.10.11.12', ts: Date.now(), detail: 'RBAC deny',    traceId: 'trace-def' },
+  {
+    id: 1,
+    type: 'jwt_ok',
+    sub: 'alice',
+    resource: 'agent',
+    ip: '1.2.3.4',
+    ts: Date.now(),
+    detail: 'OK',
+    traceId: 'trace-abc',
+  },
+  {
+    id: 2,
+    type: 'jwt_invalid',
+    sub: 'eve',
+    resource: 'metrics',
+    ip: '5.6.7.8',
+    ts: Date.now(),
+    detail: 'Invalid sig',
+    traceId: null,
+  },
+  {
+    id: 3,
+    type: 'rate_limited',
+    sub: 'alice',
+    resource: null,
+    ip: '1.2.3.4',
+    ts: Date.now(),
+    detail: null,
+    traceId: null,
+  },
+  {
+    id: 4,
+    type: 'rbac_deny',
+    sub: 'bob',
+    resource: 'metrics',
+    ip: '9.10.11.12',
+    ts: Date.now(),
+    detail: 'RBAC deny',
+    traceId: 'trace-def',
+  },
 ];
 
 const PODS = [
-  { name: 'agent-abc-1', component: 'agent',   phase: 'Running', ready: true,  restarts: 0, cpuM: 120, memMi: 200, cpuRequestM: 200 },
-  { name: 'agent-abc-2', component: 'agent',   phase: 'Running', ready: true,  restarts: 2, cpuM: 190, memMi: 250, cpuRequestM: 200 },
-  { name: 'whisper-xyz', component: 'whisper', phase: 'Pending', ready: false, restarts: 0, cpuM: 0,   memMi: 0,   cpuRequestM: 100 },
+  {
+    name: 'agent-abc-1',
+    component: 'agent',
+    phase: 'Running',
+    ready: true,
+    restarts: 0,
+    cpuM: 120,
+    memMi: 200,
+    cpuRequestM: 200,
+  },
+  {
+    name: 'agent-abc-2',
+    component: 'agent',
+    phase: 'Running',
+    ready: true,
+    restarts: 2,
+    cpuM: 190,
+    memMi: 250,
+    cpuRequestM: 200,
+  },
+  {
+    name: 'whisper-xyz',
+    component: 'whisper',
+    phase: 'Pending',
+    ready: false,
+    restarts: 0,
+    cpuM: 0,
+    memMi: 0,
+    cpuRequestM: 100,
+  },
 ];
 
 const NODES = [
-  { name: 'node-1', status: 'Ready',    roles: ['control-plane'], cpuUsagePct: 45, memUsagePct: 62, conditions: [], version: 'v1.30.0', age: '30d' },
-  { name: 'node-2', status: 'NotReady', roles: ['worker'],        cpuUsagePct: 90, memUsagePct: 88, conditions: [{ type: 'MemoryPressure', status: 'True' }], version: 'v1.30.0', age: '30d' },
+  {
+    name: 'node-1',
+    status: 'Ready',
+    roles: ['control-plane'],
+    cpuUsagePct: 45,
+    memUsagePct: 62,
+    conditions: [],
+    version: 'v1.30.0',
+    age: '30d',
+  },
+  {
+    name: 'node-2',
+    status: 'NotReady',
+    roles: ['worker'],
+    cpuUsagePct: 90,
+    memUsagePct: 88,
+    conditions: [{ type: 'MemoryPressure', status: 'True' }],
+    version: 'v1.30.0',
+    age: '30d',
+  },
 ];
 
 const HPA = [
-  { name: 'agent-hpa', component: 'agent', currentReplicas: 2, desiredReplicas: 3, minReplicas: 2, maxReplicas: 10, cpuUtilization: 80, targetCpuUtilization: 70 },
+  {
+    name: 'agent-hpa',
+    component: 'agent',
+    currentReplicas: 2,
+    desiredReplicas: 3,
+    minReplicas: 2,
+    maxReplicas: 10,
+    cpuUtilization: 80,
+    targetCpuUtilization: 70,
+  },
 ];
 
 const noop = jest.fn().mockResolvedValue(undefined);
@@ -161,7 +303,11 @@ describe('AdminGuard', () => {
   });
 
   it('shows loading spinner initially', () => {
-    render(<AdminGuard><p>content</p></AdminGuard>);
+    render(
+      <AdminGuard>
+        <p>content</p>
+      </AdminGuard>
+    );
     // The effect hasn't run yet — spinner shown.
     expect(screen.queryByText('content')).not.toBeInTheDocument();
   });
@@ -169,22 +315,38 @@ describe('AdminGuard', () => {
   it('shows 403 screen when role is not admin', async () => {
     sessionStorage.setItem('wolf_token', 'header.payload.sig');
     decodeJwtPayload.mockReturnValue({ sub: 'bob', role: 'user', exp: Date.now() / 1000 + 3600 });
-    render(<AdminGuard><p>protected</p></AdminGuard>);
+    render(
+      <AdminGuard>
+        <p>protected</p>
+      </AdminGuard>
+    );
     await waitFor(() => expect(screen.getByText(/access denied/i)).toBeInTheDocument());
     expect(screen.queryByText('protected')).not.toBeInTheDocument();
   });
 
   it('renders children when role is admin', async () => {
     sessionStorage.setItem('wolf_token', 'header.payload.sig');
-    decodeJwtPayload.mockReturnValue({ sub: 'alice', role: 'admin', exp: Date.now() / 1000 + 3600 });
-    render(<AdminGuard><p>admin content</p></AdminGuard>);
+    decodeJwtPayload.mockReturnValue({
+      sub: 'alice',
+      role: 'admin',
+      exp: Date.now() / 1000 + 3600,
+    });
+    render(
+      <AdminGuard>
+        <p>admin content</p>
+      </AdminGuard>
+    );
     await waitFor(() => expect(screen.getByText('admin content')).toBeInTheDocument());
   });
 
   it('shows forbidden when token is expired', async () => {
     sessionStorage.setItem('wolf_token', 'tok');
     decodeJwtPayload.mockReturnValue({ role: 'admin', exp: 1 }); // exp in past
-    render(<AdminGuard><p>protected</p></AdminGuard>);
+    render(
+      <AdminGuard>
+        <p>protected</p>
+      </AdminGuard>
+    );
     // Expired → unauthenticated → redirect (spinner shown)
     await waitFor(() => expect(screen.queryByText('protected')).not.toBeInTheDocument());
   });
@@ -192,8 +354,14 @@ describe('AdminGuard', () => {
   it('shows "Go back" button in forbidden view', async () => {
     sessionStorage.setItem('wolf_token', 'tok');
     decodeJwtPayload.mockReturnValue({ role: 'guest', exp: Date.now() / 1000 + 3600 });
-    render(<AdminGuard><p>x</p></AdminGuard>);
-    await waitFor(() => expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument());
+    render(
+      <AdminGuard>
+        <p>x</p>
+      </AdminGuard>
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument()
+    );
   });
 });
 
@@ -203,8 +371,13 @@ describe('AdminGuard', () => {
 
 describe('UserManager', () => {
   const props = {
-    users: USERS, loading: false, error: null,
-    onCreate: noop, onRoleChange: noop, onDelete: noop, onReset: noop,
+    users: USERS,
+    loading: false,
+    error: null,
+    onCreate: noop,
+    onRoleChange: noop,
+    onDelete: noop,
+    onReset: noop,
   };
 
   it('renders user emails', () => {
@@ -238,7 +411,9 @@ describe('UserManager', () => {
   it('opens create modal on "New User" click', async () => {
     render(<UserManager {...props} />);
     fireEvent.click(screen.getByRole('button', { name: /new user/i }));
-    await waitFor(() => expect(screen.getByRole('dialog', { name: /create user/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /create user/i })).toBeInTheDocument()
+    );
   });
 
   it('Create modal has email + password + role fields', async () => {
@@ -247,7 +422,8 @@ describe('UserManager', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/initial password/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/^role$/i)).toBeInTheDocument();
+      const dialog = screen.getByRole('dialog', { name: /create user/i });
+      expect(within(dialog).getByLabelText(/^role$/i)).toBeInTheDocument();
     });
   });
 
@@ -268,9 +444,9 @@ describe('UserManager', () => {
     await userEvent.type(screen.getByLabelText(/email address/i), 'newuser@wolf.io');
     await userEvent.type(screen.getByLabelText(/initial password/i), 'superstrongpassword!');
     fireEvent.click(screen.getByRole('button', { name: /^create$/i }));
-    await waitFor(() => expect(onCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'newuser@wolf.io' }),
-    ));
+    await waitFor(() =>
+      expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ email: 'newuser@wolf.io' }))
+    );
   });
 
   it('shows delete button for each user', () => {
@@ -313,7 +489,9 @@ describe('UserManager', () => {
 
 describe('ApiKeyManager', () => {
   const props = {
-    apiKeys: API_KEYS, loading: false, error: null,
+    apiKeys: API_KEYS,
+    loading: false,
+    error: null,
     onCreate: jest.fn().mockResolvedValue({ key: 'secret-full-key-xyz' }),
     onRevoke: noop,
     onRotate: jest.fn().mockResolvedValue({ key: 'rotated-key-abc' }),
@@ -347,13 +525,15 @@ describe('ApiKeyManager', () => {
 
   it('"New Key" button opens create modal', async () => {
     render(<ApiKeyManager {...props} />);
-    fireEvent.click(screen.getByRole('button', { name: /new key/i }));
-    await waitFor(() => expect(screen.getByRole('dialog', { name: /create api key/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /create new api key/i }));
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /create api key/i })).toBeInTheDocument()
+    );
   });
 
   it('Create modal has name + role + expiry fields', async () => {
     render(<ApiKeyManager {...props} />);
-    fireEvent.click(screen.getByRole('button', { name: /new key/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create new api key/i }));
     await waitFor(() => {
       expect(screen.getByLabelText(/key name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/key role/i)).toBeInTheDocument();
@@ -363,8 +543,10 @@ describe('ApiKeyManager', () => {
 
   it('Generate Key button disabled when name is empty', async () => {
     render(<ApiKeyManager {...props} />);
-    fireEvent.click(screen.getByRole('button', { name: /new key/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /generate key/i })).toBeDisabled());
+    fireEvent.click(screen.getByRole('button', { name: /create new api key/i }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /generate key/i })).toBeDisabled()
+    );
   });
 
   it('Revoke shows inline confirm for non-revoked key', async () => {
@@ -372,14 +554,18 @@ describe('ApiKeyManager', () => {
     // First revoke button belongs to ci-pipeline (non-revoked).
     const revokeBtn = screen.getAllByRole('button', { name: /revoke key ci-pipeline/i })[0];
     fireEvent.click(revokeBtn);
-    await waitFor(() => expect(screen.getByRole('button', { name: /confirm revoke/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /confirm revoke/i })).toBeInTheDocument()
+    );
   });
 
   it('calls onRevoke after confirm revoke', async () => {
     const onRevoke = jest.fn().mockResolvedValue(undefined);
     render(<ApiKeyManager {...props} onRevoke={onRevoke} />);
     fireEvent.click(screen.getAllByRole('button', { name: /revoke key ci-pipeline/i })[0]);
-    await waitFor(() => expect(screen.getByRole('button', { name: /confirm revoke/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /confirm revoke/i })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole('button', { name: /confirm revoke/i }));
     await waitFor(() => expect(onRevoke).toHaveBeenCalledWith('k1'));
   });
@@ -398,14 +584,18 @@ describe('SecurityLogViewer', () => {
   const onFilter = jest.fn();
 
   const props = {
-    events: SEC_EVENTS, total: 4, loading: false, error: null,
-    onFilter, prometheusData: { auth_failures: 3, rate_limited: 12, rbac_denials: 1, active_sessions: 2 },
+    events: SEC_EVENTS,
+    total: 4,
+    loading: false,
+    error: null,
+    onFilter,
+    prometheusData: { auth_failures: 3, rate_limited: 12, rbac_denials: 1, active_sessions: 2 },
     tempoUrl: id => `http://tempo/${id}`,
   };
 
   it('renders event rows', () => {
     render(<SecurityLogViewer {...props} />);
-    expect(screen.getByText('alice')).toBeInTheDocument();
+    expect(screen.getAllByText('alice').length).toBeGreaterThan(0);
     expect(screen.getByText('eve')).toBeInTheDocument();
   });
 
@@ -436,23 +626,23 @@ describe('SecurityLogViewer', () => {
     render(<SecurityLogViewer {...props} />);
     const input = screen.getByLabelText(/search by user or ip/i);
     await userEvent.type(input, 'alice');
-    await waitFor(() => expect(onFilter).toHaveBeenCalledWith(
-      expect.objectContaining({ sub: 'alice' }),
-    ));
+    await waitFor(() =>
+      expect(onFilter).toHaveBeenCalledWith(expect.objectContaining({ sub: 'alice' }))
+    );
   });
 
   it('filters by event type — calls onFilter', async () => {
     render(<SecurityLogViewer {...props} />);
     const select = screen.getByLabelText(/filter by event type/i);
     await userEvent.selectOptions(select, 'jwt_ok');
-    await waitFor(() => expect(onFilter).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'jwt_ok' }),
-    ));
+    await waitFor(() =>
+      expect(onFilter).toHaveBeenCalledWith(expect.objectContaining({ type: 'jwt_ok' }))
+    );
   });
 
   it('CSV export button is present', () => {
     render(<SecurityLogViewer {...props} />);
-    expect(screen.getByRole('button', { name: /export csv/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /export.*csv/i })).toBeInTheDocument();
   });
 
   it('shows empty message when no events', () => {
@@ -477,20 +667,25 @@ describe('SecurityLogViewer', () => {
 
 describe('DeployAdminControls', () => {
   const baseProps = {
-    onCanary:   jest.fn().mockResolvedValue(undefined),
-    onPromote:  jest.fn().mockResolvedValue(undefined),
+    onCanary: jest.fn().mockResolvedValue(undefined),
+    onPromote: jest.fn().mockResolvedValue(undefined),
     onRollback: jest.fn().mockResolvedValue(undefined),
-    onFull:     jest.fn().mockResolvedValue(undefined),
-    status:     { stableTag: 'sha-prev', canaryTag: null },
-    history:    [],
+    onFull: jest.fn().mockResolvedValue(undefined),
+    status: {
+      stableTag: 'sha-prev',
+      canaryTag: null,
+      stableReplicas: { ready: 2, desired: 2 },
+      lastDeployAt: null,
+    },
+    history: [],
   };
 
   it('renders all 4 action cards', () => {
     render(<DeployAdminControls {...baseProps} />);
-    expect(screen.getByText('Deploy Canary')).toBeInTheDocument();
-    expect(screen.getByText('Promote')).toBeInTheDocument();
-    expect(screen.getByText('Rollback')).toBeInTheDocument();
-    expect(screen.getByText('Full Deploy')).toBeInTheDocument();
+    expect(screen.getAllByText('Deploy Canary').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Promote').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Rollback').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Full Deploy').length).toBeGreaterThan(0);
   });
 
   it('tag input is present', () => {
@@ -514,7 +709,9 @@ describe('DeployAdminControls', () => {
     render(<DeployAdminControls {...baseProps} />);
     await userEvent.type(screen.getByLabelText(/deployment image tag/i), 'sha-new');
     fireEvent.click(screen.getAllByRole('button', { name: /deploy canary/i })[0]);
-    await waitFor(() => expect(screen.getByRole('dialog', { name: /confirm deployment action/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /confirm deployment action/i })).toBeInTheDocument()
+    );
   });
 
   it('calls onCanary after confirm', async () => {
@@ -528,13 +725,32 @@ describe('DeployAdminControls', () => {
   });
 
   it('Promote disabled when no canary is running', () => {
-    render(<DeployAdminControls {...baseProps} status={{ stableTag: 'sha-prev', canaryTag: null }} />);
+    render(
+      <DeployAdminControls
+        {...baseProps}
+        status={{
+          stableTag: 'sha-prev',
+          canaryTag: null,
+          stableReplicas: { ready: 2, desired: 2 },
+          lastDeployAt: null,
+        }}
+      />
+    );
     expect(screen.getAllByRole('button', { name: /promote/i })[0]).toBeDisabled();
   });
 
   it('Promote enabled when canary is running', () => {
-    render(<DeployAdminControls {...baseProps}
-      status={{ stableTag: 'sha-prev', canaryTag: 'sha-new' }} />);
+    render(
+      <DeployAdminControls
+        {...baseProps}
+        status={{
+          stableTag: 'sha-prev',
+          canaryTag: 'sha-new',
+          stableReplicas: { ready: 2, desired: 2 },
+          lastDeployAt: null,
+        }}
+      />
+    );
     expect(screen.getAllByRole('button', { name: /promote/i })[0]).not.toBeDisabled();
   });
 
@@ -551,10 +767,14 @@ describe('DeployAdminControls', () => {
     render(<DeployAdminControls {...baseProps} />);
     const lockBtn = screen.getByRole('button', { name: /lock deployments/i });
     fireEvent.click(lockBtn);
-    await waitFor(() => expect(screen.getByRole('button', { name: /unlock deployments/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /unlock deployments/i })).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole('button', { name: /unlock deployments/i }));
     await userEvent.type(screen.getByLabelText(/deployment image tag/i), 'sha-z');
-    await waitFor(() => expect(screen.getAllByRole('button', { name: /deploy canary/i })[0]).not.toBeDisabled());
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /deploy canary/i })[0]).not.toBeDisabled()
+    );
   });
 
   it('force checkbox is present', () => {
@@ -564,8 +784,18 @@ describe('DeployAdminControls', () => {
 
   it('passes force=true to onFull when checked', async () => {
     const onFull = jest.fn().mockResolvedValue(undefined);
-    render(<DeployAdminControls {...baseProps} onFull={onFull}
-      status={{ stableTag: 'sha-prev', canaryTag: null }} />);
+    render(
+      <DeployAdminControls
+        {...baseProps}
+        onFull={onFull}
+        status={{
+          stableTag: 'sha-prev',
+          canaryTag: null,
+          stableReplicas: { ready: 2, desired: 2 },
+          lastDeployAt: null,
+        }}
+      />
+    );
     await userEvent.type(screen.getByLabelText(/deployment image tag/i), 'sha-full');
     fireEvent.click(screen.getByLabelText(/force deploy/i));
     fireEvent.click(screen.getAllByRole('button', { name: /full deploy/i })[0]);
@@ -581,9 +811,14 @@ describe('DeployAdminControls', () => {
 
 describe('ClusterAdminView', () => {
   const props = {
-    pods: PODS, hpa: HPA, nodes: NODES, quota: null,
-    loading: false, error: null,
-    onDeletePod: noop, grafanaPanels: [],
+    pods: PODS,
+    hpa: HPA,
+    nodes: NODES,
+    quota: null,
+    loading: false,
+    error: null,
+    onDeletePod: noop,
+    grafanaPanels: [],
   };
 
   it('renders node names', () => {
@@ -605,7 +840,7 @@ describe('ClusterAdminView', () => {
   it('renders HPA table', () => {
     render(<ClusterAdminView {...props} />);
     expect(screen.getByRole('table', { name: /hpa status/i })).toBeInTheDocument();
-    expect(screen.getByText('agent')).toBeInTheDocument();
+    expect(screen.getAllByText('agent').length).toBeGreaterThan(0);
   });
 
   it('renders pod names', () => {
@@ -638,35 +873,43 @@ describe('ClusterAdminView', () => {
   it('shows summary count cards', () => {
     render(<ClusterAdminView {...props} />);
     expect(screen.getByText('Total Pods')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument(); // 3 pods
+    expect(screen.getAllByText('3').length).toBeGreaterThan(0); // 3 pods
   });
 
   it('shows Grafana panels when provided', () => {
-    const panels = [
-      { uid: 'p1', title: 'Auth Failures', url: 'http://grafana/d/xxx' },
-    ];
+    const panels = [{ uid: 'p1', title: 'Auth Failures', url: 'http://grafana/d/xxx' }];
     render(<ClusterAdminView {...props} grafanaPanels={panels} />);
     expect(screen.getByRole('link', { name: /auth failures/i })).toBeInTheDocument();
   });
 
   it('shows loading skeleton', () => {
-    const { container } = render(<ClusterAdminView {...props} pods={[]} nodes={[]} hpa={[]} loading />);
+    const { container } = render(
+      <ClusterAdminView {...props} pods={[]} nodes={[]} hpa={[]} loading />
+    );
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('shows error state', () => {
-    render(<ClusterAdminView {...props} pods={[]} nodes={[]} hpa={[]} error={new Error('k8s down')} />);
+    render(
+      <ClusterAdminView {...props} pods={[]} nodes={[]} hpa={[]} error={new Error('k8s down')} />
+    );
     expect(screen.getByText(/k8s down/i)).toBeInTheDocument();
   });
 
   it('shows quota panel when quota provided', () => {
     const quota = {
-      cpuRequestUsed: 4, cpuRequestLimit: 8,
-      cpuLimitUsed: 6, cpuLimitMax: 16,
-      memRequestUsed: 2048, memRequestLimit: 8192,
-      memLimitUsed: 4096, memLimitMax: 16384,
-      podsUsed: 8, podsMax: 50,
-      servicesUsed: 5, servicesMax: 20,
+      cpuRequestUsed: 4,
+      cpuRequestLimit: 8,
+      cpuLimitUsed: 6,
+      cpuLimitMax: 16,
+      memRequestUsed: 2048,
+      memRequestLimit: 8192,
+      memLimitUsed: 4096,
+      memLimitMax: 16384,
+      podsUsed: 8,
+      podsMax: 50,
+      servicesUsed: 5,
+      servicesMax: 20,
     };
     render(<ClusterAdminView {...props} quota={quota} />);
     expect(screen.getByText(/namespace resource quota/i)).toBeInTheDocument();
@@ -686,9 +929,12 @@ describe('lib/adminApi — decodeJwtPayload', () => {
     const { decodeJwtPayload: decode } = await import('../lib/adminApi.js');
     // Build a fake JWT: header.payload.sig (all base64url encoded)
     const payload = { sub: 'alice', role: 'admin', exp: 9999999999 };
-    const b64     = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    const token   = `header.${b64}.signature`;
-    const result  = decode(token);
+    const b64 = btoa(JSON.stringify(payload))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+    const token = `header.${b64}.signature`;
+    const result = decode(token);
     expect(result?.sub).toBe('alice');
     expect(result?.role).toBe('admin');
   });
@@ -711,37 +957,51 @@ describe('lib/adminApi — decodeJwtPayload', () => {
 describe('Admin pages — smoke tests', () => {
   beforeEach(() => {
     sessionStorage.setItem('wolf_token', 'tok');
-    decodeJwtPayload.mockReturnValue({ sub: 'admin', role: 'admin', exp: Date.now() / 1000 + 3600 });
+    decodeJwtPayload.mockReturnValue({
+      sub: 'admin',
+      role: 'admin',
+      exp: Date.now() / 1000 + 3600,
+    });
     useSWR.mockReturnValue({ data: null, error: null, isLoading: true, mutate: jest.fn() });
   });
 
   it('AdminUsersPage renders title', async () => {
     const { default: Page } = await import('../pages/admin/users.js');
     render(<Page />);
-    await waitFor(() => expect(screen.getByText('Users & Roles')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Users & Roles' })).toBeInTheDocument()
+    );
   });
 
   it('AdminApiKeysPage renders title', async () => {
     const { default: Page } = await import('../pages/admin/api-keys.js');
     render(<Page />);
-    await waitFor(() => expect(screen.getByText('API Keys')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'API Keys' })).toBeInTheDocument()
+    );
   });
 
   it('AdminSecurityLogsPage renders title', async () => {
     const { default: Page } = await import('../pages/admin/security-logs.js');
     render(<Page />);
-    await waitFor(() => expect(screen.getByText('Security Logs')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Security Logs' })).toBeInTheDocument()
+    );
   });
 
   it('AdminDeployPage renders title', async () => {
     const { default: Page } = await import('../pages/admin/deploy.js');
     render(<Page />);
-    await waitFor(() => expect(screen.getByText('Deployments')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Deployments' })).toBeInTheDocument()
+    );
   });
 
   it('AdminClusterPage renders title', async () => {
     const { default: Page } = await import('../pages/admin/cluster.js');
     render(<Page />);
-    await waitFor(() => expect(screen.getByText('Cluster')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Cluster' })).toBeInTheDocument()
+    );
   });
 });

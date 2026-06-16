@@ -15,14 +15,14 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
-    TTS_PROVIDER:        'elevenlabs',
-    ELEVENLABS_API_KEY:  'sk-test',
+    TTS_PROVIDER: 'elevenlabs',
+    ELEVENLABS_API_KEY: 'sk-test',
     ELEVENLABS_VOICE_ID: 'test-voice',
-    BASE_URL:            'http://localhost:3000',
-    PHONE_SALT:          'testsalt1234567890',
-    JWT_SECRET:          'testjwtsecret1234567890testjwtsecret1234567890',
-    JWT_REFRESH_SECRET:  'testrefreshsecret1234567890testrefreshsecret',
-    API_KEYS:            ['test-key'],
+    BASE_URL: 'http://localhost:3000',
+    PHONE_SALT: 'testsalt1234567890',
+    JWT_SECRET: 'testjwtsecret1234567890testjwtsecret1234567890',
+    JWT_REFRESH_SECRET: 'testrefreshsecret1234567890testrefreshsecret',
+    API_KEYS: ['test-key'],
   },
 }));
 
@@ -31,15 +31,16 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
   apiFetch: mockApiFetch,
 }));
 
-const mockRecordRequest   = jest.fn();
-const mockRecordFailure   = jest.fn();
-const mockRecordLatency   = jest.fn();
+const mockRecordRequest = jest.fn();
+const mockRecordFailure = jest.fn();
+const mockRecordLatency = jest.fn();
 const mockSetCircuitState = jest.fn();
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest:   mockRecordRequest,
-  recordFailure:   mockRecordFailure,
-  recordLatency:   mockRecordLatency,
+  recordRequest: mockRecordRequest,
+  recordFailure: mockRecordFailure,
+  recordLatency: mockRecordLatency,
   setCircuitState: mockSetCircuitState,
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ describe('tts.client — onStateChange callback (lines 250-251)', () => {
 
     // onStateChange should have been called with 'open' or 'OPEN'
     const openCalls = mockSetCircuitState.mock.calls.filter(
-      ([_name, state]) => typeof state === 'string' && state.toLowerCase().includes('open'),
+      ([_name, state]) => typeof state === 'string' && state.toLowerCase().includes('open')
     );
     expect(openCalls.length).toBeGreaterThan(0);
   });

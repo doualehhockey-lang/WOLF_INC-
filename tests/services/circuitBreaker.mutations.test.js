@@ -15,7 +15,11 @@
 
 import { jest } from '@jest/globals';
 import {
-  CircuitBreaker, CircuitOpenError, HttpError, withRetry, STATE,
+  CircuitBreaker,
+  CircuitOpenError,
+  HttpError,
+  withRetry,
+  STATE,
 } from '../../src/services/circuitBreaker.js';
 
 // ── Clock-injectable factory ──────────────────────────────────────────────────
@@ -23,19 +27,27 @@ import {
 function make(overrides = {}) {
   let t = 1_000_000;
   const cb = new CircuitBreaker('x', {
-    failureThreshold:   5,
+    failureThreshold: 5,
     errorRateThreshold: 0.5,
-    minCalls:           10,
-    windowMs:           60_000,
-    openDurationMs:     10_000,
+    minCalls: 10,
+    windowMs: 60_000,
+    openDurationMs: 10_000,
     now: () => t,
     ...overrides,
   });
-  return { cb, tick: (ms) => { t += ms; }, now: () => t };
+  return {
+    cb,
+    tick: ms => {
+      t += ms;
+    },
+    now: () => t,
+  };
 }
 
-const ok   = async () => 'ok';
-const boom = async () => { throw new Error('boom'); };
+const ok = async () => 'ok';
+const boom = async () => {
+  throw new Error('boom');
+};
 
 // ═════════════════════════════════════════════════════════════════════════════
 // L73-79 Constructor defaults — ?? operator (LogicalOperator survivors)
@@ -325,7 +337,12 @@ describe('_shouldOpen error rate boundary (L189-190 killers)', () => {
 
 describe('_prune sliding window (L195-197 killers)', () => {
   test('calls older than windowMs are pruned', async () => {
-    const { cb, tick } = make({ windowMs: 5_000, minCalls: 2, errorRateThreshold: 1.1, failureThreshold: 100 });
+    const { cb, tick } = make({
+      windowMs: 5_000,
+      minCalls: 2,
+      errorRateThreshold: 1.1,
+      failureThreshold: 100,
+    });
 
     await cb.exec(boom).catch(() => {});
     await cb.exec(boom).catch(() => {});
@@ -356,9 +373,9 @@ describe('_prune sliding window (L195-197 killers)', () => {
     const { cb, tick } = make({ windowMs: 5_000, failureThreshold: 100 });
 
     await cb.exec(ok); // t=1_000_000 (old)
-    tick(3_000);        // t=1_003_000
+    tick(3_000); // t=1_003_000
     await cb.exec(ok); // t=1_003_000 (recent)
-    tick(2_001);        // total: 5001ms → cutoff=1_000_000, first call pruned
+    tick(2_001); // total: 5001ms → cutoff=1_000_000, first call pruned
 
     await cb.exec(ok); // triggers prune
     expect(cb._calls.length).toBe(2); // second + third call kept
@@ -384,7 +401,10 @@ describe('_prune sliding window (L195-197 killers)', () => {
 describe('withRetry attempt >= maxRetries boundary (L234 killers)', () => {
   test('maxRetries=0: never retries (attempt=0 >= maxRetries=0 → stop)', async () => {
     let calls = 0;
-    const fn = async () => { calls++; throw new Error('fail'); };
+    const fn = async () => {
+      calls++;
+      throw new Error('fail');
+    };
 
     await expect(withRetry(fn, { maxRetries: 0, baseMs: 0, maxMs: 0 })).rejects.toThrow('fail');
     expect(calls).toBe(1); // exactly 1 attempt, no retry
@@ -460,7 +480,10 @@ describe('withRetry backoff bounds (L235-236 killers)', () => {
 
     let calls = 0;
     await withRetry(
-      async () => { if (calls++ < 1) throw new Error('once'); return 'ok'; },
+      async () => {
+        if (calls++ < 1) throw new Error('once');
+        return 'ok';
+      },
       { maxRetries: 1, baseMs: 0, maxMs: 200 }
     );
 
@@ -483,14 +506,17 @@ describe('withRetry backoff bounds (L235-236 killers)', () => {
 describe('withRetry attempt increments correctly (L238 UpdateOperator killer)', () => {
   test('attempt passed to shouldRetry increases monotonically', async () => {
     const attempts = [];
-    const fn = async () => { throw new Error('fail'); };
+    const fn = async () => {
+      throw new Error('fail');
+    };
     const shouldRetry = (err, attempt) => {
       attempts.push(attempt);
       return attempt < 3;
     };
 
-    await expect(withRetry(fn, { maxRetries: 5, shouldRetry, baseMs: 0, maxMs: 0 }))
-      .rejects.toThrow('fail');
+    await expect(
+      withRetry(fn, { maxRetries: 5, shouldRetry, baseMs: 0, maxMs: 0 })
+    ).rejects.toThrow('fail');
 
     // shouldRetry called with 0, 1, 2, 3 — on attempt=3 it returns false → throws
     expect(attempts).toEqual([0, 1, 2, 3]);
@@ -520,17 +546,27 @@ describe('_defaultShouldRetry boundaries (L244-246 killers)', () => {
 
   test('HttpError 400 is NOT retried (exactly at 4xx boundary)', async () => {
     let calls = 0;
-    const fn = async () => { calls++; throw new HttpError(400, 'bad request'); };
+    const fn = async () => {
+      calls++;
+      throw new HttpError(400, 'bad request');
+    };
 
-    await expect(withRetry(fn, { maxRetries: 3, baseMs: 0, maxMs: 0 })).rejects.toMatchObject({ status: 400 });
+    await expect(withRetry(fn, { maxRetries: 3, baseMs: 0, maxMs: 0 })).rejects.toMatchObject({
+      status: 400,
+    });
     expect(calls).toBe(1); // no retry
   });
 
   test('HttpError 499 is NOT retried (upper 4xx boundary)', async () => {
     let calls = 0;
-    const fn = async () => { calls++; throw new HttpError(499, 'client error'); };
+    const fn = async () => {
+      calls++;
+      throw new HttpError(499, 'client error');
+    };
 
-    await expect(withRetry(fn, { maxRetries: 3, baseMs: 0, maxMs: 0 })).rejects.toMatchObject({ status: 499 });
+    await expect(withRetry(fn, { maxRetries: 3, baseMs: 0, maxMs: 0 })).rejects.toMatchObject({
+      status: 499,
+    });
     expect(calls).toBe(1);
   });
 
@@ -549,9 +585,14 @@ describe('_defaultShouldRetry boundaries (L244-246 killers)', () => {
 
   test('CircuitOpenError is NOT retried', async () => {
     let calls = 0;
-    const fn = async () => { calls++; throw new CircuitOpenError('test'); };
+    const fn = async () => {
+      calls++;
+      throw new CircuitOpenError('test');
+    };
 
-    await expect(withRetry(fn, { maxRetries: 3, baseMs: 0, maxMs: 0 })).rejects.toBeInstanceOf(CircuitOpenError);
+    await expect(withRetry(fn, { maxRetries: 3, baseMs: 0, maxMs: 0 })).rejects.toBeInstanceOf(
+      CircuitOpenError
+    );
     expect(calls).toBe(1);
   });
 
@@ -570,7 +611,10 @@ describe('_defaultShouldRetry boundaries (L244-246 killers)', () => {
 
   test('shouldRetry returning false on 1st attempt stops immediately', async () => {
     let calls = 0;
-    const fn = async () => { calls++; throw new Error('fail'); };
+    const fn = async () => {
+      calls++;
+      throw new Error('fail');
+    };
 
     await expect(
       withRetry(fn, { maxRetries: 5, shouldRetry: () => false, baseMs: 0, maxMs: 0 })

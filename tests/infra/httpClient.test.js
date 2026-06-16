@@ -3,7 +3,7 @@
 
 import { jest } from '@jest/globals';
 import https from 'https';
-import http  from 'http';
+import http from 'http';
 import { apiFetch, httpsAgent, httpAgent } from '../../src/infra/http/httpClient.js';
 
 describe('httpClient', () => {
@@ -19,7 +19,7 @@ describe('httpClient', () => {
 
   test('apiFetch delegates to global fetch', async () => {
     const mockResponse = { ok: true, status: 200 };
-    const mockFetch    = jest.fn().mockResolvedValue(mockResponse);
+    const mockFetch = jest.fn().mockResolvedValue(mockResponse);
     const originalFetch = globalThis.fetch;
 
     globalThis.fetch = mockFetch;
@@ -41,9 +41,9 @@ describe('httpClient', () => {
     globalThis.fetch = mockFetch;
     try {
       await apiFetch('https://api.example.com', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ x: 1 }),
+        body: JSON.stringify({ x: 1 }),
       });
       const [, opts] = mockFetch.mock.calls[0];
       expect(opts.method).toBe('POST');

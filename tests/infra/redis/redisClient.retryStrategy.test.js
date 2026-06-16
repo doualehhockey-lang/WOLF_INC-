@@ -4,29 +4,29 @@
 
 import { jest } from '@jest/globals';
 
-process.env.REDIS_URL          = 'redis://localhost:6379';
-process.env.BASE_URL           = 'http://localhost:3000';
-process.env.PHONE_SALT         = 'testsalt1234567890';
-process.env.JWT_SECRET         = 'testjwtsecret1234567890testjwtsecret1234567890';
+process.env.REDIS_URL = 'redis://localhost:6379';
+process.env.BASE_URL = 'http://localhost:3000';
+process.env.PHONE_SALT = 'testsalt1234567890';
+process.env.JWT_SECRET = 'testjwtsecret1234567890testjwtsecret1234567890';
 process.env.JWT_REFRESH_SECRET = 'testrefreshsecret1234567890testrefreshsecret';
-process.env.API_KEYS           = 'test-key';
+process.env.API_KEYS = 'test-key';
 
 // Capture the Redis constructor call options
 let capturedOptions = null;
 
 const mockRedisInstance = {
-  connect:   jest.fn(async () => {}),
-  ping:      jest.fn(async () => 'PONG'),
-  get:       jest.fn(async () => null),
-  set:       jest.fn(async () => 'OK'),
-  setex:     jest.fn(async () => 'OK'),
-  del:       jest.fn(async () => 1),
-  incr:      jest.fn(async () => 1),
-  expire:    jest.fn(async () => 1),
-  ttl:       jest.fn(async () => -1),
+  connect: jest.fn(async () => {}),
+  ping: jest.fn(async () => 'PONG'),
+  get: jest.fn(async () => null),
+  set: jest.fn(async () => 'OK'),
+  setex: jest.fn(async () => 'OK'),
+  del: jest.fn(async () => 1),
+  incr: jest.fn(async () => 1),
+  expire: jest.fn(async () => 1),
+  ttl: jest.fn(async () => -1),
   getBuffer: jest.fn(async () => null),
-  eval:      jest.fn(async () => 42),
-  on:        jest.fn(),
+  eval: jest.fn(async () => 42),
+  on: jest.fn(),
 };
 
 jest.unstable_mockModule('ioredis', () => ({
@@ -42,6 +42,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: { inc: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 await import('../../../src/infra/redis/redisClient.js');

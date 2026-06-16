@@ -14,9 +14,15 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import {
-  Plus, Trash2, RotateCcw, Copy, Check,
-  Eye, EyeOff, ShieldCheck, ShieldX,
-  Loader2, AlertCircle, Key, Clock,
+  Plus,
+  Trash2,
+  RotateCcw,
+  Copy,
+  Check,
+  ShieldCheck,
+  Loader2,
+  AlertCircle,
+  Key,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -25,9 +31,9 @@ import clsx from 'clsx';
 const ROLES = ['admin', 'service', 'user'];
 
 const ROLE_BADGE = {
-  admin:   'badge-red',
+  admin: 'badge-red',
   service: 'badge-blue',
-  user:    'badge-green',
+  user: 'badge-green',
 };
 
 // ── Key reveal modal (shown once after create / rotate) ───────────────────────
@@ -59,8 +65,10 @@ function KeyRevealModal({ title, fullKey, onClose }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 rounded-lg border border-amber-300
-                        dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
+        <div
+          className="flex items-center gap-2 rounded-lg border border-amber-300
+                        dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2"
+        >
           <code className="flex-1 text-xs font-mono break-all text-amber-900 dark:text-amber-200 select-all">
             {fullKey}
           </code>
@@ -70,9 +78,11 @@ function KeyRevealModal({ title, fullKey, onClose }) {
                        text-amber-700 dark:text-amber-400 transition-colors"
             aria-label="Copy key to clipboard"
           >
-            {copied
-              ? <Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />
-              : <Copy  className="h-4 w-4" aria-hidden="true" />}
+            {copied ? (
+              <Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+            ) : (
+              <Copy className="h-4 w-4" aria-hidden="true" />
+            )}
           </button>
         </div>
 
@@ -94,9 +104,9 @@ function KeyRevealModal({ title, fullKey, onClose }) {
 // ── Create key modal ──────────────────────────────────────────────────────────
 
 function CreateKeyModal({ onClose, onCreate }) {
-  const [form,    setForm]    = useState({ name: '', role: 'service', expiresInDays: '' });
+  const [form, setForm] = useState({ name: '', role: 'service', expiresInDays: '' });
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -124,8 +134,13 @@ function CreateKeyModal({ onClose, onCreate }) {
       <div className="card max-w-md w-full shadow-2xl space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Create API Key</h2>
-          <button onClick={() => onClose(null)} className="text-text-muted hover:text-text-base text-lg"
-            aria-label="Close">×</button>
+          <button
+            onClick={() => onClose(null)}
+            className="text-text-muted hover:text-text-base text-lg"
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
 
         {error && <p className="text-xs text-red-500">{error}</p>}
@@ -136,8 +151,11 @@ function CreateKeyModal({ onClose, onCreate }) {
               Key name <span className="text-red-500">*</span>
             </label>
             <input
-              id="ak-name" type="text" required
-              value={form.name} onChange={e => set('name', e.target.value)}
+              id="ak-name"
+              type="text"
+              required
+              value={form.name}
+              onChange={e => set('name', e.target.value)}
               placeholder="e.g. ci-cd-pipeline"
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm
                          font-mono text-text-base focus:outline-none focus:ring-2 focus:ring-wolf-400"
@@ -146,7 +164,9 @@ function CreateKeyModal({ onClose, onCreate }) {
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="ak-role" className="block text-xs font-medium text-text-muted">Role</label>
+            <label htmlFor="ak-role" className="block text-xs font-medium text-text-muted">
+              Role
+            </label>
             <select
               id="ak-role"
               value={form.role}
@@ -155,17 +175,26 @@ function CreateKeyModal({ onClose, onCreate }) {
                          text-text-base focus:outline-none focus:ring-2 focus:ring-wolf-400"
               aria-label="Key role"
             >
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              {ROLES.map(r => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="space-y-1">
             <label htmlFor="ak-exp" className="block text-xs font-medium text-text-muted">
-              Expires in (days) <span className="text-text-muted font-normal">— leave blank for no expiry</span>
+              Expires in (days){' '}
+              <span className="text-text-muted font-normal">— leave blank for no expiry</span>
             </label>
             <input
-              id="ak-exp" type="number" min="1" max="3650"
-              value={form.expiresInDays} onChange={e => set('expiresInDays', e.target.value)}
+              id="ak-exp"
+              type="number"
+              min="1"
+              max="3650"
+              value={form.expiresInDays}
+              onChange={e => set('expiresInDays', e.target.value)}
               placeholder="90"
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm
                          font-mono text-text-base focus:outline-none focus:ring-2 focus:ring-wolf-400"
@@ -174,7 +203,9 @@ function CreateKeyModal({ onClose, onCreate }) {
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" className="btn-ghost" onClick={() => onClose(null)}>Cancel</button>
+            <button type="button" className="btn-ghost" onClick={() => onClose(null)}>
+              Cancel
+            </button>
             <button
               type="submit"
               className="btn-primary"
@@ -196,18 +227,26 @@ function CreateKeyModal({ onClose, onCreate }) {
 function KeyRow({ apiKey, onRevoke, onRotate }) {
   const [revoking, setRevoking] = useState(false);
   const [rotating, setRotating] = useState(false);
-  const [confirm,  setConfirm]  = useState(null); // 'revoke' | 'rotate' | null
+  const [confirm, setConfirm] = useState(null); // 'revoke' | 'rotate' | null
 
   const handleRevoke = async () => {
     setRevoking(true);
-    try { await onRevoke(apiKey.id); }
-    finally { setRevoking(false); setConfirm(null); }
+    try {
+      await onRevoke(apiKey.id);
+    } finally {
+      setRevoking(false);
+      setConfirm(null);
+    }
   };
 
   const handleRotate = async () => {
     setRotating(true);
-    try { await onRotate(apiKey.id); }
-    finally { setRotating(false); setConfirm(null); }
+    try {
+      await onRotate(apiKey.id);
+    } finally {
+      setRotating(false);
+      setConfirm(null);
+    }
   };
 
   const isExpired = apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date();
@@ -239,15 +278,11 @@ function KeyRow({ apiKey, onRevoke, onRotate }) {
       </td>
 
       <td className="px-4 py-3 text-xs text-text-muted">
-        {apiKey.expiresAt
-          ? new Date(apiKey.expiresAt).toLocaleDateString('fr-FR')
-          : 'Never'}
+        {apiKey.expiresAt ? new Date(apiKey.expiresAt).toLocaleDateString('fr-FR') : 'Never'}
       </td>
 
       <td className="px-4 py-3 text-xs text-text-muted">
-        {apiKey.lastUsed
-          ? new Date(apiKey.lastUsed).toLocaleString('fr-FR')
-          : 'Never'}
+        {apiKey.lastUsed ? new Date(apiKey.lastUsed).toLocaleString('fr-FR') : 'Never'}
       </td>
 
       <td className="px-4 py-3">
@@ -262,11 +297,11 @@ function KeyRow({ apiKey, onRevoke, onRotate }) {
                   className="btn-ghost py-1 px-2 text-xs text-amber-600"
                   aria-label="Confirm rotate"
                 >
-                  {rotating
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    : 'Confirm rotate'}
+                  {rotating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Confirm rotate'}
                 </button>
-                <button onClick={() => setConfirm(null)} className="btn-ghost py-1 px-2 text-xs">Cancel</button>
+                <button onClick={() => setConfirm(null)} className="btn-ghost py-1 px-2 text-xs">
+                  Cancel
+                </button>
               </>
             ) : (
               <button
@@ -288,11 +323,11 @@ function KeyRow({ apiKey, onRevoke, onRotate }) {
                   className="btn-ghost py-1 px-2 text-xs text-red-600"
                   aria-label="Confirm revoke"
                 >
-                  {revoking
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    : 'Confirm revoke'}
+                  {revoking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Confirm revoke'}
                 </button>
-                <button onClick={() => setConfirm(null)} className="btn-ghost py-1 px-2 text-xs">Cancel</button>
+                <button onClick={() => setConfirm(null)} className="btn-ghost py-1 px-2 text-xs">
+                  Cancel
+                </button>
               </>
             ) : (
               <button
@@ -324,35 +359,45 @@ function KeyRow({ apiKey, onRevoke, onRotate }) {
  * }} props
  */
 export default function ApiKeyManager({
-  apiKeys = [], loading, error,
-  onCreate, onRevoke, onRotate,
+  apiKeys = [],
+  loading,
+  error,
+  onCreate,
+  onRevoke,
+  onRotate,
 }) {
-  const [showCreate,  setShowCreate]  = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const [revealedKey, setRevealedKey] = useState(null); // full key string after create/rotate
   const [revealTitle, setRevealTitle] = useState('');
-  const [filter,      setFilter]      = useState('all'); // 'all' | 'active' | 'revoked'
+  const [filter, setFilter] = useState('all'); // 'all' | 'active' | 'revoked'
 
   const filtered = useMemo(() => {
-    if (filter === 'active')  return apiKeys.filter(k => !k.revoked);
-    if (filter === 'revoked') return apiKeys.filter(k =>  k.revoked);
+    if (filter === 'active') return apiKeys.filter(k => !k.revoked);
+    if (filter === 'revoked') return apiKeys.filter(k => k.revoked);
     return apiKeys;
   }, [apiKeys, filter]);
 
-  const handleCreate = useCallback(async data => {
-    const result = await onCreate(data);
-    if (result?.key) {
-      setRevealedKey(result.key);
-      setRevealTitle('New API Key Created');
-    }
-  }, [onCreate]);
+  const handleCreate = useCallback(
+    async data => {
+      const result = await onCreate(data);
+      if (result?.key) {
+        setRevealedKey(result.key);
+        setRevealTitle('New API Key Created');
+      }
+    },
+    [onCreate]
+  );
 
-  const handleRotate = useCallback(async id => {
-    const result = await onRotate(id);
-    if (result?.key) {
-      setRevealedKey(result.key);
-      setRevealTitle('API Key Rotated — New Key');
-    }
-  }, [onRotate]);
+  const handleRotate = useCallback(
+    async id => {
+      const result = await onRotate(id);
+      if (result?.key) {
+        setRevealedKey(result.key);
+        setRevealTitle('API Key Rotated — New Key');
+      }
+    },
+    [onRotate]
+  );
 
   if (loading) {
     return (
@@ -377,7 +422,7 @@ export default function ApiKeyManager({
     <>
       {showCreate && (
         <CreateKeyModal
-          onClose={key => {
+          onClose={_key => {
             setShowCreate(false);
             // onCreate already called from inside modal
           }}
@@ -397,8 +442,11 @@ export default function ApiKeyManager({
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Status filter */}
-          <div className="flex rounded-lg border border-border overflow-hidden" role="group"
-               aria-label="Filter by status">
+          <div
+            className="flex rounded-lg border border-border overflow-hidden"
+            role="group"
+            aria-label="Filter by status"
+          >
             {['all', 'active', 'revoked'].map(f => (
               <button
                 key={f}
@@ -407,7 +455,7 @@ export default function ApiKeyManager({
                   'px-3 py-1.5 text-xs font-medium capitalize transition-colors',
                   filter === f
                     ? 'bg-wolf-500 text-white'
-                    : 'bg-surface-2 text-text-muted hover:bg-surface hover:text-text-base',
+                    : 'bg-surface-2 text-text-muted hover:bg-surface hover:text-text-base'
                 )}
                 aria-pressed={filter === f}
               >
@@ -416,7 +464,9 @@ export default function ApiKeyManager({
             ))}
           </div>
 
-          <span className="text-xs text-text-muted">{filtered.length} key{filtered.length !== 1 ? 's' : ''}</span>
+          <span className="text-xs text-text-muted">
+            {filtered.length} key{filtered.length !== 1 ? 's' : ''}
+          </span>
 
           <button
             className="btn-primary ml-auto"
@@ -434,8 +484,11 @@ export default function ApiKeyManager({
             <thead className="bg-surface border-b border-border">
               <tr>
                 {['Name / Prefix', 'Role', 'Status', 'Expires', 'Last Used', 'Actions'].map(h => (
-                  <th key={h} scope="col"
-                    className="px-4 py-3 text-left text-xs font-medium text-text-muted">
+                  <th
+                    key={h}
+                    scope="col"
+                    className="px-4 py-3 text-left text-xs font-medium text-text-muted"
+                  >
                     {h}
                   </th>
                 ))}
@@ -448,14 +501,11 @@ export default function ApiKeyManager({
                     No API keys found.
                   </td>
                 </tr>
-              ) : filtered.map(k => (
-                <KeyRow
-                  key={k.id}
-                  apiKey={k}
-                  onRevoke={onRevoke}
-                  onRotate={handleRotate}
-                />
-              ))}
+              ) : (
+                filtered.map(k => (
+                  <KeyRow key={k.id} apiKey={k} onRevoke={onRevoke} onRotate={handleRotate} />
+                ))
+              )}
             </tbody>
           </table>
         </div>

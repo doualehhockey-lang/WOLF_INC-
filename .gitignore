@@ -1,3 +1,34 @@
-"node_modules/"  
-".env"  
+# Dependencies
 node_modules/
+
+# Environment / secrets
+.env
+.env.local
+.env.production
+
+# Stryker mutation testing
+.stryker-tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/worktrees/
+
+# Build / logs
+dist/
+coverage/
+.next/
+*.log
+
+# Audio cache
+public/audio/*.mp3
+
+# Data files (tenant settings, JSON store)
+data/

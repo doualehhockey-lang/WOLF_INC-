@@ -1,8 +1,8 @@
-// src/features/responder/responder.service.js — SMS auto-responder with configurable tones.
-// Delegates to Ollama (local LLM) for short, stylized replies.
-// Tone is selected from config.SMS_TONE or overridden per-call.
+// src/features/responder/responder.service.js — SMS auto-responder avec tons configurables.
+// Utilise Claude pour générer des réponses courtes et stylisées.
 
 import { config } from '../../core/config.js';
+import Anthropic from '@anthropic-ai/sdk';
 
 export const TONES = {
   pro:
@@ -25,23 +25,22 @@ export const TONES = {
 export const DEFAULT_TONE = 'friendly';
 
 /**
- * Generate a toned reply using the local Ollama LLM.
- * @param {string} content  — user message
- * @param {string} [tone]   — tone key (defaults to config.SMS_TONE)
+ * Génère une réponse SMS stylisée avec Claude.
+ * @param {string} content  — message utilisateur
+ * @param {string} [tone]   — clé de ton (défaut : config.SMS_TONE)
  * @returns {Promise<string>}
  */
 export async function autoReply(content, tone = config.SMS_TONE) {
   const systemPrompt = TONES[tone] ?? TONES[DEFAULT_TONE];
 
-  // Dynamic import — keeps this module usable even when ollama isn't installed.
-  const { chat } = await import('../../services/ollama.client.js');
-  return chat(
-    [
-      { role: 'system', content: systemPrompt },
-      { role: 'user',   content },
-    ],
-    { temperature: 0.7, num_predict: 120 }
-  );
+  const client = new Anthropic({ apiKey: config.CLAUDE_API_KEY });
+  const msg = await client.messages.create({
+    model: config.CLAUDE_MODEL ?? 'claude-haiku-4-5-20251001',
+    max_tokens: 120,
+    system: systemPrompt,
+    messages: [{ role: 'user', content }],
+  });
+  return msg.content[0]?.text ?? '';
 }
 
 /** @returns {string[]} */

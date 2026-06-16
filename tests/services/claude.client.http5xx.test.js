@@ -12,7 +12,7 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
     CLAUDE_API_KEY: 'sk-http5xx-key',
-    CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+    CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
   },
 }));
 
@@ -21,15 +21,16 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
   apiFetch: mockApiFetch,
 }));
 
-const mockRecordRequest   = jest.fn();
-const mockRecordFailure   = jest.fn();
-const mockRecordLatency   = jest.fn();
+const mockRecordRequest = jest.fn();
+const mockRecordFailure = jest.fn();
+const mockRecordLatency = jest.fn();
 const mockSetCircuitState = jest.fn();
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest:   mockRecordRequest,
-  recordFailure:   mockRecordFailure,
-  recordLatency:   mockRecordLatency,
+  recordRequest: mockRecordRequest,
+  recordFailure: mockRecordFailure,
+  recordLatency: mockRecordLatency,
   setCircuitState: mockSetCircuitState,
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 const { analyze } = await import('../../src/services/claude.client.js');
@@ -43,14 +44,15 @@ describe('_failureReason http_5xx — line 52 branch 6,0', () => {
     // HttpError(500): _isRetryable returns true (500 is NOT 400-499), so all attempts run.
     // After maxRetries=2 (3 total), _failureReason(HttpError(500)) → 'http_5xx'
     const mock500 = {
-      ok: false, status: 500,
+      ok: false,
+      status: 500,
       text: jest.fn(async () => 'Internal Server Error'),
       json: jest.fn(async () => ({})),
     };
     mockApiFetch
-      .mockResolvedValueOnce(mock500)   // attempt 0 → HttpError(500)
-      .mockResolvedValueOnce(mock500)   // attempt 1 → HttpError(500)
-      .mockResolvedValueOnce(mock500);  // attempt 2 → HttpError(500), maxRetries reached → throw
+      .mockResolvedValueOnce(mock500) // attempt 0 → HttpError(500)
+      .mockResolvedValueOnce(mock500) // attempt 1 → HttpError(500)
+      .mockResolvedValueOnce(mock500); // attempt 2 → HttpError(500), maxRetries reached → throw
 
     const result = await analyze('liste mes événements');
     expect(result.strategy).toBe('rule-based');

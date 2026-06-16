@@ -14,24 +14,25 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
-  config: { CLAUDE_API_KEY: 'test-key', CLAUDE_MODEL: 'claude-haiku-4-5-20251001', OLLAMA_MODEL: 'llama3' },
+  config: { CLAUDE_API_KEY: 'test-key', CLAUDE_MODEL: 'claude-haiku-4-5-20251001' },
 }));
 
 const mockTimer = jest.fn();
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   nluLatency: { startTimer: jest.fn(() => mockTimer) },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 jest.unstable_mockModule('../../../src/features/agent/intent.normalizer.js', () => ({
   normalizeIntent: jest.fn(i => i),
 }));
 
-const mockBuildContext      = jest.fn(async () => '');
-const mockGetLastEntities   = jest.fn(async () => null);
+const mockBuildContext = jest.fn(async () => '');
+const mockGetLastEntities = jest.fn(async () => null);
 const mockDetectShortAnswer = jest.fn(() => null);
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
-  buildContext:      mockBuildContext,
-  getLastEntities:   mockGetLastEntities,
+  buildContext: mockBuildContext,
+  getLastEntities: mockGetLastEntities,
   detectShortAnswer: mockDetectShortAnswer,
 }));
 
@@ -40,12 +41,12 @@ jest.unstable_mockModule('../../../src/services/claude.client.js', () => ({
   analyze: mockAnalyzeClaude,
 }));
 
-jest.unstable_mockModule('../../../src/services/ollama.client.js', () => ({
-  analyze: jest.fn(),
-}));
-
 const mockResolveDate = jest.fn(async () => ({
-  date: null, time: null, iso: null, hasDate: false, hasTime: false,
+  date: null,
+  time: null,
+  iso: null,
+  hasDate: false,
+  hasTime: false,
 }));
 jest.unstable_mockModule('../../../src/services/dateparser.js', () => ({
   resolve: mockResolveDate,
@@ -59,8 +60,13 @@ const { understand } = await import('../../../src/features/nlu/nlu.service.js');
 
 function llmOk(overrides = {}) {
   return {
-    intent: 'list_events', subject: '', date: '', time: '',
-    confidence: 0.9, errors: [], strategy: 'claude',
+    intent: 'list_events',
+    subject: '',
+    date: '',
+    time: '',
+    confidence: 0.9,
+    errors: [],
+    strategy: 'claude',
     ...overrides,
   };
 }
@@ -70,7 +76,13 @@ beforeEach(() => {
   mockBuildContext.mockResolvedValue('');
   mockGetLastEntities.mockResolvedValue(null);
   mockDetectShortAnswer.mockReturnValue(null);
-  mockResolveDate.mockResolvedValue({ date: null, time: null, iso: null, hasDate: false, hasTime: false });
+  mockResolveDate.mockResolvedValue({
+    date: null,
+    time: null,
+    iso: null,
+    hasDate: false,
+    hasTime: false,
+  });
   mockAnalyzeClaude.mockResolvedValue(llmOk());
 });
 
@@ -82,15 +94,20 @@ describe('_resolveImplicit — confirm ?? branches (lines 52-54)', () => {
   test('falls back to nlu.date when lastEntities.isoDate is null (line 52 right branch)', async () => {
     mockDetectShortAnswer.mockReturnValue('confirm');
     mockGetLastEntities.mockResolvedValueOnce({
-      intent:  'create_event',
-      isoDate: null,        // null → ?? nlu.date
-      isoTime: null,        // null → ?? nlu.time
-      subject: null,        // null → ?? nlu.subject
+      intent: 'create_event',
+      isoDate: null, // null → ?? nlu.date
+      isoTime: null, // null → ?? nlu.time
+      subject: null, // null → ?? nlu.subject
     });
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'unknown', confidence: 0.9,
-      date: 'demain', time: '10:00', subject: 'réunion',
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'unknown',
+        confidence: 0.9,
+        date: 'demain',
+        time: '10:00',
+        subject: 'réunion',
+      })
+    );
 
     const result = await understand('oui', 'CA-confirm-null-entities');
     expect(result._resolved).toBe('confirm');
@@ -103,15 +120,20 @@ describe('_resolveImplicit — confirm ?? branches (lines 52-54)', () => {
   test('uses lastEntities values when they are non-null (line 52 left branch)', async () => {
     mockDetectShortAnswer.mockReturnValue('confirm');
     mockGetLastEntities.mockResolvedValueOnce({
-      intent:  'create_event',
+      intent: 'create_event',
       isoDate: '2026-09-15',
       isoTime: '14:30',
       subject: 'dentiste',
     });
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'unknown', confidence: 0.9,
-      date: 'demain', time: '10:00', subject: 'réunion',
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'unknown',
+        confidence: 0.9,
+        date: 'demain',
+        time: '10:00',
+        subject: 'réunion',
+      })
+    );
 
     const result = await understand('oui', 'CA-confirm-entities');
     expect(result._resolved).toBe('confirm');
@@ -128,14 +150,20 @@ describe('_resolveImplicit — confirm ?? branches (lines 52-54)', () => {
 
 describe('_getMissing — update_event missing date (line 90)', () => {
   test('adds "date" to missing when update_event has no date', async () => {
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent:     'update_event',
-      date:       '',
-      time:       '',
-      confidence: 0.9,
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'update_event',
+        date: '',
+        time: '',
+        confidence: 0.9,
+      })
+    );
     mockResolveDate.mockResolvedValueOnce({
-      date: null, time: null, iso: null, hasDate: false, hasTime: false,
+      date: null,
+      time: null,
+      iso: null,
+      hasDate: false,
+      hasTime: false,
     });
 
     const result = await understand('modifier mon rendez-vous', null);
@@ -145,13 +173,19 @@ describe('_getMissing — update_event missing date (line 90)', () => {
   });
 
   test('no missing for update_event when date is provided', async () => {
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent:     'update_event',
-      date:       '2026-10-15',
-      confidence: 0.9,
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'update_event',
+        date: '2026-10-15',
+        confidence: 0.9,
+      })
+    );
     mockResolveDate.mockResolvedValueOnce({
-      date: '2026-10-15', time: null, iso: null, hasDate: true, hasTime: false,
+      date: '2026-10-15',
+      time: null,
+      iso: null,
+      hasDate: true,
+      hasTime: false,
     });
 
     const result = await understand('modifier mon rendez-vous du 15 octobre', null);
@@ -167,13 +201,13 @@ describe('_getMissing — update_event missing date (line 90)', () => {
 describe('understand() — ?? null defaults in return (lines 168-169, 177)', () => {
   test('returns empty string for subject when nlu.subject is null (line 168)', async () => {
     mockAnalyzeClaude.mockResolvedValueOnce({
-      intent:     'list_events',
-      subject:    null,        // null → ?? '' right side
-      date:       null,        // null → ?? '' right side (line 169)
-      time:       null,
+      intent: 'list_events',
+      subject: null, // null → ?? '' right side
+      date: null, // null → ?? '' right side (line 169)
+      time: null,
       confidence: 0.9,
-      errors:     null,        // null → ?? [] right side (line 177)
-      strategy:   'claude',
+      errors: null, // null → ?? [] right side (line 177)
+      strategy: 'claude',
     });
 
     const result = await understand('quels sont mes rendez-vous', null);
@@ -184,13 +218,13 @@ describe('understand() — ?? null defaults in return (lines 168-169, 177)', () 
 
   test('returns empty string for date when nlu.date is undefined (line 169)', async () => {
     mockAnalyzeClaude.mockResolvedValueOnce({
-      intent:     'list_events',
-      subject:    undefined,   // undefined → ?? '' right side
-      date:       undefined,   // undefined → ?? '' right side
-      time:       undefined,
+      intent: 'list_events',
+      subject: undefined, // undefined → ?? '' right side
+      date: undefined, // undefined → ?? '' right side
+      time: undefined,
       confidence: 0.9,
-      errors:     undefined,   // undefined → ?? [] right side
-      strategy:   'claude',
+      errors: undefined, // undefined → ?? [] right side
+      strategy: 'claude',
     });
 
     const result = await understand('liste mes événements', null);
@@ -200,9 +234,11 @@ describe('understand() — ?? null defaults in return (lines 168-169, 177)', () 
   });
 
   test('returns errors array when nlu.errors is non-empty', async () => {
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      errors: ['validation-error'],
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        errors: ['validation-error'],
+      })
+    );
 
     const result = await understand('test message', null);
     // nlu.errors is non-null → ?? left side taken

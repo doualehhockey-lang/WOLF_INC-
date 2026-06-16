@@ -4,22 +4,22 @@ import { normalizeIntent } from '../../../src/features/agent/intent.normalizer.j
 
 describe('normalizeIntent', () => {
   test.each([
-    ['create',          'create_event'],
-    ['créer',           'create_event'],
-    ['ajouter',         'create_event'],
+    ['create', 'create_event'],
+    ['créer', 'create_event'],
+    ['ajouter', 'create_event'],
     ['new appointment', 'create_event'],
-    ['book a meeting',  'create_event'],
-    ['cancel',          'cancel_event'],
-    ['annuler',         'cancel_event'],
-    ['supprimer',       'cancel_event'],
-    ['delete event',    'cancel_event'],
-    ['update',          'update_event'],
-    ['modifier',        'update_event'],
-    ['déplacer rdv',    'update_event'],
-    ['list',            'list_events'],
-    ['agenda',          'list_events'],
-    ['afficher',        'list_events'],
-    ['lister',          'list_events'],
+    ['book a meeting', 'create_event'],
+    ['cancel', 'cancel_event'],
+    ['annuler', 'cancel_event'],
+    ['supprimer', 'cancel_event'],
+    ['delete event', 'cancel_event'],
+    ['update', 'update_event'],
+    ['modifier', 'update_event'],
+    ['déplacer rdv', 'update_event'],
+    ['list', 'list_events'],
+    ['agenda', 'list_events'],
+    ['afficher', 'list_events'],
+    ['lister', 'list_events'],
   ])('"%s" → %s', (input, expected) => {
     expect(normalizeIntent(input)).toBe(expected);
   });

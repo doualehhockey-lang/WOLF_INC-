@@ -9,7 +9,7 @@ import {
 
 describe('twiml.builder', () => {
   const GATHER_URL = 'http://localhost:3000/twilio/gather';
-  const AUDIO_URL  = 'http://localhost:3000/audio/tts_123.wav';
+  const AUDIO_URL = 'http://localhost:3000/audio/tts_123.wav';
 
   test('twimlPlayThenGather produces valid XML with <Play>', () => {
     const xml = twimlPlayThenGather(AUDIO_URL, GATHER_URL);
@@ -36,7 +36,7 @@ describe('twiml.builder', () => {
   test('twimlError with gatherUrl produces Say+Gather', () => {
     const xml = twimlError(GATHER_URL, 'fr-FR');
     expect(xml).toContain('<Gather');
-    expect(xml).toContain('erreur');
+    expect(xml).toContain('problème');
   });
 
   test('twimlError without gatherUrl produces Hangup', () => {
@@ -53,7 +53,7 @@ describe('twiml.builder', () => {
 
   test('XML-escapes special characters in URLs', () => {
     const dangerous = 'http://evil.com/?a=1&b=2<script>';
-    const xml       = twimlPlayThenGather(dangerous, GATHER_URL);
+    const xml = twimlPlayThenGather(dangerous, GATHER_URL);
     expect(xml).not.toContain('<script>');
     expect(xml).toContain('&lt;script&gt;');
   });

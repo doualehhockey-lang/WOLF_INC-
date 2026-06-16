@@ -14,31 +14,48 @@
 /** @param {import('knex').Knex} knex */
 export async function up(knex) {
   // ── 1. Add new columns to existing audit_logs ────────────────────────────
-  await knex.schema.table('audit_logs', (table) => {
+  await knex.schema.table('audit_logs', table => {
     // Correlation
-    table.string('request_id', 36).nullable()
+    table
+      .string('request_id', 36)
+      .nullable()
       .comment('UUID from X-Request-Id header — traces across services');
 
     // Provider attribution
-    table.string('provider', 50).nullable()
+    table
+      .string('provider', 50)
+      .nullable()
       .comment('NLU/TTS provider: claude | ollama | rule-based | piper | elevenlabs | azure');
-    table.string('nlu_strategy', 50).nullable()
+    table
+      .string('nlu_strategy', 50)
+      .nullable()
       .comment('NLU execution path: claude | ollama | rule-based | none');
 
     // Runtime feature flags snapshot (for debugging flag-related regressions)
-    table.jsonb('feature_flags').nullable()
-      .comment('Active feature flags at time of request — e.g. {"claude.nlu":true,"tts.elevenlabs":false}');
+    table
+      .jsonb('feature_flags')
+      .nullable()
+      .comment(
+        'Active feature flags at time of request — e.g. {"claude.nlu":true,"tts.elevenlabs":false}'
+      );
 
     // Privacy-safe client fingerprint
-    table.string('ip_hash', 12).nullable()
+    table
+      .string('ip_hash', 12)
+      .nullable()
       .comment('HMAC-SHA256 of client IP, truncated to 12 hex chars (GDPR-safe)');
 
     // Session context
-    table.integer('session_turn').unsigned().nullable()
+    table
+      .integer('session_turn')
+      .unsigned()
+      .nullable()
       .comment('Turn number within the call session (1-based)');
 
     // Model used (for cost/quality analysis)
-    table.string('model_id', 100).nullable()
+    table
+      .string('model_id', 100)
+      .nullable()
       .comment('Exact model ID used (e.g. claude-haiku-4-5-20251001)');
 
     // Token usage for Claude API cost tracking
@@ -48,7 +65,7 @@ export async function up(knex) {
 
   // ── 2. Indexes for new columns ────────────────────────────────────────────
 
-  await knex.schema.table('audit_logs', (table) => {
+  await knex.schema.table('audit_logs', table => {
     table.index(['request_id'], 'idx_audit_request_id');
     table.index(['provider', 'created_at'], 'idx_audit_provider_ts');
     table.index(['nlu_strategy', 'created_at'], 'idx_audit_strategy_ts');
@@ -81,10 +98,13 @@ export async function up(knex) {
   // for every row in a high-traffic window.
   const hasTable = await knex.schema.hasTable('audit_log_features');
   if (!hasTable) {
-    await knex.schema.createTable('audit_log_features', (table) => {
+    await knex.schema.createTable('audit_log_features', table => {
       table.increments('id').primary();
       table.jsonb('flags').notNullable();
-      table.string('flags_hash', 64).notNullable().unique()
+      table
+        .string('flags_hash', 64)
+        .notNullable()
+        .unique()
         .comment('SHA-256 of JSON.stringify(flags) for dedup lookup');
       table.timestamp('created_at').defaultTo(knex.fn.now());
 
@@ -102,14 +122,16 @@ export async function down(knex) {
   await knex.raw(`DROP INDEX IF EXISTS idx_audit_recent`);
 
   // Drop new indexes
-  await knex.schema.table('audit_logs', (table) => {
-    table.dropIndex([], 'idx_audit_request_id');
-    table.dropIndex([], 'idx_audit_provider_ts');
-    table.dropIndex([], 'idx_audit_strategy_ts');
-  }).catch(() => {}); // ignore if already gone
+  await knex.schema
+    .table('audit_logs', table => {
+      table.dropIndex([], 'idx_audit_request_id');
+      table.dropIndex([], 'idx_audit_provider_ts');
+      table.dropIndex([], 'idx_audit_strategy_ts');
+    })
+    .catch(() => {}); // ignore if already gone
 
   // Remove added columns
-  await knex.schema.table('audit_logs', (table) => {
+  await knex.schema.table('audit_logs', table => {
     table.dropColumn('request_id');
     table.dropColumn('provider');
     table.dropColumn('nlu_strategy');

@@ -8,14 +8,17 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
-    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   }),
 }));
 
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
-    BASE_URL:  'http://localhost:3000',
+    BASE_URL: 'http://localhost:3000',
     AUDIO_DIR: '/tmp/audio',
   },
 }));
@@ -24,8 +27,9 @@ jest.unstable_mockModule('../../../src/core/config.js', () => ({
 const mockTimer = jest.fn();
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   pipelineLatency: { startTimer: jest.fn(() => mockTimer) },
-  errorCounter:    { inc: jest.fn() },
-  activeSessions:  { set: jest.fn() },
+  errorCounter: { inc: jest.fn() },
+  activeSessions: { set: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Mock NLU ─────────────────────────────────────────────────────────────────
@@ -46,29 +50,39 @@ jest.unstable_mockModule('../../../src/features/tts/tts.service.js', () => ({
   synthesize: mockSynthesize,
 }));
 
+// ── Mock conversation service — throws so structured fallback is tested ──────
+const mockConverse = jest.fn(async () => {
+  throw new Error('converse-disabled-in-test');
+});
+jest.unstable_mockModule('../../../src/features/voice/conversation.service.js', () => ({
+  converse: mockConverse,
+}));
+
 // ── Mock Memory ───────────────────────────────────────────────────────────────
-const mockAddUserTurn  = jest.fn(async () => {});
+const mockAddUserTurn = jest.fn(async () => {});
 const mockAddAgentTurn = jest.fn(async () => {});
-const mockMemStats     = jest.fn(() => ({ activeSessions: 1 }));
+const mockGetSession = jest.fn(async () => ({ turns: [] }));
+const mockMemStats = jest.fn(() => ({ activeSessions: 1 }));
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
-  addUserTurn:  mockAddUserTurn,
+  addUserTurn: mockAddUserTurn,
   addAgentTurn: mockAddAgentTurn,
-  getStats:     mockMemStats,
+  getSession: mockGetSession,
+  getStats: mockMemStats,
 }));
 
 // ── Mock lang ─────────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/features/lang/lang.service.js', () => ({
-  detectLang:   jest.fn(() => 'fr'),
+  detectLang: jest.fn(() => 'fr'),
   twilioLocale: jest.fn(() => 'fr-FR'),
 }));
 
 // ── Mock TwiML builder ────────────────────────────────────────────────────────
-const mockSayThenGather  = jest.fn((msg) => `<Say>${msg}</Say>`);
-const mockPlayThenGather = jest.fn((url) => `<Play>${url}</Play>`);
+const mockSayThenGather = jest.fn(msg => `<Say>${msg}</Say>`);
+const mockPlayThenGather = jest.fn(url => `<Play>${url}</Play>`);
 jest.unstable_mockModule('../../../src/features/voice/twiml.builder.js', () => ({
-  twimlSayThenGather:  mockSayThenGather,
+  twimlSayThenGather: mockSayThenGather,
   twimlPlayThenGather: mockPlayThenGather,
-  twimlError:          jest.fn(() => '<Error/>'),
+  twimlError: jest.fn(() => '<Error/>'),
 }));
 
 // ── Mock audio utils (saveAudio) ──────────────────────────────────────────────
@@ -87,16 +101,16 @@ const saveAudio = jest.fn(async () => ({ filename: 'audio-test.wav' }));
 /** A baseline NLU success result with no missing fields. */
 function nluOk(overrides = {}) {
   return {
-    ok:                 true,
-    intent:             'list_events',
-    confidence:         0.9,
-    subject:            '',
-    isoDate:            null,
-    isoTime:            null,
+    ok: true,
+    intent: 'list_events',
+    confidence: 0.9,
+    subject: '',
+    isoDate: null,
+    isoTime: null,
     needsClarification: false,
-    missing:            [],
-    errors:             [],
-    strategy:           'mock',
+    missing: [],
+    errors: [],
+    strategy: 'mock',
     ...overrides,
   };
 }
@@ -110,7 +124,12 @@ beforeEach(() => {
   mockAddUserTurn.mockResolvedValue(undefined);
   mockAddAgentTurn.mockResolvedValue(undefined);
   saveAudio.mockResolvedValue({ filename: 'audio-test.wav' });
-  mockSynthesize.mockResolvedValue({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav', fallback: false });
+  mockSynthesize.mockResolvedValue({
+    buffer: Buffer.alloc(10),
+    ext: '.wav',
+    mimeType: 'audio/wav',
+    fallback: false,
+  });
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -135,9 +154,9 @@ describe('withTimeout', () => {
     const result = await racePromise;
 
     expect(mockSayThenGather).toHaveBeenCalledWith(
-      expect.stringContaining('patienter'),
+      expect.stringContaining('instant'),
       GATHER_URL,
-      expect.objectContaining({ locale: 'fr-FR' }),
+      expect.objectContaining({ locale: 'fr-FR' })
     );
     expect(typeof result).toBe('string');
     jest.useRealTimers();
@@ -160,7 +179,7 @@ describe('runPipeline — NLU failure', () => {
   test('returns error TwiML when understand() throws', async () => {
     mockUnderstand.mockRejectedValueOnce(new Error('Claude API timeout'));
     const result = await runPipeline(CTX, saveAudio);
-    expect(result).toContain("indisponible");
+    expect(result).toContain('problème');
     expect(mockDispatch).not.toHaveBeenCalled();
   });
 
@@ -169,7 +188,7 @@ describe('runPipeline — NLU failure', () => {
     await runPipeline(CTX, saveAudio);
     const { errorCounter } = await import('../../../src/core/metrics.js');
     expect(errorCounter.inc).toHaveBeenCalledWith(
-      expect.objectContaining({ service: 'pipeline', errorType: 'nlu_error' }),
+      expect.objectContaining({ service: 'pipeline', errorType: 'nlu_error' })
     );
   });
 
@@ -204,7 +223,7 @@ describe('runPipeline — clarification (needsClarification=true, missing=[])', 
     await runPipeline(CTX, saveAudio);
     // The clarification text is passed to synthesize, not directly to twimlSayThenGather
     const [text] = mockSynthesize.mock.calls[0];
-    expect(text).toMatch(/créer|annuler|modifier|consulter/i);
+    expect(text).toMatch(/prendre|annuler|modifier|vérifier/i);
   });
 
   test('adds agent turn for clarification message', async () => {
@@ -226,54 +245,78 @@ describe('runPipeline — clarification (needsClarification=true, missing=[])', 
 
 describe('runPipeline — missing fields', () => {
   test('asks for date when create_event is missing date', async () => {
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent: 'create_event', missing: ['date'], needsClarification: true,
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'create_event',
+        missing: ['date'],
+        needsClarification: true,
+      })
+    );
     await runPipeline(CTX, saveAudio);
     const [msg] = mockSayThenGather.mock.calls[0] ?? [];
     expect(msg ?? mockAddAgentTurn.mock.calls[0]?.[1]).toMatch(/jour/i);
   });
 
   test('asks for time when create_event is missing heure', async () => {
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent: 'create_event', missing: ['heure'], needsClarification: true,
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'create_event',
+        missing: ['heure'],
+        needsClarification: true,
+      })
+    );
     await runPipeline(CTX, saveAudio);
     const agentMsg = mockAddAgentTurn.mock.calls[0]?.[1] ?? '';
     expect(agentMsg).toMatch(/heure/i);
   });
 
   test('asks for both date and time when both missing', async () => {
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent: 'create_event', missing: ['date', 'heure'], needsClarification: true,
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'create_event',
+        missing: ['date', 'heure'],
+        needsClarification: true,
+      })
+    );
     await runPipeline(CTX, saveAudio);
     const agentMsg = mockAddAgentTurn.mock.calls[0]?.[1] ?? '';
     expect(agentMsg).toMatch(/jour|heure/i);
   });
 
   test('asks for date on cancel_event missing date', async () => {
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent: 'cancel_event', missing: ['date'], needsClarification: true,
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'cancel_event',
+        missing: ['date'],
+        needsClarification: true,
+      })
+    );
     await runPipeline(CTX, saveAudio);
     const agentMsg = mockAddAgentTurn.mock.calls[0]?.[1] ?? '';
     expect(agentMsg).toMatch(/annuler/i);
   });
 
   test('asks for date on update_event missing date', async () => {
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent: 'update_event', missing: ['date'], needsClarification: true,
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'update_event',
+        missing: ['date'],
+        needsClarification: true,
+      })
+    );
     await runPipeline(CTX, saveAudio);
     const agentMsg = mockAddAgentTurn.mock.calls[0]?.[1] ?? '';
     expect(agentMsg).toMatch(/modifier/i);
   });
 
   test('does NOT dispatch agent when fields are missing', async () => {
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent: 'create_event', missing: ['date'], needsClarification: true,
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'create_event',
+        missing: ['date'],
+        needsClarification: true,
+      })
+    );
     await runPipeline(CTX, saveAudio);
     expect(mockDispatch).not.toHaveBeenCalled();
   });
@@ -301,7 +344,12 @@ describe('runPipeline — happy path', () => {
   test('returns <Play> TwiML when TTS and saveAudio succeed', async () => {
     mockUnderstand.mockResolvedValueOnce(nluOk());
     mockDispatch.mockResolvedValueOnce({ ok: true, message: 'Pas de RDV.' });
-    mockSynthesize.mockResolvedValueOnce({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav', fallback: false });
+    mockSynthesize.mockResolvedValueOnce({
+      buffer: Buffer.alloc(10),
+      ext: '.wav',
+      mimeType: 'audio/wav',
+      fallback: false,
+    });
     saveAudio.mockResolvedValueOnce({ filename: 'reply.wav' });
     const result = await runPipeline(CTX, saveAudio);
     expect(result).toContain('reply.wav');
@@ -322,7 +370,7 @@ describe('runPipeline — happy path', () => {
     expect(mockAddAgentTurn).toHaveBeenCalledWith(
       CTX.callSid,
       expect.stringContaining('Réponse'),
-      expect.anything(),
+      expect.anything()
     );
   });
 });
@@ -356,9 +404,7 @@ describe('runPipeline — TTS or saveAudio failure → <Say> fallback', () => {
     mockSynthesize.mockRejectedValueOnce(new Error('Timeout'));
     await runPipeline(CTX, saveAudio);
     const { errorCounter } = await import('../../../src/core/metrics.js');
-    expect(errorCounter.inc).toHaveBeenCalledWith(
-      expect.objectContaining({ service: 'tts' }),
-    );
+    expect(errorCounter.inc).toHaveBeenCalledWith(expect.objectContaining({ service: 'tts' }));
   });
 });
 
@@ -374,13 +420,13 @@ describe('runPipeline — agent dispatch failure', () => {
     expect(typeof result).toBe('string');
   });
 
-  test('uses fallback message "Une erreur interne est survenue"', async () => {
+  test('uses fallback message in French when agent dispatch fails', async () => {
     mockUnderstand.mockResolvedValueOnce(nluOk());
     mockDispatch.mockRejectedValueOnce(new Error('crash'));
     await runPipeline(CTX, saveAudio);
     // The fallback message is passed to TTS or Say — check agent turn content
     const [, msg] = mockAddAgentTurn.mock.calls[0] ?? [null, ''];
-    expect(msg).toMatch(/erreur interne/i);
+    expect(msg).toMatch(/problème est survenu/i);
   });
 });
 
@@ -392,11 +438,13 @@ describe('_buildMissingQuestion — line 136 FALSE branch (create_event, unknown
   test('falls through to default question when create_event missing an unknown field', async () => {
     // Covers line 136 FALSE: missing doesn't include 'heure' (nor 'date')
     // For create_event, after failing both date and heure checks, falls through to default
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent:             'create_event',
-      missing:            ['subject'],  // neither 'date' nor 'heure'
-      needsClarification: true,
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'create_event',
+        missing: ['subject'], // neither 'date' nor 'heure'
+        needsClarification: true,
+      })
+    );
     const result = await runPipeline(CTX, saveAudio);
     // Should not throw — _buildMissingQuestion returns default question
     expect(typeof result).toBe('string');

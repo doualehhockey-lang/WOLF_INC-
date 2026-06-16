@@ -12,7 +12,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=wolf
       - DB_USER=wolf
-      - DB_PASSWORD=${DB_PASSWORD:?ERROR: DB_PASSWORD must be set — never use a default in production}
+      - DB_PASSWORD=${DB_PASSWORD:?ERROR: DB_PASSWORD must be set}
     depends_on:
       postgres:
         condition: service_healthy
@@ -25,6 +25,14 @@ services:
       retries: 3
       start_period: 20s
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     volumes:
       - audio_data:/app/public/audio
     networks: [wolf-net]
@@ -47,7 +55,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --save 60 1 --loglevel warning
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD:-changeme}
     volumes:
       - redis_data:/data
     healthcheck:
@@ -58,6 +66,7 @@ services:
     restart: unless-stopped
     networks: [wolf-net]
 
+  # ── Observabilité (optionnel — démarrer avec: docker compose --profile monitoring up) ──
   prometheus:
     image: prom/prometheus:v2.51.0
     command:
@@ -73,13 +82,14 @@ services:
     depends_on: [app]
     restart: unless-stopped
     networks: [wolf-net]
+    profiles: [monitoring]
 
   grafana:
     image: grafana/grafana:10.4.0
     ports:
       - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?ERROR: GRAFANA_PASSWORD must be set}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     volumes:
@@ -89,6 +99,22 @@ services:
     depends_on: [prometheus]
     restart: unless-stopped
     networks: [wolf-net]
+    profiles: [monitoring]
+
+  # ── Backup base de données ───────────────────────────────────────────────────
+  backup:
+    image: postgres:16-alpine
+    env_file: .env
+    environment:
+      - BACKUP_DIR=/var/backups/wolf
+      - RETAIN_DAYS=7
+    volumes:
+      - ./scripts/backup.sh:/usr/local/bin/backup.sh:ro
+      - backup_data:/var/backups/wolf
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["echo 'Backup service ready. Run: docker compose run backup backup.sh'"]
+    networks: [wolf-net]
+    profiles: [backup]
 
 volumes:
   pg_data:
@@ -96,6 +122,7 @@ volumes:
   prometheus_data:
   grafana_data:
   audio_data:
+  backup_data:
 
 networks:
   wolf-net:

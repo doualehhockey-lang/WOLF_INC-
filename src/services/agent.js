@@ -1,16 +1,15 @@
 // src/services/agent.js — Wolf Engine ML pipeline orchestrator.
 //
-// Pipeline (4 stages):
+// Pipeline (3 stages):
 //   1. Whisper  → transcription text  (required — failure returns ok:false)
 //   2. Claude   → NLU analysis        (required — failure returns ok:false)
-//   3. Ollama   → enrichment          (optional — never throws; pipeline continues on error)
-//   4. TTS      → audio buffer        (required — failure returns ok:false)
+//   3. TTS      → audio buffer        (required — failure returns ok:false)
 //
 // Factory pattern:  _makeAgent(deps) exported for testing with DI.
 // Production entry: export const { process } = _makeAgent()
 
-import { randomUUID }             from 'crypto';
-import { childLogger }            from '../core/logger.js';
+import { randomUUID } from 'crypto';
+import { childLogger } from '../core/logger.js';
 import { CircuitOpenError, TimeoutError } from './circuitBreaker.js';
 import {
   recordAgentRequest,
@@ -30,7 +29,7 @@ const log = childLogger('agent');
  */
 function _failureReason(err) {
   if (err instanceof CircuitOpenError) return 'circuit_open';
-  if (err instanceof TimeoutError)     return 'timeout';
+  if (err instanceof TimeoutError) return 'timeout';
   return 'error';
 }
 
@@ -38,11 +37,11 @@ function _failureReason(err) {
 
 /** Intent → natural-language response (French, default Wolf Engine persona). */
 const _INTENT_RESPONSES = {
-  create_event: (a) => `Parfait, je crée l'événement "${a.subject}" pour ${a.date} à ${a.time}.`,
-  cancel_event: (a) => `D'accord, j'annule l'événement "${a.subject}".`,
-  update_event: (a) => `Je mets à jour l'événement "${a.subject}".`,
-  list_events:  ()  => 'Voici vos événements à venir.',
-  unknown:      ()  => 'Je n\'ai pas compris votre demande. Pouvez-vous reformuler ?',
+  create_event: a => `Parfait, je crée l'événement "${a.subject}" pour ${a.date} à ${a.time}.`,
+  cancel_event: a => `D'accord, j'annule l'événement "${a.subject}".`,
+  update_event: a => `Je mets à jour l'événement "${a.subject}".`,
+  list_events: () => 'Voici vos événements à venir.',
+  unknown: () => "Je n'ai pas compris votre demande. Pouvez-vous reformuler ?",
 };
 
 /**
@@ -65,31 +64,23 @@ function _composeResponse(analysis) {
  * @param {object} [deps]
  * @param {function} [deps.transcribeWav]  whisper.client transcribeWav
  * @param {function} [deps.claudeAnalyze]  claude.client analyze
- * @param {function} [deps.ollamaAnalyze]  ollama.client analyze (never throws)
  * @param {function} [deps.synthesize]     tts.client synthesize
  * @param {function} [deps.now]            () => number  (clock injection for tests)
  * @returns {{ process: function }}
  */
 export function _makeAgent(deps = {}) {
-  let transcribeWav, claudeAnalyze, ollamaAnalyze, synthesize;
+  let transcribeWav, claudeAnalyze, synthesize;
 
   // Lazy-resolved defaults (dynamic import avoids circular deps at module load time)
   async function _resolve() {
     if (!transcribeWav) {
-      transcribeWav = deps.transcribeWav
-        ?? (await import('./whisper.client.js')).transcribeWav;
+      transcribeWav = deps.transcribeWav ?? (await import('./whisper.client.js')).transcribeWav;
     }
     if (!claudeAnalyze) {
-      claudeAnalyze = deps.claudeAnalyze
-        ?? (await import('./claude.client.js')).analyze;
-    }
-    if (!ollamaAnalyze) {
-      ollamaAnalyze = deps.ollamaAnalyze
-        ?? (await import('./ollama.client.js')).analyze;
+      claudeAnalyze = deps.claudeAnalyze ?? (await import('./claude.client.js')).analyze;
     }
     if (!synthesize) {
-      synthesize = deps.synthesize
-        ?? (await import('./tts.client.js')).synthesize;
+      synthesize = deps.synthesize ?? (await import('./tts.client.js')).synthesize;
     }
   }
 
@@ -112,7 +103,6 @@ export function _makeAgent(deps = {}) {
    * @property {string} requestId
    * @property {string} transcription
    * @property {object} analysis        NLU output from Claude
-   * @property {object} enriched        NLU enrichment from Ollama (may have strategy:'ollama-error')
    * @property {object} audio           { buffer, ext, mimeType }
    * @property {string} responseText    Text fed to TTS
    * @property {number} latency         Total pipeline latency in ms
@@ -125,7 +115,7 @@ export function _makeAgent(deps = {}) {
    */
   async function process(wavBuffer = null, opts = {}) {
     const requestId = opts.requestId ?? randomUUID();
-    const start     = _now();
+    const start = _now();
 
     await _resolve();
 
@@ -160,28 +150,13 @@ export function _makeAgent(deps = {}) {
       return { ok: false, stage: 'claude', error: err.message, requestId };
     }
 
-    // ── Stage 3: Ollama enrichment (non-blocking) ───────────────────────────
-    let enriched;
-    try {
-      enriched = await ollamaAnalyze(transcription, { requestId, timeoutMs: opts.timeoutMs });
-      if (enriched?.strategy === 'ollama-error') {
-        recordAgentStageFailure('ollama', 'error');
-        log.warn({ requestId }, 'Agent: Ollama enrichment returned error fallback');
-      }
-    } catch (err) {
-      // ollamaAnalyze() should never throw — defensive catch in case of DI mismatch
-      recordAgentStageFailure('ollama', _failureReason(err));
-      log.warn({ requestId, err: err.message }, 'Agent: Ollama stage threw unexpectedly');
-      enriched = { intent: 'unknown', subject: '', date: '', time: '', confidence: 0, errors: [err.message], strategy: 'ollama-error' };
-    }
-
-    // ── Stage 4: TTS ────────────────────────────────────────────────────────
+    // ── Stage 3: TTS ────────────────────────────────────────────────────────
     const responseText = _composeResponse(analysis);
     let audio;
     try {
       audio = await synthesize(responseText, {
         requestId,
-        locale:    opts.locale ?? 'fr-FR',
+        locale: opts.locale ?? 'fr-FR',
         timeoutMs: opts.timeoutMs,
       });
     } catch (err) {
@@ -205,7 +180,6 @@ export function _makeAgent(deps = {}) {
       requestId,
       transcription,
       analysis,
-      enriched,
       audio,
       responseText,
       latency,

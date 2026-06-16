@@ -15,9 +15,14 @@
 
 import {
   ResponsiveContainer,
-  LineChart, Line,
-  BarChart,  Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ReferenceLine,
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -32,7 +37,8 @@ function WolfTooltip({ active, payload, label, unit = '' }) {
       <p className="text-text-muted mb-1">{label}</p>
       {payload.map(p => (
         <p key={p.dataKey} style={{ color: p.color }} className="font-mono">
-          {p.name}: {p.value}{unit}
+          {p.name}: {p.value}
+          {unit}
         </p>
       ))}
     </div>
@@ -43,7 +49,7 @@ function WolfTooltip({ active, payload, label, unit = '' }) {
 
 function StatPanel({ value, unit = '', delta, deltaLabel, suffix, loading, error }) {
   if (loading) return <SkeletonStat />;
-  if (error)   return <ErrorState message={error.message} />;
+  if (error) return <ErrorState message={error.message} />;
 
   const deltaSign = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
 
@@ -56,25 +62,25 @@ function StatPanel({ value, unit = '', delta, deltaLabel, suffix, loading, error
         )}
       </p>
       {suffix && <p className="text-xs text-text-muted">{suffix}</p>}
-      {delta !== undefined && (
-        <DeltaBadge sign={deltaSign} delta={delta} label={deltaLabel} />
-      )}
+      {delta !== undefined && <DeltaBadge sign={deltaSign} delta={delta} label={deltaLabel} />}
     </div>
   );
 }
 
 function DeltaBadge({ sign, delta, label }) {
-  const Icon  = sign === 'up' ? TrendingUp : sign === 'down' ? TrendingDown : Minus;
-  const color = sign === 'up'
-    ? 'text-emerald-500 dark:text-emerald-400'
-    : sign === 'down'
-    ? 'text-red-500 dark:text-red-400'
-    : 'text-text-muted';
+  const Icon = sign === 'up' ? TrendingUp : sign === 'down' ? TrendingDown : Minus;
+  const color =
+    sign === 'up'
+      ? 'text-emerald-500 dark:text-emerald-400'
+      : sign === 'down'
+        ? 'text-red-500 dark:text-red-400'
+        : 'text-text-muted';
 
   return (
     <p className={clsx('flex items-center gap-1 text-xs font-medium', color)}>
       <Icon className="h-3 w-3" aria-hidden="true" />
-      {Math.abs(delta)}{label ?? ''}
+      {Math.abs(delta)}
+      {label ?? ''}
     </p>
   );
 }
@@ -83,14 +89,22 @@ function DeltaBadge({ sign, delta, label }) {
 
 function LinePanel({ data, dataKey, color = '#4070f4', unit = '', refValue, loading, error }) {
   if (loading) return <SkeletonChart />;
-  if (error)   return <ErrorState message={error.message} />;
+  if (error) return <ErrorState message={error.message} />;
 
   return (
     <ResponsiveContainer width="100%" height={140}>
       <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-        <XAxis dataKey="ts" tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} tickLine={false} />
-        <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} />
+        <XAxis
+          dataKey="ts"
+          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tickLine={false}
+        />
+        <YAxis
+          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tickLine={false}
+          axisLine={false}
+        />
         <Tooltip content={<WolfTooltip unit={unit} />} />
         {refValue !== undefined && (
           <ReferenceLine y={refValue} stroke="var(--color-text-muted)" strokeDasharray="4 4" />
@@ -112,14 +126,22 @@ function LinePanel({ data, dataKey, color = '#4070f4', unit = '', refValue, load
 
 function BarPanel({ data, dataKey, color = '#4070f4', unit = '', loading, error }) {
   if (loading) return <SkeletonChart />;
-  if (error)   return <ErrorState message={error.message} />;
+  if (error) return <ErrorState message={error.message} />;
 
   return (
     <ResponsiveContainer width="100%" height={140}>
       <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-        <XAxis dataKey="ts" tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} tickLine={false} />
-        <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} />
+        <XAxis
+          dataKey="ts"
+          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tickLine={false}
+        />
+        <YAxis
+          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tickLine={false}
+          axisLine={false}
+        />
         <Tooltip content={<WolfTooltip unit={unit} />} />
         <Bar dataKey={dataKey} fill={color} radius={[3, 3, 0, 0]} maxBarSize={24} />
       </BarChart>
@@ -153,11 +175,7 @@ function SkeletonChart() {
 }
 
 function ErrorState({ message }) {
-  return (
-    <p className="text-xs text-red-500 dark:text-red-400 py-2">
-      Failed to load: {message}
-    </p>
-  );
+  return <p className="text-xs text-red-500 dark:text-red-400 py-2">Failed to load: {message}</p>;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
@@ -190,14 +208,11 @@ export default function ChartPanel({
   variant = 'stat',
   className,
   loading = false,
-  error   = null,
+  error = null,
   ...rest
 }) {
   return (
-    <article
-      className={clsx('card flex flex-col gap-3', className)}
-      aria-label={title}
-    >
+    <article className={clsx('card flex flex-col gap-3', className)} aria-label={title}>
       {/* Header */}
       <div>
         <p className="text-sm font-medium text-text-base">{title}</p>
@@ -205,15 +220,9 @@ export default function ChartPanel({
       </div>
 
       {/* Body */}
-      {variant === 'stat' && (
-        <StatPanel loading={loading} error={error} {...rest} />
-      )}
-      {variant === 'line' && (
-        <LinePanel loading={loading} error={error} {...rest} />
-      )}
-      {variant === 'bar' && (
-        <BarPanel  loading={loading} error={error} {...rest} />
-      )}
+      {variant === 'stat' && <StatPanel loading={loading} error={error} {...rest} />}
+      {variant === 'line' && <LinePanel loading={loading} error={error} {...rest} />}
+      {variant === 'bar' && <BarPanel loading={loading} error={error} {...rest} />}
     </article>
   );
 }

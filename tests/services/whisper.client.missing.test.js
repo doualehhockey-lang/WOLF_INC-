@@ -14,10 +14,10 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 // Mutable config object — tests mutate fields to exercise different branches
 const cfg = {
-  WHISPER_BACKEND:    'local-server',
+  WHISPER_BACKEND: 'local-server',
   WHISPER_SERVER_URL: 'http://localhost:9000/transcribe',
-  WHISPER_TIMEOUT:    5_000,
-  OPENAI_API_KEY:     'sk-test',
+  WHISPER_TIMEOUT: 5_000,
+  OPENAI_API_KEY: 'sk-test',
 };
 jest.unstable_mockModule('../../src/core/config.js', () => ({ config: cfg }));
 
@@ -27,16 +27,17 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest:   jest.fn(),
-  recordFailure:   jest.fn(),
-  recordLatency:   jest.fn(),
+  recordRequest: jest.fn(),
+  recordFailure: jest.fn(),
+  recordLatency: jest.fn(),
   setCircuitState: jest.fn(),
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 
 const { _makeTranscribeWav } = await import('../../src/services/whisper.client.js');
-const { CircuitBreaker }     = await import('../../src/services/circuitBreaker.js');
+const { CircuitBreaker } = await import('../../src/services/circuitBreaker.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -50,10 +51,10 @@ function makeClient() {
 
 function okResponse(body) {
   return {
-    ok:     true,
+    ok: true,
     status: 200,
-    json:   async () => body,
-    text:   async () => JSON.stringify(body),
+    json: async () => body,
+    text: async () => JSON.stringify(body),
   };
 }
 
@@ -61,7 +62,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Reset to safe defaults before each test
   cfg.WHISPER_BACKEND = 'local-server';
-  cfg.OPENAI_API_KEY  = 'sk-test';
+  cfg.OPENAI_API_KEY = 'sk-test';
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -104,14 +105,14 @@ describe('_localServer — json field fallback chain (line 68)', () => {
 describe('_openai — missing API key (line 78)', () => {
   test('throws when OPENAI_API_KEY is undefined', async () => {
     cfg.WHISPER_BACKEND = 'openai';
-    cfg.OPENAI_API_KEY  = undefined;
+    cfg.OPENAI_API_KEY = undefined;
     const transcribeWav = makeClient();
     await expect(transcribeWav(validWav)).rejects.toThrow('OPENAI_API_KEY not configured');
   });
 
   test('throws when OPENAI_API_KEY is empty string', async () => {
     cfg.WHISPER_BACKEND = 'openai';
-    cfg.OPENAI_API_KEY  = '';
+    cfg.OPENAI_API_KEY = '';
     const transcribeWav = makeClient();
     await expect(transcribeWav(validWav)).rejects.toThrow('OPENAI_API_KEY not configured');
   });
@@ -125,9 +126,9 @@ describe('_localServer — res.text().catch fallback (line 64)', () => {
   test('catch(() => "") fires when res.text() rejects on non-ok response', async () => {
     cfg.WHISPER_BACKEND = 'local-server';
     mockApiFetch.mockResolvedValueOnce({
-      ok:     false,
+      ok: false,
       status: 503,
-      text:   jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
+      text: jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
     });
     const transcribeWav = makeClient();
     await expect(transcribeWav(validWav)).rejects.toThrow('Whisper local 503');
@@ -142,7 +143,7 @@ describe('_localServer — res.text().catch fallback (line 64)', () => {
 describe('_openai — empty response (line 104)', () => {
   beforeEach(() => {
     cfg.WHISPER_BACKEND = 'openai';
-    cfg.OPENAI_API_KEY  = 'sk-test';
+    cfg.OPENAI_API_KEY = 'sk-test';
   });
 
   test('throws when json.text is empty string', async () => {

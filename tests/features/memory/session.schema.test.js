@@ -1,6 +1,10 @@
 // tests/features/memory/session.schema.test.js
 
-import { parseSession, defaultSession, SessionSchema } from '../../../src/features/memory/session.schema.js';
+import {
+  parseSession,
+  defaultSession,
+  SessionSchema,
+} from '../../../src/features/memory/session.schema.js';
 
 describe('SessionSchema', () => {
   test('defaultSession returns a valid session', () => {
@@ -14,14 +18,14 @@ describe('SessionSchema', () => {
 
   test('parseSession accepts a valid session object', () => {
     const raw = {
-      callSid:        'CA123',
-      turns:          [{ role: 'user', content: 'hello', ts: Date.now() }],
-      lang:           'en',
-      pendingIntent:  null,
-      pendingDate:    null,
-      pendingTime:    null,
+      callSid: 'CA123',
+      turns: [{ role: 'user', content: 'hello', ts: Date.now() }],
+      lang: 'en',
+      pendingIntent: null,
+      pendingDate: null,
+      pendingTime: null,
       pendingSubject: null,
-      lastActivity:   Date.now(),
+      lastActivity: Date.now(),
     };
     const result = parseSession(raw);
     expect(result).not.toBeNull();
@@ -31,14 +35,14 @@ describe('SessionSchema', () => {
 
   test('parseSession returns null for invalid input', () => {
     expect(parseSession(null)).toBeNull();
-    expect(parseSession({})).toBeNull();        // missing callSid
+    expect(parseSession({})).toBeNull(); // missing callSid
     expect(parseSession({ callSid: '' })).toBeNull(); // empty callSid
   });
 
   test('parseSession rejects invalid turn role', () => {
     const raw = {
-      callSid:      'CA123',
-      turns:        [{ role: 'admin', content: 'hack', ts: Date.now() }],
+      callSid: 'CA123',
+      turns: [{ role: 'admin', content: 'hack', ts: Date.now() }],
       lastActivity: Date.now(),
     };
     expect(parseSession(raw)).toBeNull();
@@ -46,8 +50,8 @@ describe('SessionSchema', () => {
 
   test('session serializes and round-trips via JSON', () => {
     const original = defaultSession('CA999');
-    const json     = JSON.stringify(original);
-    const parsed   = parseSession(JSON.parse(json));
+    const json = JSON.stringify(original);
+    const parsed = parseSession(JSON.parse(json));
     expect(parsed).not.toBeNull();
     expect(parsed.callSid).toBe('CA999');
   });

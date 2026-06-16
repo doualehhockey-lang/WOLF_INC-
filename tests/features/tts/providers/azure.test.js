@@ -7,9 +7,9 @@ import { jest } from '@jest/globals';
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../../src/core/config.js', () => ({
   config: {
-    AZURE_TTS_KEY:    'test-key',
+    AZURE_TTS_KEY: 'test-key',
     AZURE_TTS_REGION: 'westeurope',
-    AZURE_TTS_VOICE:  'fr-FR-DeniseNeural',
+    AZURE_TTS_VOICE: 'fr-FR-DeniseNeural',
   },
 }));
 
@@ -23,30 +23,31 @@ jest.unstable_mockModule('../../../../src/infra/http/httpClient.js', () => ({
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 const { synthesizeAzure } = await import('../../../../src/features/tts/providers/azure.js');
-const { TtsError }        = await import('../../../../src/core/errors.js');
-const { config }          = await import('../../../../src/core/config.js');
+const { TtsError } = await import('../../../../src/core/errors.js');
+const { config } = await import('../../../../src/core/config.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function makeTokenRes(ok = true) {
   return { ok, status: ok ? 200 : 401, text: async () => 'fake-bearer-token' };
 }
 function makeTtsRes(ok = true) {
-  const buf = Buffer.alloc(16, 0xAB);
+  const buf = Buffer.alloc(16, 0xab);
   return {
-    ok, status: ok ? 200 : 503,
+    ok,
+    status: ok ? 200 : 503,
     arrayBuffer: async () => buf.buffer,
   };
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
-  config.AZURE_TTS_KEY    = 'test-key';
+  config.AZURE_TTS_KEY = 'test-key';
   config.AZURE_TTS_REGION = 'westeurope';
-  config.AZURE_TTS_VOICE  = 'fr-FR-DeniseNeural';
+  config.AZURE_TTS_VOICE = 'fr-FR-DeniseNeural';
   // Default: both fetches succeed
   mockApiFetch
-    .mockResolvedValueOnce(makeTokenRes(true))   // token
-    .mockResolvedValueOnce(makeTtsRes(true));    // synthesis
+    .mockResolvedValueOnce(makeTokenRes(true)) // token
+    .mockResolvedValueOnce(makeTtsRes(true)); // synthesis
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -96,17 +97,13 @@ describe('synthesizeAzure — token request fails', () => {
 describe('synthesizeAzure — synthesis request fails', () => {
   test('throws TtsError when TTS endpoint returns non-ok', async () => {
     mockApiFetch.mockReset();
-    mockApiFetch
-      .mockResolvedValueOnce(makeTokenRes(true))
-      .mockResolvedValueOnce(makeTtsRes(false));
+    mockApiFetch.mockResolvedValueOnce(makeTokenRes(true)).mockResolvedValueOnce(makeTtsRes(false));
     await expect(synthesizeAzure('Bonjour')).rejects.toBeInstanceOf(TtsError);
   });
 
   test('TtsError message includes synthesis status', async () => {
     mockApiFetch.mockReset();
-    mockApiFetch
-      .mockResolvedValueOnce(makeTokenRes(true))
-      .mockResolvedValueOnce(makeTtsRes(false));
+    mockApiFetch.mockResolvedValueOnce(makeTokenRes(true)).mockResolvedValueOnce(makeTtsRes(false));
     await expect(synthesizeAzure('Bonjour')).rejects.toThrow('503');
   });
 });

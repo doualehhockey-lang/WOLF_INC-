@@ -7,36 +7,36 @@ import { z } from 'zod';
 // ── Twilio webhook schemas ────────────────────────────────────────────────────
 
 export const TwilioVoiceSchema = z.object({
-  CallSid:     z.string().max(64).default('unknown'),
-  From:        z.string().max(20).default('unknown'),
-  To:          z.string().max(20).optional(),
-  CallStatus:  z.string().max(32).optional(),
-  Direction:   z.string().max(32).optional(),
+  CallSid: z.string().max(64).default('unknown'),
+  From: z.string().max(20).default('unknown'),
+  To: z.string().max(20).optional(),
+  CallStatus: z.string().max(32).optional(),
+  Direction: z.string().max(32).optional(),
 });
 
 export const TwilioGatherSchema = z.object({
   SpeechResult: z.string().max(500).optional(),
-  Confidence:   z.string().optional(),
-  CallSid:      z.string().max(64).default('unknown'),
-  From:         z.string().max(20).default('unknown'),
+  Confidence: z.string().optional(),
+  CallSid: z.string().max(64).default('unknown'),
+  From: z.string().max(20).default('unknown'),
 });
 
 export const TwilioStatusSchema = z.object({
-  CallSid:    z.string().max(64),
+  CallSid: z.string().max(64),
   CallStatus: z.string().max(32),
 });
 
 export const TwilioSmsSchema = z.object({
   Body: z.string().max(1_600).optional(),
   From: z.string().max(20).default('unknown'),
-  To:   z.string().max(20).optional(),
+  To: z.string().max(20).optional(),
 });
 
 // ── REST API schemas ──────────────────────────────────────────────────────────
 
 export const ReplyBodySchema = z.object({
   content: z.string().min(1).max(2_000),
-  tone:    z.enum(['pro', 'sec', 'friendly', 'sarcastique', 'wolf-inc']).optional(),
+  tone: z.enum(['pro', 'sec', 'friendly', 'sarcastique', 'wolf-inc']).optional(),
 });
 
 // ── Middleware factory ────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ export function validateBody(schema) {
     const result = schema.safeParse(req.body ?? {});
     if (!result.success) {
       return res.status(400).json({
-        error:   'VALIDATION_ERROR',
+        error: 'VALIDATION_ERROR',
         details: result.error.issues.map(e => ({ path: e.path.join('.'), msg: e.message })),
       });
     }

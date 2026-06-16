@@ -7,7 +7,10 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
-    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   }),
 }));
 
@@ -15,17 +18,18 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 const mockTtsCacheHits = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   ttsCacheHits: mockTtsCacheHits,
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Mock Redis — always available ─────────────────────────────────────────────
 const mockRedis = {
   getBuffer: jest.fn(),
-  get:       jest.fn(),
-  expire:    jest.fn(),
-  setex:     jest.fn(),
+  get: jest.fn(),
+  expire: jest.fn(),
+  setex: jest.fn(),
 };
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
-  redis:          mockRedis,
+  redis: mockRedis,
   redisAvailable: true,
 }));
 
@@ -33,10 +37,10 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
 const { cacheKey, cacheGet, cacheSet } = await import('../../../src/features/tts/tts.cache.js');
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
-const TEXT     = 'Bonjour monde Redis';
+const TEXT = 'Bonjour monde Redis';
 const PROVIDER = 'mock';
-const LOCALE   = 'fr-FR';
-const fakeBuffer = () => Buffer.alloc(20, 0xAB);
+const LOCALE = 'fr-FR';
+const fakeBuffer = () => Buffer.alloc(20, 0xab);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -123,19 +127,29 @@ describe('cacheSet — Redis available', () => {
   test('calls redis.setex for buffer with 24h TTL (86400s)', async () => {
     const buf = fakeBuffer();
     mockRedis.setex.mockResolvedValue('OK');
-    await cacheSet('redis-set-test', PROVIDER, { buffer: buf, ext: '.wav', mimeType: 'audio/wav' }, LOCALE);
+    await cacheSet(
+      'redis-set-test',
+      PROVIDER,
+      { buffer: buf, ext: '.wav', mimeType: 'audio/wav' },
+      LOCALE
+    );
     expect(mockRedis.setex).toHaveBeenCalledWith(
       cacheKey('redis-set-test', PROVIDER, LOCALE),
       86400,
-      buf,
+      buf
     );
   });
 
   test('writes ext and mimeType in :meta key', async () => {
     const buf = fakeBuffer();
     mockRedis.setex.mockResolvedValue('OK');
-    await cacheSet('redis-meta-test', PROVIDER, { buffer: buf, ext: '.mp3', mimeType: 'audio/mpeg' }, LOCALE);
-    const metaKey  = `${cacheKey('redis-meta-test', PROVIDER, LOCALE)}:meta`;
+    await cacheSet(
+      'redis-meta-test',
+      PROVIDER,
+      { buffer: buf, ext: '.mp3', mimeType: 'audio/mpeg' },
+      LOCALE
+    );
+    const metaKey = `${cacheKey('redis-meta-test', PROVIDER, LOCALE)}:meta`;
     const metaCall = mockRedis.setex.mock.calls.find(([k]) => k === metaKey);
     expect(metaCall).toBeDefined();
     const parsed = JSON.parse(metaCall[2]);
@@ -147,7 +161,12 @@ describe('cacheSet — Redis available', () => {
     mockRedis.setex.mockRejectedValue(new Error('OOM command not allowed'));
     const buf = fakeBuffer();
     await expect(
-      cacheSet('redis-err-test', PROVIDER, { buffer: buf, ext: '.wav', mimeType: 'audio/wav' }, LOCALE),
+      cacheSet(
+        'redis-err-test',
+        PROVIDER,
+        { buffer: buf, ext: '.wav', mimeType: 'audio/wav' },
+        LOCALE
+      )
     ).resolves.toBeUndefined();
   });
 });

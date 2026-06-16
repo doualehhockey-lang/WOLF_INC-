@@ -12,27 +12,28 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
     EVENTS_FILE: '/tmp/json-store-defaults-test/events.json',
-    MAX_EVENTS:  100,
+    MAX_EVENTS: 100,
   },
 }));
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   eventsStoredGauge: { inc: jest.fn(), dec: jest.fn(), set: jest.fn() },
-  errorCounter:      { inc: jest.fn() },
+  errorCounter: { inc: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // fs mocks: existsSync=true (dir exists, no mkdirSync needed),
 // readFileSync returns '{}' → JSON has no events or counter fields
 // → destructuring defaults { events = {}, counter = 1 } both fire (line 28 TRUE branches)
 const mockReadFileSync = jest.fn(() => '{}');
-const mockExistsSync   = jest.fn(() => true);
-const mockMkdirSync    = jest.fn();
-const mockWriteFile    = jest.fn(async () => {});
+const mockExistsSync = jest.fn(() => true);
+const mockMkdirSync = jest.fn();
+const mockWriteFile = jest.fn(async () => {});
 
 jest.unstable_mockModule('fs', () => ({
   readFileSync: mockReadFileSync,
-  mkdirSync:    mockMkdirSync,
-  existsSync:   mockExistsSync,
+  mkdirSync: mockMkdirSync,
+  existsSync: mockExistsSync,
 }));
 
 jest.unstable_mockModule('fs/promises', () => ({
@@ -41,8 +42,12 @@ jest.unstable_mockModule('fs/promises', () => ({
 
 jest.unstable_mockModule('../../../src/features/agent/write-queue.js', () => ({
   WriteQueue: class MockWriteQueue {
-    constructor(fn) { this._fn = fn; }
-    async enqueue() { await this._fn(); }
+    constructor(fn) {
+      this._fn = fn;
+    }
+    async enqueue() {
+      await this._fn();
+    }
   },
 }));
 

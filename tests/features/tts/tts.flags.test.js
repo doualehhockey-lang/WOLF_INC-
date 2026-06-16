@@ -9,16 +9,19 @@ import { jest } from '@jest/globals';
 // ── Controllable flag mock ─────────────────────────────────────────────────────
 const _disabledFlags = new Set();
 jest.unstable_mockModule('../../../src/core/featureFlags.js', () => ({
-  isEnabled: jest.fn(async (flag) => !_disabledFlags.has(flag)),
+  isEnabled: jest.fn(async flag => !_disabledFlags.has(flag)),
   FLAGS: {
     TTS_ELEVENLABS: 'tts.elevenlabs',
-    TTS_AZURE:      'tts.azure',
-    TTS_PIPER:      'tts.piper',
+    TTS_AZURE: 'tts.azure',
+    TTS_PIPER: 'tts.piper',
     PIPELINE_VOICE: 'pipeline.voice',
-    RATE_LIMIT:     'rate-limit',
-    CLAUDE_NLU:     'claude.nlu',
+    RATE_LIMIT: 'rate-limit',
+    CLAUDE_NLU: 'claude.nlu',
   },
-  setFlag: jest.fn(), getAllFlags: jest.fn(), snapshotFlags: jest.fn(() => ({})), clearCache: jest.fn(),
+  setFlag: jest.fn(),
+  getAllFlags: jest.fn(),
+  snapshotFlags: jest.fn(() => ({})),
+  clearCache: jest.fn(),
 }));
 
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
@@ -30,16 +33,22 @@ const _config = { TTS_PROVIDER: 'mock' };
 jest.unstable_mockModule('../../../src/core/config.js', () => ({ config: _config }));
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
-  ttsLatency:     { startTimer: jest.fn(() => jest.fn()) },
-  inflightTts:    { set: jest.fn() },
+  ttsLatency: { startTimer: jest.fn(() => jest.fn()) },
+  inflightTts: { set: jest.fn() },
   rateLimitCounter: { inc: jest.fn() },
-  pipelineLatency:  { startTimer: jest.fn(() => jest.fn()) },
-  errorCounter:     { inc: jest.fn() },
-  activeSessions:   { set: jest.fn() },
+  pipelineLatency: { startTimer: jest.fn(() => jest.fn()) },
+  errorCounter: { inc: jest.fn() },
+  activeSessions: { set: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 jest.unstable_mockModule('../../../src/core/errors.js', () => ({
-  TtsError: class TtsError extends Error { constructor(m) { super(m); this.name = 'TtsError'; } },
+  TtsError: class TtsError extends Error {
+    constructor(m) {
+      super(m);
+      this.name = 'TtsError';
+    }
+  },
 }));
 
 const mockCacheGet = jest.fn(async () => null);
@@ -87,8 +96,9 @@ describe('TTS_ELEVENLABS=false', () => {
 
     const result = await synthesize('hello world', 'en-US');
 
-    const { synthesizeMock }       = await import('../../../src/features/tts/providers/mock.js');
-    const { synthesizeElevenLabs } = await import('../../../src/features/tts/providers/elevenlabs.js');
+    const { synthesizeMock } = await import('../../../src/features/tts/providers/mock.js');
+    const { synthesizeElevenLabs } =
+      await import('../../../src/features/tts/providers/elevenlabs.js');
 
     expect(synthesizeMock).toHaveBeenCalled();
     expect(synthesizeElevenLabs).not.toHaveBeenCalled();
@@ -106,7 +116,7 @@ describe('TTS_AZURE=false', () => {
 
     const result = await synthesize('bonjour', 'fr-FR');
 
-    const { synthesizeMock }  = await import('../../../src/features/tts/providers/mock.js');
+    const { synthesizeMock } = await import('../../../src/features/tts/providers/mock.js');
     const { synthesizeAzure } = await import('../../../src/features/tts/providers/azure.js');
 
     expect(synthesizeMock).toHaveBeenCalled();
@@ -124,7 +134,7 @@ describe('TTS_PIPER=false', () => {
 
     const result = await synthesize('test text', 'fr-FR');
 
-    const { synthesizeMock }  = await import('../../../src/features/tts/providers/mock.js');
+    const { synthesizeMock } = await import('../../../src/features/tts/providers/mock.js');
     const { synthesizePiper } = await import('../../../src/features/tts/providers/piper.js');
 
     expect(synthesizeMock).toHaveBeenCalled();

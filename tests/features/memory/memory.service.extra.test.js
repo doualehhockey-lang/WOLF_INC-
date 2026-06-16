@@ -21,7 +21,7 @@ let _failRedis = false;
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   redis: null,
   redisAvailable: false,
-  cacheGet: jest.fn(async (key) => {
+  cacheGet: jest.fn(async key => {
     if (_failRedis) throw new Error('Redis down');
     return _redisStore.has(key) ? _redisStore.get(key) : null;
   }),
@@ -29,7 +29,7 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
     if (_failRedis) throw new Error('Redis down');
     _redisStore.set(key, value);
   }),
-  cacheDel: jest.fn(async (key) => {
+  cacheDel: jest.fn(async key => {
     _redisStore.delete(key);
   }),
 }));
@@ -39,13 +39,8 @@ jest.useFakeTimers();
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 
-const {
-  addUserTurn,
-  addAgentTurn,
-  buildContext,
-  getLang,
-  getSession,
-} = await import('../../../src/features/memory/memory.service.js');
+const { addUserTurn, addAgentTurn, buildContext, getLang, getSession } =
+  await import('../../../src/features/memory/memory.service.js');
 
 afterAll(() => jest.useRealTimers());
 
@@ -84,7 +79,7 @@ describe('memory.service — GC prunes expired sessions (lines 22-24)', () => {
     // cutoff = (TTL+1000) - 900000 = 1000 → lastActivity=0 < 1000 ✓
     // debug should have been called with { pruned: 1 }
     const pruneCalls = mockDebug.mock.calls.filter(
-      ([obj]) => obj && typeof obj === 'object' && obj.pruned > 0,
+      ([obj]) => obj && typeof obj === 'object' && obj.pruned > 0
     );
     expect(pruneCalls.length).toBeGreaterThan(0);
   });
@@ -95,7 +90,7 @@ describe('memory.service — GC prunes expired sessions (lines 22-24)', () => {
     await Promise.resolve();
 
     const pruneCalls = mockDebug.mock.calls.filter(
-      ([obj]) => obj && typeof obj === 'object' && obj.pruned > 0,
+      ([obj]) => obj && typeof obj === 'object' && obj.pruned > 0
     );
     expect(pruneCalls.length).toBe(0);
   });
@@ -158,7 +153,7 @@ describe('memory.service — buildContext pendingTime TRUE branch (line 106)', (
     const id = sid();
     // Set isoDate, isoTime, and subject — triggers pendingTime true branch
     await addAgentTurn(id, 'Rendez-vous créé', {
-      intent:  'create_event',
+      intent: 'create_event',
       isoDate: '2026-11-15',
       isoTime: '14:30',
       subject: 'médecin',

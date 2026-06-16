@@ -15,13 +15,8 @@
 //   component — backend component to tail ('agent'|'whisper'|'claude'|'tts'|'ollama')
 //   streamFn  — (component, signal) => Promise<Response>  (injected for testability)
 
-import {
-  useState, useEffect, useRef, useCallback, useMemo,
-} from 'react';
-import {
-  Search, Download, Pause, Play, Trash2,
-  ChevronDown, AlertCircle,
-} from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Search, Download, Pause, Play, Trash2, ChevronDown, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -35,8 +30,8 @@ const LEVEL_NUM = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 
 const LEVEL_STYLE = {
   trace: 'text-slate-400',
   debug: 'text-sky-400',
-  info:  'text-emerald-400',
-  warn:  'text-amber-400',
+  info: 'text-emerald-400',
+  warn: 'text-amber-400',
   error: 'text-red-400',
   fatal: 'text-red-600 font-bold',
 };
@@ -50,12 +45,12 @@ const LEVEL_STYLE = {
  */
 function parseLine(raw) {
   try {
-    const obj   = JSON.parse(raw);
+    const obj = JSON.parse(raw);
     const level = Object.entries(LEVEL_NUM).find(([, n]) => n === obj.level)?.[0] ?? 'info';
     return {
       level,
       time: obj.time ? new Date(obj.time).toLocaleTimeString('fr-FR', { hour12: false }) : '',
-      msg:  obj.msg ?? obj.message ?? raw,
+      msg: obj.msg ?? obj.message ?? raw,
       raw,
     };
   } catch {
@@ -70,12 +65,8 @@ function LogLine({ line }) {
 
   return (
     <li className="flex gap-2 px-3 py-0.5 hover:bg-surface group font-mono text-xs">
-      {line.time && (
-        <span className="shrink-0 text-text-muted w-20">{line.time}</span>
-      )}
-      <span className={clsx('shrink-0 w-10 uppercase', colorClass)}>
-        {line.level}
-      </span>
+      {line.time && <span className="shrink-0 text-text-muted w-20">{line.time}</span>}
+      <span className={clsx('shrink-0 w-10 uppercase', colorClass)}>{line.level}</span>
       <span className="flex-1 break-all text-text-base">{line.msg}</span>
     </li>
   );
@@ -84,11 +75,16 @@ function LogLine({ line }) {
 // ── Controls bar ──────────────────────────────────────────────────────────────
 
 function Controls({
-  component, setComponent,
-  level, setLevel,
-  search, setSearch,
-  paused, onTogglePause,
-  onClear, onDownload,
+  component,
+  setComponent,
+  level,
+  setLevel,
+  search,
+  setSearch,
+  paused,
+  onTogglePause,
+  onClear,
+  onDownload,
   lineCount,
 }) {
   const COMPONENTS = ['agent', 'whisper', 'claude', 'tts', 'ollama'];
@@ -104,7 +100,9 @@ function Controls({
         aria-label="Select component"
       >
         {COMPONENTS.map(c => (
-          <option key={c} value={c}>{c}</option>
+          <option key={c} value={c}>
+            {c}
+          </option>
         ))}
       </select>
 
@@ -116,7 +114,11 @@ function Controls({
                    text-text-base focus:outline-none focus:ring-2 focus:ring-wolf-400"
         aria-label="Minimum log level"
       >
-        {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+        {LEVELS.map(l => (
+          <option key={l} value={l}>
+            {l}
+          </option>
+        ))}
       </select>
 
       {/* Search */}
@@ -134,9 +136,7 @@ function Controls({
         />
       </div>
 
-      <span className="text-xs text-text-muted tabular-nums ml-auto">
-        {lineCount} lines
-      </span>
+      <span className="text-xs text-text-muted tabular-nums ml-auto">{lineCount} lines</span>
 
       {/* Action buttons */}
       <button
@@ -145,9 +145,11 @@ function Controls({
         aria-label={paused ? 'Resume streaming' : 'Pause streaming'}
         title={paused ? 'Resume' : 'Pause'}
       >
-        {paused
-          ? <Play  className="h-3.5 w-3.5" aria-hidden="true" />
-          : <Pause className="h-3.5 w-3.5" aria-hidden="true" />}
+        {paused ? (
+          <Play className="h-3.5 w-3.5" aria-hidden="true" />
+        ) : (
+          <Pause className="h-3.5 w-3.5" aria-hidden="true" />
+        )}
       </button>
 
       <button
@@ -181,15 +183,15 @@ function Controls({
  */
 export default function LogViewer({ component: initialComponent = 'agent', streamFn }) {
   const [component, setComponent] = useState(initialComponent);
-  const [lines,     setLines]     = useState(/** @type {object[]} */ ([]));
-  const [level,     setLevel]     = useState('all');
-  const [search,    setSearch]    = useState('');
-  const [paused,    setPaused]    = useState(false);
-  const [error,     setError]     = useState(null);
+  const [lines, setLines] = useState(/** @type {object[]} */ ([]));
+  const [level, setLevel] = useState('all');
+  const [search, setSearch] = useState('');
+  const [paused, setPaused] = useState(false);
+  const [error, setError] = useState(null);
   const [autoScroll, setAutoScroll] = useState(true);
 
-  const listRef    = useRef(null);
-  const pausedRef  = useRef(paused);
+  const listRef = useRef(null);
+  const pausedRef = useRef(paused);
   pausedRef.current = paused;
 
   // ── Streaming ──────────────────────────────────────────────────────────────
@@ -219,9 +221,7 @@ export default function LogViewer({ component: initialComponent = 'agent', strea
 
           if (pausedRef.current) continue;
 
-          const parsed = parts
-            .filter(p => p.trim())
-            .map(parseLine);
+          const parsed = parts.filter(p => p.trim()).map(parseLine);
 
           if (parsed.length) {
             setLines(prev => {
@@ -264,13 +264,13 @@ export default function LogViewer({ component: initialComponent = 'agent', strea
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleTogglePause = useCallback(() => setPaused(p => !p), []);
-  const handleClear       = useCallback(() => setLines([]), []);
+  const handleClear = useCallback(() => setLines([]), []);
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([lines.map(l => l.raw).join('\n')], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
     a.download = `wolf-${component}-${Date.now()}.log`;
     a.click();
     URL.revokeObjectURL(url);
@@ -286,11 +286,19 @@ export default function LogViewer({ component: initialComponent = 'agent', strea
   return (
     <div className="card p-0 flex flex-col overflow-hidden h-[600px]" aria-label="Log viewer">
       <Controls
-        component={component}   setComponent={c => { setComponent(c); setLines([]); }}
-        level={level}           setLevel={setLevel}
-        search={search}         setSearch={setSearch}
-        paused={paused}         onTogglePause={handleTogglePause}
-        onClear={handleClear}   onDownload={handleDownload}
+        component={component}
+        setComponent={c => {
+          setComponent(c);
+          setLines([]);
+        }}
+        level={level}
+        setLevel={setLevel}
+        search={search}
+        setSearch={setSearch}
+        paused={paused}
+        onTogglePause={handleTogglePause}
+        onClear={handleClear}
+        onDownload={handleDownload}
         lineCount={filtered.length}
       />
 
@@ -302,8 +310,10 @@ export default function LogViewer({ component: initialComponent = 'agent', strea
       )}
 
       {paused && (
-        <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400
-                        text-xs border-b border-border flex items-center gap-2">
+        <div
+          className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400
+                        text-xs border-b border-border flex items-center gap-2"
+        >
           <Pause className="h-3 w-3" aria-hidden="true" />
           Streaming paused — new logs are buffered server-side.
         </div>
@@ -321,9 +331,7 @@ export default function LogViewer({ component: initialComponent = 'agent', strea
       >
         {filtered.length === 0 && (
           <li className="px-4 py-8 text-center text-xs text-slate-500">
-            {lines.length === 0
-              ? 'Waiting for log events…'
-              : 'No lines match the current filter.'}
+            {lines.length === 0 ? 'Waiting for log events…' : 'No lines match the current filter.'}
           </li>
         )}
         {filtered.map((line, i) => (

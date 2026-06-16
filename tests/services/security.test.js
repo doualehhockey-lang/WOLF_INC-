@@ -15,70 +15,62 @@
 //                   RBAC deny response, skipRateLimit flag
 //   SecurityError — code/statusCode mapping
 
-import { jest }   from '@jest/globals';
+import { jest } from '@jest/globals';
 import { strict as assert } from 'assert';
 
 // ── Mock: config ───────────────────────────────────────────────────────────────
 await jest.unstable_mockModule('../../src/core/config.js', () => ({
-  config:   { JWT_SECRET: 'test-secret-at-least-32-chars-long', API_KEYS: 'key-a,key-b' },
-  apiKeys:  ['key-a', 'key-b'],
-  isProd:   false,
-  isTest:   true,
+  config: { JWT_SECRET: 'test-secret-at-least-32-chars-long', API_KEYS: 'key-a,key-b' },
+  apiKeys: ['key-a', 'key-b'],
+  isProd: false,
+  isTest: true,
   corsOrigins: [],
 }));
 
 // ── Mock: token.service ────────────────────────────────────────────────────────
 const mockVerifyAccess = jest.fn();
 await jest.unstable_mockModule('../../src/features/auth/token.service.js', () => ({
-  verifyAccess:  mockVerifyAccess,
-  issueTokens:   jest.fn(),
+  verifyAccess: mockVerifyAccess,
+  issueTokens: jest.fn(),
   refreshTokens: jest.fn(),
 }));
 
 // ── Mock: redisClient ──────────────────────────────────────────────────────────
-const mockCacheIncr   = jest.fn();
+const mockCacheIncr = jest.fn();
 const mockCacheExpire = jest.fn();
 await jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
-  cacheIncr:        mockCacheIncr,
-  cacheExpire:      mockCacheExpire,
-  cacheGet:         jest.fn(),
-  cacheSet:         jest.fn(),
-  cacheDel:         jest.fn(),
-  cacheGetBuffer:   jest.fn(),
-  cacheSetBuffer:   jest.fn(),
-  cacheTtl:         jest.fn(),
-  evalScript:       jest.fn(),
-  redis:            null,
-  redisAvailable:   false,
+  cacheIncr: mockCacheIncr,
+  cacheExpire: mockCacheExpire,
+  cacheGet: jest.fn(),
+  cacheSet: jest.fn(),
+  cacheDel: jest.fn(),
+  cacheGetBuffer: jest.fn(),
+  cacheSetBuffer: jest.fn(),
+  cacheTtl: jest.fn(),
+  evalScript: jest.fn(),
+  redis: null,
+  redisAvailable: false,
+  isRedisAvailable: jest.fn().mockReturnValue(false),
 }));
 
 // ── Mock: metrics ──────────────────────────────────────────────────────────────
-const mockRlInc  = jest.fn();
+const mockRlInc = jest.fn();
 const mockErrInc = jest.fn();
 await jest.unstable_mockModule('../../src/core/metrics.js', () => ({
-  rateLimitCounter: { inc: mockRlInc  },
-  errorCounter:     { inc: mockErrInc },
-  pipelineLatency:  { observe: jest.fn() },
-  register:         { metrics: jest.fn() },
+  rateLimitCounter: { inc: mockRlInc },
+  errorCounter: { inc: mockErrInc },
+  pipelineLatency: { observe: jest.fn() },
+  register: { metrics: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
-// ── Mock: observability ────────────────────────────────────────────────────────
-// recordStageSpan(stage, attrs, fn) → simply calls fn(null)
+// recordStageSpan is now a no-op in security.js; keep as injectable mock for DI tests
 const mockRecordStageSpan = jest.fn((_stage, _attrs, fn) => fn(null));
-await jest.unstable_mockModule('../../src/services/observability.js', () => ({
-  recordStageSpan: mockRecordStageSpan,
-  STAGES:          { WHISPER: 'whisper', CLAUDE: 'claude', OLLAMA: 'ollama', TTS: 'tts', AGENT: 'agent.pipeline' },
-  withSpan:        jest.fn((_n, _a, fn) => fn(null)),
-  init:            jest.fn(),
-  shutdown:        jest.fn(),
-  getTracer:       jest.fn(),
-  getMeter:        jest.fn(),
-}));
 
 // ── Mock: logger ───────────────────────────────────────────────────────────────
 await jest.unstable_mockModule('../../src/core/logger.js', () => ({
   childLogger: () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
-  logger:      { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
 // ── Import SUT ─────────────────────────────────────────────────────────────────
@@ -93,13 +85,13 @@ const { _makeSecurity, SecurityError, ROLE_CAPABILITIES } =
  */
 function makeSec(overrides = {}) {
   return _makeSecurity({
-    _verifyAccess:     mockVerifyAccess,
-    _apiKeys:          ['key-a', 'key-b'],
-    _cacheIncr:        mockCacheIncr,
-    _cacheExpire:      mockCacheExpire,
-    _rateLimitCounter: { inc: mockRlInc  },
-    _errorCounter:     { inc: mockErrInc },
-    _recordStageSpan:  mockRecordStageSpan,
+    _verifyAccess: mockVerifyAccess,
+    _apiKeys: ['key-a', 'key-b'],
+    _cacheIncr: mockCacheIncr,
+    _cacheExpire: mockCacheExpire,
+    _rateLimitCounter: { inc: mockRlInc },
+    _errorCounter: { inc: mockErrInc },
+    _recordStageSpan: mockRecordStageSpan,
     ...overrides,
   });
 }
@@ -111,12 +103,20 @@ function req(headers = {}) {
 function mockRes() {
   const r = {
     _status: null,
-    _body:   null,
+    _body: null,
     _headers: {},
   };
-  r.status      = (s) => { r._status = s; return r; };
-  r.json        = (b) => { r._body   = b; return r; };
-  r.setHeader   = (k, v) => { r._headers[k] = v; };
+  r.status = s => {
+    r._status = s;
+    return r;
+  };
+  r.json = b => {
+    r._body = b;
+    return r;
+  };
+  r.setHeader = (k, v) => {
+    r._headers[k] = v;
+  };
   return r;
 }
 
@@ -182,26 +182,32 @@ describe('authenticate — JWT', () => {
 
   it('throws TOKEN_EXPIRED when verifyAccess throws TokenExpiredError', async () => {
     const expErr = new Error('jwt expired');
-    expErr.name  = 'TokenExpiredError';
-    mockVerifyAccess.mockImplementation(() => { throw expErr; });
+    expErr.name = 'TokenExpiredError';
+    mockVerifyAccess.mockImplementation(() => {
+      throw expErr;
+    });
     const { authenticate } = makeSec();
     await assert.rejects(
       () => authenticate(req({ authorization: 'Bearer old.token' })),
-      e => e instanceof SecurityError && e.code === 'TOKEN_EXPIRED' && e.statusCode === 401,
+      e => e instanceof SecurityError && e.code === 'TOKEN_EXPIRED' && e.statusCode === 401
     );
   });
 
   it('throws TOKEN_INVALID on any other JWT error', async () => {
-    mockVerifyAccess.mockImplementation(() => { throw new Error('invalid signature'); });
+    mockVerifyAccess.mockImplementation(() => {
+      throw new Error('invalid signature');
+    });
     const { authenticate } = makeSec();
     await assert.rejects(
       () => authenticate(req({ authorization: 'Bearer bad.token' })),
-      e => e instanceof SecurityError && e.code === 'TOKEN_INVALID',
+      e => e instanceof SecurityError && e.code === 'TOKEN_INVALID'
     );
   });
 
   it('increments errorCounter on JWT failure', async () => {
-    mockVerifyAccess.mockImplementation(() => { throw new Error('bad'); });
+    mockVerifyAccess.mockImplementation(() => {
+      throw new Error('bad');
+    });
     const { authenticate } = makeSec();
     await assert.rejects(() => authenticate(req({ authorization: 'Bearer x' })));
     assert.ok(mockErrInc.mock.calls.length > 0);
@@ -236,7 +242,7 @@ describe('authenticate — API key', () => {
     const { authenticate } = makeSec();
     await assert.rejects(
       () => authenticate(req({ 'x-api-key': 'wrong-key' })),
-      e => e instanceof SecurityError && e.code === 'FORBIDDEN' && e.statusCode === 403,
+      e => e instanceof SecurityError && e.code === 'FORBIDDEN' && e.statusCode === 403
     );
   });
 
@@ -263,7 +269,7 @@ describe('authenticate — no credentials', () => {
     const { authenticate } = makeSec();
     await assert.rejects(
       () => authenticate(req({})),
-      e => e instanceof SecurityError && e.code === 'UNAUTHORIZED' && e.statusCode === 401,
+      e => e instanceof SecurityError && e.code === 'UNAUTHORIZED' && e.statusCode === 401
     );
   });
 
@@ -271,7 +277,7 @@ describe('authenticate — no credentials', () => {
     const { authenticate } = makeSec();
     await assert.rejects(
       () => authenticate(req({ authorization: 'Basic dXNlcjpwYXNz' })),
-      e => e instanceof SecurityError && e.code === 'UNAUTHORIZED',
+      e => e instanceof SecurityError && e.code === 'UNAUTHORIZED'
     );
   });
 
@@ -279,7 +285,7 @@ describe('authenticate — no credentials', () => {
     const { authenticate } = makeSec();
     await assert.rejects(
       () => authenticate({ headers: null }),
-      e => e instanceof SecurityError && e.code === 'UNAUTHORIZED',
+      e => e instanceof SecurityError && e.code === 'UNAUTHORIZED'
     );
   });
 });
@@ -370,7 +376,7 @@ describe('rateLimit — TTL management', () => {
     const { rateLimit } = makeSec();
     await rateLimit('user', { windowSec: 60, maxHits: 10 });
     const key1 = mockCacheIncr.mock.calls[0][0];
-    assert.match(key1, /^rl:user:/);
+    assert.match(key1, /^rl:sec:/);
   });
 });
 
@@ -381,7 +387,7 @@ describe('rateLimit — TTL management', () => {
 describe('authorise — RBAC', () => {
   it('admin can access all resources', () => {
     const { authorise } = makeSec();
-    const resources = ['agent', 'whisper', 'claude', 'tts', 'ollama', 'metrics', 'admin'];
+    const resources = ['agent', 'whisper', 'claude', 'tts', 'metrics', 'admin'];
     for (const r of resources) {
       assert.equal(authorise('admin', r), true, `admin should access ${r}`);
     }
@@ -389,7 +395,7 @@ describe('authorise — RBAC', () => {
 
   it('service role can access service resources', () => {
     const { authorise } = makeSec();
-    const allowed = ['agent', 'whisper', 'claude', 'tts', 'ollama'];
+    const allowed = ['agent', 'whisper', 'claude', 'tts'];
     for (const r of allowed) {
       assert.equal(authorise('service', r), true);
     }
@@ -400,7 +406,7 @@ describe('authorise — RBAC', () => {
     for (const r of ['metrics', 'admin']) {
       assert.throws(
         () => authorise('service', r),
-        e => e instanceof SecurityError && e.code === 'FORBIDDEN',
+        e => e instanceof SecurityError && e.code === 'FORBIDDEN'
       );
     }
   });
@@ -411,12 +417,12 @@ describe('authorise — RBAC', () => {
     assert.equal(authorise('user', 'tts'), true);
   });
 
-  it('user role cannot access whisper, claude, ollama, metrics', () => {
+  it('user role cannot access whisper, claude, metrics', () => {
     const { authorise } = makeSec();
-    for (const r of ['whisper', 'claude', 'ollama', 'metrics']) {
+    for (const r of ['whisper', 'claude', 'metrics']) {
       assert.throws(
         () => authorise('user', r),
-        e => e instanceof SecurityError && e.code === 'FORBIDDEN',
+        e => e instanceof SecurityError && e.code === 'FORBIDDEN'
       );
     }
   });
@@ -426,7 +432,7 @@ describe('authorise — RBAC', () => {
     for (const r of ['agent', 'tts', 'whisper', 'claude']) {
       assert.throws(
         () => authorise('guest', r),
-        e => e instanceof SecurityError && e.code === 'FORBIDDEN',
+        e => e instanceof SecurityError && e.code === 'FORBIDDEN'
       );
     }
   });
@@ -435,7 +441,7 @@ describe('authorise — RBAC', () => {
     const { authorise } = makeSec();
     assert.throws(
       () => authorise('hacker', 'agent'),
-      e => e instanceof SecurityError && e.code === 'FORBIDDEN',
+      e => e instanceof SecurityError && e.code === 'FORBIDDEN'
     );
   });
 
@@ -459,9 +465,9 @@ describe('makeSecurityMiddleware — success', () => {
     mockVerifyAccess.mockReturnValue({ sub: 'alice', role: 'admin' });
     mockCacheIncr.mockResolvedValue(1);
     const { makeSecurityMiddleware } = makeSec();
-    const mw   = makeSecurityMiddleware();
-    const next  = jest.fn();
-    const res   = mockRes();
+    const mw = makeSecurityMiddleware();
+    const next = jest.fn();
+    const res = mockRes();
     await mw(req({ authorization: 'Bearer tok' }), res, next);
     assert.equal(next.mock.calls.length, 1);
     assert.equal(next.mock.calls[0].length, 0); // called without error arg
@@ -471,8 +477,8 @@ describe('makeSecurityMiddleware — success', () => {
     mockVerifyAccess.mockReturnValue({ sub: 'bob', role: 'user' });
     mockCacheIncr.mockResolvedValue(1);
     const { makeSecurityMiddleware } = makeSec();
-    const mw   = makeSecurityMiddleware();
-    const next  = jest.fn();
+    const mw = makeSecurityMiddleware();
+    const next = jest.fn();
     const request = req({ authorization: 'Bearer tok' });
     await mw(request, mockRes(), next);
     assert.deepEqual(request.user, { sub: 'bob', role: 'user', method: 'jwt' });
@@ -482,18 +488,18 @@ describe('makeSecurityMiddleware — success', () => {
     mockVerifyAccess.mockReturnValue({ sub: 'u', role: 'user' });
     mockCacheIncr.mockResolvedValue(10);
     const { makeSecurityMiddleware } = makeSec();
-    const mw  = makeSecurityMiddleware({ maxHits: 100 });
+    const mw = makeSecurityMiddleware({ maxHits: 100 });
     const res = mockRes();
     await mw(req({ authorization: 'Bearer tok' }), res, jest.fn());
-    assert.equal(res._headers['X-RateLimit-Limit'],     100);
+    assert.equal(res._headers['X-RateLimit-Limit'], 100);
     assert.equal(res._headers['X-RateLimit-Remaining'], 90);
   });
 
   it('valid API key bypasses JWT and calls next()', async () => {
     mockCacheIncr.mockResolvedValue(1);
     const { makeSecurityMiddleware } = makeSec();
-    const mw   = makeSecurityMiddleware();
-    const next  = jest.fn();
+    const mw = makeSecurityMiddleware();
+    const next = jest.fn();
     await mw(req({ 'x-api-key': 'key-a' }), mockRes(), next);
     assert.equal(next.mock.calls.length, 1);
     assert.equal(mockVerifyAccess.mock.calls.length, 0);
@@ -503,8 +509,8 @@ describe('makeSecurityMiddleware — success', () => {
     mockVerifyAccess.mockReturnValue({ sub: 'svc', role: 'service' });
     mockCacheIncr.mockResolvedValue(1);
     const { makeSecurityMiddleware } = makeSec();
-    const mw   = makeSecurityMiddleware({ resource: 'agent' });
-    const next  = jest.fn();
+    const mw = makeSecurityMiddleware({ resource: 'agent' });
+    const next = jest.fn();
     await mw(req({ authorization: 'Bearer tok' }), mockRes(), next);
     assert.equal(next.mock.calls.length, 1);
   });
@@ -525,7 +531,7 @@ describe('makeSecurityMiddleware — success', () => {
 describe('makeSecurityMiddleware — failures', () => {
   it('responds 401 when no credentials provided', async () => {
     const { makeSecurityMiddleware } = makeSec();
-    const mw  = makeSecurityMiddleware();
+    const mw = makeSecurityMiddleware();
     const res = mockRes();
     await mw(req({}), res, jest.fn());
     assert.equal(res._status, 401);
@@ -534,7 +540,9 @@ describe('makeSecurityMiddleware — failures', () => {
 
   it('responds 401 with TOKEN_EXPIRED code', async () => {
     const err = Object.assign(new Error('jwt expired'), { name: 'TokenExpiredError' });
-    mockVerifyAccess.mockImplementation(() => { throw err; });
+    mockVerifyAccess.mockImplementation(() => {
+      throw err;
+    });
     const { makeSecurityMiddleware } = makeSec();
     const res = mockRes();
     await mw(req({ authorization: 'Bearer old' }), res, jest.fn());
@@ -551,7 +559,7 @@ describe('makeSecurityMiddleware — failures', () => {
     mockVerifyAccess.mockReturnValue({ sub: 'spammer', role: 'user' });
     mockCacheIncr.mockResolvedValue(999);
     const { makeSecurityMiddleware } = makeSec();
-    const mw  = makeSecurityMiddleware({ maxHits: 100 });
+    const mw = makeSecurityMiddleware({ maxHits: 100 });
     const res = mockRes();
     await mw(req({ authorization: 'Bearer tok' }), res, jest.fn());
     assert.equal(res._status, 429);
@@ -563,9 +571,9 @@ describe('makeSecurityMiddleware — failures', () => {
     mockVerifyAccess.mockReturnValue({ sub: 'u', role: 'user' });
     mockCacheIncr.mockResolvedValue(999);
     const { makeSecurityMiddleware } = makeSec();
-    const mw   = makeSecurityMiddleware({ maxHits: 10 });
-    const next  = jest.fn();
-    const res   = mockRes();
+    const mw = makeSecurityMiddleware({ maxHits: 10 });
+    const next = jest.fn();
+    const res = mockRes();
     await mw(req({ authorization: 'Bearer tok' }), res, next);
     assert.equal(next.mock.calls.length, 0);
   });
@@ -574,7 +582,7 @@ describe('makeSecurityMiddleware — failures', () => {
     mockVerifyAccess.mockReturnValue({ sub: 'u', role: 'user' });
     mockCacheIncr.mockResolvedValue(1);
     const { makeSecurityMiddleware } = makeSec();
-    const mw  = makeSecurityMiddleware({ resource: 'metrics' });
+    const mw = makeSecurityMiddleware({ resource: 'metrics' });
     const res = mockRes();
     await mw(req({ authorization: 'Bearer tok' }), res, jest.fn());
     assert.equal(res._status, 403);
@@ -583,7 +591,7 @@ describe('makeSecurityMiddleware — failures', () => {
 
   it('responds 403 for invalid API key', async () => {
     const { makeSecurityMiddleware } = makeSec();
-    const mw  = makeSecurityMiddleware();
+    const mw = makeSecurityMiddleware();
     const res = mockRes();
     await mw(req({ 'x-api-key': 'garbage' }), res, jest.fn());
     assert.equal(res._status, 403);
@@ -652,8 +660,8 @@ describe('concurrent and edge cases', () => {
     const { authenticate } = makeSec();
     const results = await Promise.all(
       Array.from({ length: 20 }, (_, i) =>
-        authenticate(req({ authorization: `Bearer token-${i}` })),
-      ),
+        authenticate(req({ authorization: `Bearer token-${i}` }))
+      )
     );
     assert.equal(results.length, 20);
     assert.equal(new Set(results.map(r => r.sub)).size, 20);
@@ -663,7 +671,7 @@ describe('concurrent and edge cases', () => {
     const { authenticate } = makeSec({ _apiKeys: [] });
     await assert.rejects(
       () => authenticate(req({ 'x-api-key': 'key-a' })),
-      e => e instanceof SecurityError && e.code === 'FORBIDDEN',
+      e => e instanceof SecurityError && e.code === 'FORBIDDEN'
     );
   });
 
@@ -678,13 +686,13 @@ describe('concurrent and edge cases', () => {
     // API key identity has sub='service' — ensure that path also works
     mockCacheIncr.mockResolvedValue(1);
     const { makeSecurityMiddleware } = makeSec();
-    const mw   = makeSecurityMiddleware();
-    const next  = jest.fn();
+    const mw = makeSecurityMiddleware();
+    const next = jest.fn();
     const request = req({ 'x-api-key': 'key-a' });
     await mw(request, mockRes(), next);
     assert.equal(next.mock.calls.length, 1);
     // Redis key should start with rl:service:
     const rlKey = mockCacheIncr.mock.calls[0][0];
-    assert.match(rlKey, /^rl:service:/);
+    assert.match(rlKey, /^rl:sec:/);
   });
 });

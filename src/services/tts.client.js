@@ -9,14 +9,16 @@
 //   'mock'       — Silent WAV buffer (dev / test)
 
 import { childLogger } from '../core/logger.js';
-import { config }      from '../core/config.js';
-import { apiFetch }    from '../infra/http/httpClient.js';
+import { config } from '../core/config.js';
+import { apiFetch } from '../infra/http/httpClient.js';
 import {
-  CircuitBreaker, CircuitOpenError, TimeoutError, HttpError, withRetry,
+  CircuitBreaker,
+  CircuitOpenError,
+  TimeoutError,
+  HttpError,
+  withRetry,
 } from './circuitBreaker.js';
-import {
-  recordRequest, recordFailure, recordLatency, setCircuitState,
-} from './metrics.js';
+import { recordRequest, recordFailure, recordLatency, setCircuitState } from './metrics.js';
 
 const log = childLogger('tts');
 
@@ -24,8 +26,10 @@ const log = childLogger('tts');
 
 function _escXml(s) {
   return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // ── Cloud backends ────────────────────────────────────────────────────────────
@@ -41,16 +45,21 @@ async function _elevenlabs(text, signal) {
   if (!apiKey) throw new Error('ELEVENLABS_API_KEY not configured');
 
   const res = await apiFetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method:  'POST',
+    method: 'POST',
     headers: {
-      'xi-api-key':   apiKey,
+      'xi-api-key': apiKey,
       'Content-Type': 'application/json',
-      Accept:         'audio/mpeg',
+      Accept: 'audio/mpeg',
     },
     body: JSON.stringify({
       text,
-      model_id:       'eleven_multilingual_v2',
-      voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
+      model_id: 'eleven_multilingual_v2',
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.75,
+        style: 0.0,
+        use_speaker_boost: true,
+      },
     }),
     signal,
   });
@@ -78,7 +87,7 @@ async function _azure(text, locale, signal) {
   // Step 1 — bearer token
   const tokenRes = await apiFetch(
     `https://${region}.api.cognitive.microsoft.com/sts/v1.0/issueToken`,
-    { method: 'POST', headers: { 'Ocp-Apim-Subscription-Key': key }, signal },
+    { method: 'POST', headers: { 'Ocp-Apim-Subscription-Key': key }, signal }
   );
   if (!tokenRes.ok) {
     const detail = await tokenRes.text().catch(() => '');
@@ -88,20 +97,17 @@ async function _azure(text, locale, signal) {
 
   // Step 2 — SSML synthesis
   const ssml = `<speak version='1.0' xml:lang='${locale}'><voice name='${voice}'><prosody rate='0%'>${_escXml(text)}</prosody></voice></speak>`;
-  const ttsRes = await apiFetch(
-    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-    {
-      method:  'POST',
-      headers: {
-        Authorization:              `Bearer ${token}`,
-        'Content-Type':             'application/ssml+xml',
-        'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-        'User-Agent':               'wolf-engine/2.0',
-      },
-      body:   ssml,
-      signal,
+  const ttsRes = await apiFetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/ssml+xml',
+      'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+      'User-Agent': 'wolf-engine/2.0',
     },
-  );
+    body: ssml,
+    signal,
+  });
   if (!ttsRes.ok) {
     const detail = await ttsRes.text().catch(() => '');
     throw new HttpError(ttsRes.status, `Azure TTS ${ttsRes.status}: ${detail.slice(0, 200)}`);
@@ -120,14 +126,14 @@ function _isRetryable(err) {
 
 function _requestStatus(err) {
   if (err instanceof CircuitOpenError) return 'circuit_open';
-  if (err instanceof TimeoutError)     return 'timeout';
+  if (err instanceof TimeoutError) return 'timeout';
   return 'error';
 }
 
 function _failureReason(err) {
   if (err instanceof CircuitOpenError) return 'circuit_open';
-  if (err instanceof TimeoutError)     return 'timeout';
-  if (err instanceof HttpError)        return err.status >= 500 ? 'http_5xx' : 'http_4xx';
+  if (err instanceof TimeoutError) return 'timeout';
+  if (err instanceof HttpError) return err.status >= 500 ? 'http_5xx' : 'http_4xx';
   return 'network';
 }
 
@@ -153,11 +159,7 @@ function _failureReason(err) {
  * @returns {function(string, object?): Promise<TtsResult>}
  */
 export function _makeSynthesize(breaker, retryOpts = {}) {
-  const {
-    maxRetries = 2,
-    baseMs     = 200,
-    maxMs      = 2_000,
-  } = retryOpts;
+  const { maxRetries = 2, baseMs = 200, maxMs = 2_000 } = retryOpts;
 
   setCircuitState(breaker.name, breaker.getState());
 
@@ -180,11 +182,7 @@ export function _makeSynthesize(breaker, retryOpts = {}) {
   return async function synthesize(text, opts = {}) {
     if (!text?.trim()) throw new Error('[TTS] Empty text passed to synthesize()');
 
-    const {
-      requestId = '',
-      locale    = 'fr-FR',
-      timeoutMs = 15_000,
-    } = opts;
+    const { requestId = '', locale = 'fr-FR', timeoutMs = 15_000 } = opts;
 
     const provider = config.TTS_PROVIDER ?? 'mock';
 
@@ -201,12 +199,13 @@ export function _makeSynthesize(breaker, retryOpts = {}) {
     }
 
     // ── Cloud backends — through circuit breaker ─────────────────────────────
-    const backendFn = provider === 'azure'
-      ? (signal) => _azure(text, locale, signal)
-      : (signal) => _elevenlabs(text, signal); // default: elevenlabs
+    const backendFn =
+      provider === 'azure'
+        ? signal => _azure(text, locale, signal)
+        : signal => _elevenlabs(text, signal); // default: elevenlabs
 
-    const start    = Date.now();
-    let   attempts = 0;
+    const start = Date.now();
+    let attempts = 0;
 
     try {
       const result = await withRetry(
@@ -214,25 +213,34 @@ export function _makeSynthesize(breaker, retryOpts = {}) {
           attempts++;
           return breaker.exec(backendFn, { requestId, timeoutMs });
         },
-        { maxRetries, baseMs, maxMs, shouldRetry: _isRetryable },
+        { maxRetries, baseMs, maxMs, shouldRetry: _isRetryable }
       );
 
       const latency = Date.now() - start;
       recordRequest('tts', 'success');
       recordLatency('tts', latency);
-      log.debug({ requestId, provider, locale, latency, attempts, state: breaker.getState() }, 'TTS OK');
+      log.debug(
+        { requestId, provider, locale, latency, attempts, state: breaker.getState() },
+        'TTS OK'
+      );
       return result;
-
     } catch (err) {
       const latency = Date.now() - start;
       recordRequest('tts', _requestStatus(err));
       recordFailure('tts', _failureReason(err));
       recordLatency('tts', latency);
-      log.warn({
-        requestId, provider, locale, latency, attempts,
-        state: breaker.getState(),
-        err:   err.message,
-      }, 'TTS failed');
+      log.warn(
+        {
+          requestId,
+          provider,
+          locale,
+          latency,
+          attempts,
+          state: breaker.getState(),
+          err: err.message,
+        },
+        'TTS failed'
+      );
       throw err;
     }
   };
@@ -241,11 +249,11 @@ export function _makeSynthesize(breaker, retryOpts = {}) {
 // ── Default production instance ───────────────────────────────────────────────
 
 const _defaultBreaker = new CircuitBreaker('tts', {
-  failureThreshold:   5,
+  failureThreshold: 5,
   errorRateThreshold: 0.5,
-  minCalls:           10,
-  windowMs:           60_000,
-  openDurationMs:     60_000,
+  minCalls: 10,
+  windowMs: 60_000,
+  openDurationMs: 60_000,
   onStateChange(state, name) {
     log.warn({ provider: name, state }, `Circuit breaker → ${state}`);
     setCircuitState(name, state);

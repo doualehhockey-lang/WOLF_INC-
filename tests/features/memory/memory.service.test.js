@@ -7,20 +7,23 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
-    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   }),
 }));
 
 // ── Mock Redis — simple in-memory Map to simulate both paths ─────────────────
 // We expose a mutable `_redisStore` Map and a flag `_failRedis`
 // so individual tests can simulate Redis unavailability or errors.
-const _redisStore  = new Map();
-let   _failRedis   = false;
+const _redisStore = new Map();
+let _failRedis = false;
 
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
   redis: null,
   redisAvailable: false,
-  cacheGet: jest.fn(async (key) => {
+  cacheGet: jest.fn(async key => {
     if (_failRedis) throw new Error('Redis down');
     return _redisStore.has(key) ? _redisStore.get(key) : null;
   }),
@@ -28,7 +31,7 @@ jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
     if (_failRedis) throw new Error('Redis down');
     _redisStore.set(key, value);
   }),
-  cacheDel: jest.fn(async (key) => {
+  cacheDel: jest.fn(async key => {
     _redisStore.delete(key);
   }),
 }));
@@ -77,7 +80,7 @@ describe('getSession', () => {
 
   test('callSid is preserved in the returned session', async () => {
     const id = sid();
-    const s  = await getSession(id);
+    const s = await getSession(id);
     expect(s.callSid).toBe(id);
   });
 
@@ -137,7 +140,11 @@ describe('addAgentTurn', () => {
 
   test('saves pendingIntent when intent is known', async () => {
     const id = sid();
-    await addAgentTurn(id, 'Votre rendez-vous est créé', { intent: 'create_event', isoDate: '2026-06-01', subject: 'médecin' });
+    await addAgentTurn(id, 'Votre rendez-vous est créé', {
+      intent: 'create_event',
+      isoDate: '2026-06-01',
+      subject: 'médecin',
+    });
     const s = await getSession(id);
     expect(s.pendingIntent).toBe('create_event');
     expect(s.pendingDate).toBe('2026-06-01');
@@ -213,7 +220,11 @@ describe('buildContext', () => {
 
   test('includes pending context when pendingDate or pendingSubject is set', async () => {
     const id = sid();
-    await addAgentTurn(id, 'Ok', { intent: 'create_event', isoDate: '2026-10-01', subject: 'dentiste' });
+    await addAgentTurn(id, 'Ok', {
+      intent: 'create_event',
+      isoDate: '2026-10-01',
+      subject: 'dentiste',
+    });
     const ctx = await buildContext(id);
     expect(ctx).toContain('date précédente: 2026-10-01');
     expect(ctx).toContain('sujet précédent: dentiste');
@@ -259,14 +270,26 @@ describe('getLastEntities', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('detectShortAnswer', () => {
-  const YES_INPUTS = ['oui', 'yes', 'ok', 'ouais', 'bien sur', 'parfait', 'confirme', 'valide', "d'accord", 'dac', 'exactement'];
-  const NO_INPUTS  = ['non', 'no', 'nan', 'pas du tout', 'annule', 'laisse tomber', 'jamais'];
+  const YES_INPUTS = [
+    'oui',
+    'yes',
+    'ok',
+    'ouais',
+    'bien sur',
+    'parfait',
+    'confirme',
+    'valide',
+    "d'accord",
+    'dac',
+    'exactement',
+  ];
+  const NO_INPUTS = ['non', 'no', 'nan', 'pas du tout', 'annule', 'laisse tomber', 'jamais'];
 
-  test.each(YES_INPUTS)('"%s" → "confirm"', (input) => {
+  test.each(YES_INPUTS)('"%s" → "confirm"', input => {
     expect(detectShortAnswer(input)).toBe('confirm');
   });
 
-  test.each(NO_INPUTS)('"%s" → "deny"', (input) => {
+  test.each(NO_INPUTS)('"%s" → "deny"', input => {
     expect(detectShortAnswer(input)).toBe('deny');
   });
 

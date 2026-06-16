@@ -9,28 +9,47 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
-    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   }),
 }));
 
 // ── Mock config ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
-    BASE_URL:        'http://localhost:3000',
-    TTS_PROVIDER:    'mock',
+    BASE_URL: 'http://localhost:3000',
+    TTS_PROVIDER: 'mock',
     WHISPER_BACKEND: 'local',
-    OLLAMA_MODEL:    'llama3',
   },
 }));
 
 // ── Mock core metrics ─────────────────────────────────────────────────────────
-const mockCallsTotal    = { inc: jest.fn() };
+const mockCallsTotal = { inc: jest.fn() };
 const mockActiveSessions = { set: jest.fn() };
-const mockErrorCounter  = { inc: jest.fn() };
+const mockErrorCounter = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
-  callsTotal:     mockCallsTotal,
+  callsTotal: mockCallsTotal,
   activeSessions: mockActiveSessions,
-  errorCounter:   mockErrorCounter,
+  errorCounter: mockErrorCounter,
+  auditLogFailures: { inc: jest.fn() },
+  rateLimitCounter: { inc: jest.fn() },
+  pipelineLatency: { startTimer: jest.fn(() => jest.fn()), observe: jest.fn() },
+  nluLatency: { observe: jest.fn() },
+}));
+
+// ── Mock redisClient (for gather idempotency) ─────────────────────────────────
+jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
+  cacheGet: jest.fn(async () => null), // cache miss by default — run pipeline
+  cacheSet: jest.fn(async () => {}),
+  cacheDel: jest.fn(async () => {}),
+  cacheIncr: jest.fn(async () => 1),
+  cacheExpire: jest.fn(async () => {}),
+  isRedisAvailable: jest.fn(() => false),
+  evalScript: jest.fn(async () => null),
+  redis: null,
+  redisAvailable: false,
 }));
 
 // ── Mock rate-limiter ─────────────────────────────────────────────────────────
@@ -41,61 +60,68 @@ jest.unstable_mockModule('../../../src/features/voice/rate-limiter.js', () => ({
 
 // ── Mock pipeline ─────────────────────────────────────────────────────────────
 const mockRunPipeline = jest.fn(async () => '<Response/>');
-const mockWithTimeout = jest.fn(async (fn) => fn());
+const mockWithTimeout = jest.fn(async fn => fn());
 jest.unstable_mockModule('../../../src/features/voice/pipeline.js', () => ({
   runPipeline: mockRunPipeline,
-  withTimeout:  mockWithTimeout,
+  withTimeout: mockWithTimeout,
 }));
 
 // ── Mock greeting ─────────────────────────────────────────────────────────────
 let _greetingUrl = null;
 const mockGetGreetingUrl = jest.fn(() => _greetingUrl);
+const mockGetFillerUrl = jest.fn(() => null);
+const mockGetFillerText = jest.fn(() => 'Un instant, je vérifie ça pour vous.');
 jest.unstable_mockModule('../../../src/features/voice/greeting.js', () => ({
   getGreetingUrl: mockGetGreetingUrl,
-  GREETING_TEXT:  'Bonjour, comment puis-je vous aider ?',
+  getFillerUrl: mockGetFillerUrl,
+  getFillerText: mockGetFillerText,
+  GREETING_TEXT: 'Bonjour, comment puis-je vous aider ?',
 }));
 
 // ── Mock memory.service ───────────────────────────────────────────────────────
 const mockClearSession = jest.fn(async () => {});
-const mockMemStats     = jest.fn(() => ({ activeSessions: 3, totalSessions: 10 }));
+const mockMemStats = jest.fn(() => ({ activeSessions: 3, totalSessions: 10 }));
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
   clearSession: mockClearSession,
-  getStats:     mockMemStats,
+  getStats: mockMemStats,
 }));
 
 // ── Mock lang.service ────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/features/lang/lang.service.js', () => ({
-  detectLang:   jest.fn(() => 'fr'),
+  detectLang: jest.fn(() => 'fr'),
   twilioLocale: jest.fn(() => 'fr-FR'),
 }));
 
 // ── Mock validation ───────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/api/middleware/validation.js', () => ({
-  sanitizeText: jest.fn((t) => t),
+  sanitizeText: jest.fn(t => t),
 }));
 
 // ── Mock twiml.builder ────────────────────────────────────────────────────────
-const mockTwimlGather         = jest.fn(() => '<Gather/>');
+const mockTwimlGather = jest.fn(() => '<Gather/>');
 const mockTwimlPlayThenGather = jest.fn(() => '<Play/>');
-const mockTwimlSayThenGather  = jest.fn(() => '<Say/>');
-const mockTwimlError          = jest.fn(() => '<Error/>');
+const mockTwimlSayThenGather = jest.fn(() => '<Say/>');
+const mockTwimlError = jest.fn(() => '<Error/>');
+const mockTwimlFillerThenRedirect = jest.fn(() => '<Filler/>');
 jest.unstable_mockModule('../../../src/features/voice/twiml.builder.js', () => ({
-  twimlGather:         mockTwimlGather,
+  twimlGather: mockTwimlGather,
   twimlPlayThenGather: mockTwimlPlayThenGather,
-  twimlSayThenGather:  mockTwimlSayThenGather,
-  twimlError:          mockTwimlError,
+  twimlSayThenGather: mockTwimlSayThenGather,
+  twimlError: mockTwimlError,
+  twimlFillerThenRedirect: mockTwimlFillerThenRedirect,
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
-const { handleVoice, handleGather, handleStatus, handleHealth } =
+const { handleVoice, handleGather, handleGatherResult, handleStatus, handleHealth } =
   await import('../../../src/features/voice/voice.controller.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function mockRes() {
   const res = {};
-  res.send       = jest.fn();
+  res.send = jest.fn();
   res.sendStatus = jest.fn();
-  res.json       = jest.fn();
+  res.json = jest.fn();
+  res.set = jest.fn().mockReturnValue(res); // M8: Retry-After header
   return res;
 }
 
@@ -105,7 +131,7 @@ beforeEach(() => {
   mockIsRateLimited.mockResolvedValue(false);
   mockGetGreetingUrl.mockImplementation(() => _greetingUrl);
   mockRunPipeline.mockResolvedValue('<Response/>');
-  mockWithTimeout.mockImplementation(async (fn) => fn());
+  mockWithTimeout.mockImplementation(async fn => fn());
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -145,7 +171,7 @@ describe('handleVoice — greeting URL present', () => {
 
     expect(mockTwimlPlayThenGather).toHaveBeenCalledWith(
       'http://localhost:3000/audio/greeting.wav',
-      expect.stringContaining('/twilio/gather'),
+      expect.stringContaining('/twilio/gather')
     );
     expect(res.send).toHaveBeenCalledWith('<Play/>');
   });
@@ -183,16 +209,16 @@ describe('handleGather — rate limited', () => {
 });
 
 describe('handleGather — empty text', () => {
-  test('sends "Je n\'ai pas bien entendu" when SpeechResult is empty', async () => {
+  test('sends "didn\'t catch that" when SpeechResult is empty', async () => {
     const req = { body: { SpeechResult: '', CallSid: 'CA6', From: '+33600000006' } };
     const res = mockRes();
 
     await handleGather(req, res);
 
     expect(mockTwimlSayThenGather).toHaveBeenCalledWith(
-      expect.stringContaining("entendu"),
+      expect.stringContaining('entendu'),
       expect.any(String),
-      expect.any(Object),
+      expect.any(Object)
     );
     expect(mockRunPipeline).not.toHaveBeenCalled();
   });
@@ -208,27 +234,49 @@ describe('handleGather — empty text', () => {
   });
 });
 
-describe('handleGather — pipeline delegation', () => {
-  test('calls withTimeout and runPipeline when text is present', async () => {
+describe('handleGather — two-phase pipeline delegation', () => {
+  test('sends filler TwiML immediately when text is present', async () => {
     const req = { body: { SpeechResult: 'Bonjour', CallSid: 'CA8', From: '+33600000008' } };
     const res = mockRes();
 
     await handleGather(req, res);
 
-    expect(mockWithTimeout).toHaveBeenCalledTimes(1);
-    expect(mockRunPipeline).toHaveBeenCalledTimes(1);
-    expect(res.send).toHaveBeenCalledWith('<Response/>');
+    // Phase 1: should send filler redirect (not pipeline result directly)
+    expect(mockTwimlFillerThenRedirect).toHaveBeenCalledTimes(1);
+    expect(res.send).toHaveBeenCalledWith('<Filler/>');
   });
 
-  test('sends twimlError when runPipeline throws', async () => {
-    mockRunPipeline.mockRejectedValueOnce(new Error('pipeline boom'));
-    const req = { body: { SpeechResult: 'Hello', CallSid: 'CA9', From: '+33600000009' } };
+  test('starts pipeline in background via withTimeout', async () => {
+    const req = { body: { SpeechResult: 'Bonjour', CallSid: 'CA8b', From: '+33600000008' } };
     const res = mockRes();
 
     await handleGather(req, res);
 
-    expect(mockTwimlError).toHaveBeenCalled();
-    expect(mockErrorCounter.inc).toHaveBeenCalled();
+    // withTimeout is called to wrap the pipeline
+    expect(mockWithTimeout).toHaveBeenCalledTimes(1);
+  });
+
+  test('handleGatherResult returns pipeline result for the callSid', async () => {
+    // Phase 1: trigger gather to store pending result
+    const gatherReq = { body: { SpeechResult: 'Bonjour', CallSid: 'CA9', From: '+33600000009' } };
+    const gatherRes = mockRes();
+    await handleGather(gatherReq, gatherRes);
+
+    // Phase 2: gather-result picks up the pending pipeline result
+    const resultReq = { body: { CallSid: 'CA9' } };
+    const resultRes = mockRes();
+    await handleGatherResult(resultReq, resultRes);
+
+    expect(resultRes.send).toHaveBeenCalledWith('<Response/>');
+  });
+
+  test('handleGatherResult returns fallback when no pending result exists', async () => {
+    const req = { body: { CallSid: 'CA_unknown' } };
+    const res = mockRes();
+
+    await handleGatherResult(req, res);
+
+    expect(mockTwimlSayThenGather).toHaveBeenCalled();
   });
 });
 
@@ -286,9 +334,7 @@ describe('handleHealth', () => {
 
     handleHealth(req, res);
 
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: true }),
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ok: true }));
   });
 
   test('includes timestamp, config, memory in response', () => {

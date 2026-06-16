@@ -19,8 +19,16 @@
 
 import { useState, useCallback } from 'react';
 import {
-  Rocket, CheckCircle2, RotateCcw, Zap, Lock, Unlock,
-  AlertTriangle, Loader2, Clock, ChevronDown, ExternalLink,
+  Rocket,
+  CheckCircle2,
+  RotateCcw,
+  Zap,
+  Lock,
+  Unlock,
+  AlertTriangle,
+  Loader2,
+  ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -36,15 +44,18 @@ function Confirm({ message, onConfirm, onCancel, loading, danger = false }) {
     >
       <div className="card max-w-sm w-full shadow-2xl space-y-4">
         <div className="flex gap-3 items-start">
-          <AlertTriangle className={clsx('h-5 w-5 shrink-0 mt-0.5',
-            danger ? 'text-red-500' : 'text-amber-500')} />
+          <AlertTriangle
+            className={clsx('h-5 w-5 shrink-0 mt-0.5', danger ? 'text-red-500' : 'text-amber-500')}
+          />
           <div>
             <p className="text-sm font-medium">Confirm action</p>
             <p className="text-sm text-text-muted mt-1">{message}</p>
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <button className="btn-ghost" onClick={onCancel} disabled={loading}>Cancel</button>
+          <button className="btn-ghost" onClick={onCancel} disabled={loading}>
+            Cancel
+          </button>
           <button
             className={danger ? 'btn-danger' : 'btn-primary'}
             onClick={onConfirm}
@@ -87,10 +98,19 @@ function TagInput({ value, onChange }) {
 
 // ── Single action card ────────────────────────────────────────────────────────
 
-function ActionCard({ label, desc, icon: Icon, confirmMsg, variant, disabled, onExecute, danger = false }) {
+function ActionCard({
+  label,
+  desc,
+  icon: Icon,
+  confirmMsg,
+  variant,
+  disabled,
+  onExecute,
+  danger = false,
+}) {
   const [confirming, setConfirming] = useState(false);
-  const [loading,    setLoading]    = useState(false);
-  const [result,     setResult]     = useState(null); // 'ok' | 'error'
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null); // 'ok' | 'error'
 
   const execute = useCallback(async () => {
     setConfirming(false);
@@ -108,8 +128,7 @@ function ActionCard({ label, desc, icon: Icon, confirmMsg, variant, disabled, on
   }, [onExecute]);
 
   const btnCls =
-    variant === 'danger'  ? 'btn-danger'  :
-    variant === 'primary' ? 'btn-primary' : 'btn-ghost';
+    variant === 'danger' ? 'btn-danger' : variant === 'primary' ? 'btn-primary' : 'btn-ghost';
 
   return (
     <>
@@ -125,19 +144,23 @@ function ActionCard({ label, desc, icon: Icon, confirmMsg, variant, disabled, on
 
       <article className="card flex flex-col gap-4" aria-label={label}>
         <div className="flex items-start gap-3">
-          <div className={clsx(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-            variant === 'danger'  ? 'bg-red-500/10 text-red-500'  :
-            variant === 'primary' ? 'bg-wolf-500/10 text-wolf-500' :
-                                    'bg-surface text-text-muted',
-          )}>
+          <div
+            className={clsx(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+              variant === 'danger'
+                ? 'bg-red-500/10 text-red-500'
+                : variant === 'primary'
+                  ? 'bg-wolf-500/10 text-wolf-500'
+                  : 'bg-surface text-text-muted'
+            )}
+          >
             <Icon className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">{label}</p>
             <p className="text-xs text-text-muted mt-0.5">{desc}</p>
           </div>
-          {result === 'ok'    && <span className="badge-green">Done</span>}
+          {result === 'ok' && <span className="badge-green">Done</span>}
           {result === 'error' && <span className="badge-red">Failed</span>}
         </div>
 
@@ -147,9 +170,7 @@ function ActionCard({ label, desc, icon: Icon, confirmMsg, variant, disabled, on
           disabled={disabled || loading}
           aria-busy={loading}
         >
-          {loading
-            ? <Loader2 className="h-4 w-4 animate-spin" />
-            : <Icon    className="h-4 w-4" />}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
           {loading ? 'Working…' : label}
         </button>
       </article>
@@ -159,14 +180,18 @@ function ActionCard({ label, desc, icon: Icon, confirmMsg, variant, disabled, on
 
 // ── Deploy history table ──────────────────────────────────────────────────────
 
-const STATUS_BADGE = { success: 'badge-green', failure: 'badge-red', running: 'badge-yellow', cancelled: 'badge-gray' };
+const STATUS_BADGE = {
+  success: 'badge-green',
+  failure: 'badge-red',
+  running: 'badge-yellow',
+  cancelled: 'badge-gray',
+};
 
 function HistoryTable({ runs }) {
   const [limit, setLimit] = useState(10);
 
-  if (!runs?.length) return (
-    <p className="text-sm text-text-muted text-center py-6">No deploy history available.</p>
-  );
+  if (!runs?.length)
+    return <p className="text-sm text-text-muted text-center py-6">No deploy history available.</p>;
 
   return (
     <div className="space-y-2">
@@ -175,8 +200,13 @@ function HistoryTable({ runs }) {
           <thead className="bg-surface border-b border-border">
             <tr>
               {['#', 'SHA', 'Branch', 'Type', 'Status', 'Duration', 'By', 'Link'].map(h => (
-                <th key={h} scope="col"
-                  className="px-4 py-2.5 text-left text-xs font-medium text-text-muted">{h}</th>
+                <th
+                  key={h}
+                  scope="col"
+                  className="px-4 py-2.5 text-left text-xs font-medium text-text-muted"
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -200,9 +230,13 @@ function HistoryTable({ runs }) {
                 <td className="px-4 py-2.5 text-xs text-text-muted">{run.triggeredBy ?? '—'}</td>
                 <td className="px-4 py-2.5">
                   {run.url && (
-                    <a href={run.url} target="_blank" rel="noopener noreferrer"
-                       className="flex items-center gap-1 text-wolf-500 text-xs hover:underline"
-                       aria-label="Open CI run">
+                    <a
+                      href={run.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-wolf-500 text-xs hover:underline"
+                      aria-label="Open CI run"
+                    >
                       CI <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
@@ -245,7 +279,7 @@ function StatusStrip({ status }) {
       <div>
         <p className="text-xs text-text-muted">Stable Replicas</p>
         <span className="font-mono text-sm">
-          {status.stableReplicas != null
+          {status.stableReplicas !== null
             ? `${status.stableReplicas.ready}/${status.stableReplicas.desired}`
             : '—'}
         </span>
@@ -253,9 +287,7 @@ function StatusStrip({ status }) {
       <div>
         <p className="text-xs text-text-muted">Last Deploy</p>
         <span className="text-xs text-text-muted">
-          {status.lastDeployAt
-            ? new Date(status.lastDeployAt).toLocaleString('fr-FR')
-            : '—'}
+          {status.lastDeployAt ? new Date(status.lastDeployAt).toLocaleString('fr-FR') : '—'}
         </span>
       </div>
     </div>
@@ -266,17 +298,19 @@ function StatusStrip({ status }) {
 
 function DeployLock({ locked, onToggle }) {
   return (
-    <div className={clsx(
-      'card flex items-center gap-3 py-3',
-      locked && 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20',
-    )}>
-      {locked
-        ? <Lock   className="h-5 w-5 text-amber-500 shrink-0" />
-        : <Unlock className="h-5 w-5 text-emerald-500 shrink-0" />}
+    <div
+      className={clsx(
+        'card flex items-center gap-3 py-3',
+        locked && 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20'
+      )}
+    >
+      {locked ? (
+        <Lock className="h-5 w-5 text-amber-500 shrink-0" />
+      ) : (
+        <Unlock className="h-5 w-5 text-emerald-500 shrink-0" />
+      )}
       <div className="flex-1">
-        <p className="text-sm font-medium">
-          Deployments are {locked ? 'LOCKED' : 'unlocked'}
-        </p>
+        <p className="text-sm font-medium">Deployments are {locked ? 'LOCKED' : 'unlocked'}</p>
         <p className="text-xs text-text-muted">
           {locked
             ? 'All deploy actions are blocked. Unlock to proceed.'
@@ -310,14 +344,20 @@ function DeployLock({ locked, onToggle }) {
  * }} props
  */
 export default function DeployAdminControls({
-  onCanary, onPromote, onRollback, onFull,
-  status = null, history = [], loading = false, error = null,
+  onCanary,
+  onPromote,
+  onRollback,
+  onFull,
+  status = null,
+  history = [],
+  loading = false,
+  error = null,
 }) {
-  const [tag,     setTag]     = useState('');
-  const [locked,  setLocked]  = useState(false);
-  const [force,   setForce]   = useState(false);
+  const [tag, setTag] = useState('');
+  const [locked, setLocked] = useState(false);
+  const [force, setForce] = useState(false);
 
-  const tagReady    = tag.trim().length > 0;
+  const tagReady = tag.trim().length > 0;
   const canaryAlive = !!status?.canaryTag;
 
   if (error) {
@@ -392,9 +432,7 @@ export default function DeployAdminControls({
       {/* History */}
       <section aria-label="Deploy history">
         <h3 className="text-sm font-medium mb-3">Deploy History</h3>
-        {loading
-          ? <div className="animate-pulse card h-32" />
-          : <HistoryTable runs={history} />}
+        {loading ? <div className="animate-pulse card h-32" /> : <HistoryTable runs={history} />}
       </section>
     </div>
   );

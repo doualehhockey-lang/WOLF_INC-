@@ -12,9 +12,9 @@
 // and prevents accidental exposure in the browser — not a security boundary.
 
 import { useEffect, useState } from 'react';
-import { useRouter }           from 'next/router';
-import { Lock, ShieldX, Loader2 } from 'lucide-react';
-import { decodeJwtPayload }    from '../../lib/adminApi.js';
+import { useRouter } from 'next/router';
+import { ShieldX, Loader2 } from 'lucide-react';
+import { decodeJwtPayload } from '../../lib/adminApi.js';
 
 /**
  * @param {{ children: React.ReactNode, loginPath?: string }} props
@@ -86,10 +86,7 @@ export default function AdminGuard({ children, loginPath = '/login' }) {
             This area requires the <span className="font-mono font-bold">admin</span> role.
           </p>
         </div>
-        <button
-          onClick={() => router.back()}
-          className="btn-ghost"
-        >
+        <button onClick={() => router.back()} className="btn-ghost">
           Go back
         </button>
       </div>

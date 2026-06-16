@@ -10,16 +10,17 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
-    BASE_URL:  'http://localhost:3000',
+    BASE_URL: 'http://localhost:3000',
     AUDIO_DIR: './public/audio',
-    NODE_ENV:  'test',
+    NODE_ENV: 'test',
   },
 }));
 
 jest.unstable_mockModule('../../src/core/metrics.js', () => ({
   pipelineLatency: { startTimer: jest.fn(() => jest.fn()) },
-  errorCounter:    { inc: jest.fn() },
-  activeSessions:  { set: jest.fn() },
+  errorCounter: { inc: jest.fn() },
+  activeSessions: { set: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 const mockUnderstand = jest.fn();
@@ -38,20 +39,27 @@ jest.unstable_mockModule('../../src/features/tts/tts.service.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/features/memory/memory.service.js', () => ({
-  addUserTurn:  jest.fn(async () => {}),
+  addUserTurn: jest.fn(async () => {}),
   addAgentTurn: jest.fn(async () => {}),
-  getStats:     jest.fn(() => ({ activeSessions: 1 })),
+  getSession: jest.fn(async () => ({ turns: [] })),
+  getStats: jest.fn(() => ({ activeSessions: 1 })),
+}));
+
+jest.unstable_mockModule('../../src/features/voice/conversation.service.js', () => ({
+  converse: jest.fn(async () => {
+    throw new Error('converse-disabled');
+  }),
 }));
 
 jest.unstable_mockModule('../../src/features/lang/lang.service.js', () => ({
-  detectLang:   jest.fn(() => 'fr'),
+  detectLang: jest.fn(() => 'fr'),
   twilioLocale: jest.fn(() => 'fr-FR'),
 }));
 
 jest.unstable_mockModule('../../src/features/voice/twiml.builder.js', () => ({
-  twimlSayThenGather:  jest.fn((msg) => `<Response><Say>${msg}</Say><Gather/></Response>`),
-  twimlPlayThenGather: jest.fn((url) => `<Response><Play>${url}</Play><Gather/></Response>`),
-  twimlError:          jest.fn(() => '<Response><Say>Error</Say></Response>'),
+  twimlSayThenGather: jest.fn(msg => `<Response><Say>${msg}</Say><Gather/></Response>`),
+  twimlPlayThenGather: jest.fn(url => `<Response><Play>${url}</Play><Gather/></Response>`),
+  twimlError: jest.fn(() => '<Response><Say>Error</Say></Response>'),
 }));
 
 const { runPipeline } = await import('../../src/features/voice/pipeline.js');
@@ -64,10 +72,19 @@ const saveAudio = jest.fn(async () => ({ filename: 'response.mp3', ext: 'mp3' })
 
 function nluOk(overrides = {}) {
   return {
-    ok: true, intent: 'list_events', confidence: 0.9,
-    needsClarification: false, missing: [],
-    subject: '', date: '', time: '', isoDate: null, isoTime: null,
-    errors: [], strategy: 'rule-based', ...overrides,
+    ok: true,
+    intent: 'list_events',
+    confidence: 0.9,
+    needsClarification: false,
+    missing: [],
+    subject: '',
+    date: '',
+    time: '',
+    isoDate: null,
+    isoTime: null,
+    errors: [],
+    strategy: 'rule-based',
+    ...overrides,
   };
 }
 
@@ -109,17 +126,25 @@ describe('Chaos: NLU failures → always returns valid TwiML', () => {
   });
 
   test('NLU returns missing:["date"] → date-question TwiML', async () => {
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent: 'create_event', needsClarification: true, missing: ['date'],
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'create_event',
+        needsClarification: true,
+        missing: ['date'],
+      })
+    );
     const result = await runPipeline(CTX, saveAudio);
     expect(isTwiml(result)).toBe(true);
   });
 
   test('NLU returns missing:["date","heure"] → combined question', async () => {
-    mockUnderstand.mockResolvedValueOnce(nluOk({
-      intent: 'create_event', needsClarification: true, missing: ['date', 'heure'],
-    }));
+    mockUnderstand.mockResolvedValueOnce(
+      nluOk({
+        intent: 'create_event',
+        needsClarification: true,
+        missing: ['date', 'heure'],
+      })
+    );
     const result = await runPipeline(CTX, saveAudio);
     expect(isTwiml(result)).toBe(true);
   });
@@ -145,7 +170,10 @@ describe('Chaos: Agent failures → pipeline always recovers', () => {
   });
 
   test('agent returns ok:false → still returns TwiML with message', async () => {
-    mockDispatch.mockResolvedValueOnce({ ok: false, message: 'Opération impossible pour le moment.' });
+    mockDispatch.mockResolvedValueOnce({
+      ok: false,
+      message: 'Opération impossible pour le moment.',
+    });
     const result = await runPipeline(CTX, saveAudio);
     expect(isTwiml(result)).toBe(true);
   });
@@ -197,7 +225,8 @@ describe('Chaos: all intent clarification paths produce valid TwiML', () => {
   const unknownMissing = [{ intent: 'create_event', missing: ['subject'] }];
 
   test.each([...cancelMissing, ...updateMissing, ...unknownMissing])(
-    'intent=%s missing=[%s] → valid TwiML', async ({ intent, missing }) => {
+    'intent=%s missing=[%s] → valid TwiML',
+    async ({ intent, missing }) => {
       mockUnderstand.mockResolvedValueOnce(nluOk({ intent, missing, needsClarification: true }));
       const result = await runPipeline(CTX, saveAudio);
       expect(isTwiml(result)).toBe(true);

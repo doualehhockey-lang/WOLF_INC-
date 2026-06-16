@@ -14,7 +14,11 @@ export default function ObservabilityPage() {
         {data?.panels?.length === 0 && <p>No panels available.</p>}
         <ul className="mt-4 space-y-2">
           {data?.panels?.map(p => (
-            <li key={p.id}><a href={p.url} target="_blank" rel="noreferrer" className="text-blue-600">{p.title}</a></li>
+            <li key={p.id}>
+              <a href={p.url} target="_blank" rel="noreferrer" className="text-blue-600">
+                {p.title}
+              </a>
+            </li>
           ))}
         </ul>
       </div>

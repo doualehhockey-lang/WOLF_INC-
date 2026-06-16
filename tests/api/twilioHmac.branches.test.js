@@ -16,9 +16,9 @@ jest.unstable_mockModule('../../src/features/voice/twiml.builder.js', () => ({
 // Production config with auth token to reach lines 22-24
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
-    NODE_ENV:          'production',
+    NODE_ENV: 'production',
     TWILIO_AUTH_TOKEN: 'ACtest-branch-token',
-    BASE_URL:          'https://example.com',
+    BASE_URL: 'https://example.com',
   },
 }));
 
@@ -27,8 +27,8 @@ const { twilioHmac } = await import('../../src/api/middleware/twilioHmac.js');
 function mockRes() {
   const res = {};
   res.status = jest.fn(() => res);
-  res.type   = jest.fn(() => res);
-  res.send   = jest.fn(() => res);
+  res.type = jest.fn(() => res);
+  res.send = jest.fn(() => res);
   return res;
 }
 
@@ -41,11 +41,11 @@ beforeEach(() => jest.clearAllMocks());
 describe('twilioHmac — missing x-twilio-signature header (line 22 right branch)', () => {
   test('treats absent signature header as empty string → rejects with 401', () => {
     const req = {
-      headers:     {},            // no x-twilio-signature → ?? '' right side
-      body:        { CallSid: 'CA-missing-sig' },
+      headers: {}, // no x-twilio-signature → ?? '' right side
+      body: { CallSid: 'CA-missing-sig' },
       originalUrl: '/twilio/voice',
     };
-    const res  = mockRes();
+    const res = mockRes();
     const next = jest.fn();
 
     twilioHmac(req, res, next);
@@ -63,11 +63,11 @@ describe('twilioHmac — missing x-twilio-signature header (line 22 right branch
 describe('twilioHmac — null body (line 24 right branch)', () => {
   test('treats null body as empty object {} → sig mismatch → 401', () => {
     const req = {
-      headers:     { 'x-twilio-signature': 'any-sig' },
-      body:        null,          // null → ?? {} right side
+      headers: { 'x-twilio-signature': 'any-sig' },
+      body: null, // null → ?? {} right side
       originalUrl: '/twilio/voice',
     };
-    const res  = mockRes();
+    const res = mockRes();
     const next = jest.fn();
 
     twilioHmac(req, res, next);
@@ -78,11 +78,11 @@ describe('twilioHmac — null body (line 24 right branch)', () => {
 
   test('treats undefined body as empty object {} → sig mismatch → 401', () => {
     const req = {
-      headers:     { 'x-twilio-signature': 'another-sig' },
-      body:        undefined,     // undefined → ?? {} right side
+      headers: { 'x-twilio-signature': 'another-sig' },
+      body: undefined, // undefined → ?? {} right side
       originalUrl: '/twilio/gather',
     };
-    const res  = mockRes();
+    const res = mockRes();
     const next = jest.fn();
 
     twilioHmac(req, res, next);

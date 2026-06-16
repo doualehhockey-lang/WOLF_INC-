@@ -15,15 +15,24 @@ export const logger = pino(
     redact: {
       paths: [
         // Phone numbers (GDPR)
-        'phone', '*.phone', 'from', '*.from', 'From', '*.From',
+        'phone',
+        '*.phone',
+        'from',
+        '*.from',
+        'From',
+        '*.From',
         // Auth tokens
         'req.headers.authorization',
         'req.headers.cookie',
-        'body.apiKey', '*.apiKey',
-        'accessToken', '*.accessToken',
+        'body.apiKey',
+        '*.apiKey',
+        'accessToken',
+        '*.accessToken',
         // Credentials
-        'password', '*.password',
-        'authToken', '*.authToken',
+        'password',
+        '*.password',
+        'authToken',
+        '*.authToken',
         'body.AccountSid',
       ],
       censor: '[REDACTED]',

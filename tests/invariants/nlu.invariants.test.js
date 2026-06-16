@@ -11,27 +11,41 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
     CLAUDE_API_KEY: '', // force rule-based — no API calls
-    CLAUDE_MODEL:   'claude-haiku-4-5-20251001',
+    CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
   },
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest: jest.fn(), recordFailure: jest.fn(),
-  recordLatency: jest.fn(), setCircuitState: jest.fn(),
+  recordRequest: jest.fn(),
+  recordFailure: jest.fn(),
+  recordLatency: jest.fn(),
+  setCircuitState: jest.fn(),
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 jest.unstable_mockModule('../../src/services/circuitBreaker.js', () => ({
-  CircuitBreaker:   jest.fn(() => ({ exec: jest.fn(), getState: jest.fn(() => 'CLOSED') })),
+  CircuitBreaker: jest.fn(() => ({ exec: jest.fn(), getState: jest.fn(() => 'CLOSED') })),
   CircuitOpenError: class extends Error {},
-  TimeoutError:     class extends Error {},
-  HttpError:        class extends Error { constructor(s, m) { super(m); this.status = s; } },
-  withRetry:        jest.fn(async (fn) => fn()),
-  STATE:            { CLOSED: 'CLOSED', HALF_OPEN: 'HALF_OPEN', OPEN: 'OPEN' },
+  TimeoutError: class extends Error {},
+  HttpError: class extends Error {
+    constructor(s, m) {
+      super(m);
+      this.status = s;
+    }
+  },
+  withRetry: jest.fn(async fn => fn()),
+  STATE: { CLOSED: 'CLOSED', HALF_OPEN: 'HALF_OPEN', OPEN: 'OPEN' },
 }));
 
 const { analyze } = await import('../../src/services/claude.client.js');
 
-const VALID_INTENTS = new Set(['create_event', 'cancel_event', 'update_event', 'list_events', 'unknown']);
+const VALID_INTENTS = new Set([
+  'create_event',
+  'cancel_event',
+  'update_event',
+  'list_events',
+  'unknown',
+]);
 
 // ═════════════════════════════════════════════════════════════════════════════
 // INVARIANT 1: Output shape is always complete for any non-empty text
@@ -49,11 +63,11 @@ describe('INVARIANT 1: analyze() always returns a complete valid shape', () => {
     'rendez-vous le 15/06 à 9:00',
     'réunion demain à 14h00',
     'delete my appointment please',
-    'À',                // single accented character
-    'x',               // minimal input
+    'À', // single accented character
+    'x', // minimal input
   ];
 
-  test.each(texts)('shape is valid for "%s"', async (text) => {
+  test.each(texts)('shape is valid for "%s"', async text => {
     const r = await analyze(text);
 
     // Intent is always one of the valid enum values
@@ -83,11 +97,11 @@ describe('INVARIANT 1: analyze() always returns a complete valid shape', () => {
 
 describe('INVARIANT 2: empty/null inputs always return intent:unknown', () => {
   const emptyInputs = [
-    ['null',       null],
-    ['undefined',  undefined],
+    ['null', null],
+    ['undefined', undefined],
     ['empty string', ''],
     ['whitespace', '   '],
-    ['tab',        '\t'],
+    ['tab', '\t'],
   ];
 
   test.each(emptyInputs)('%s → intent:unknown', async (_label, input) => {
@@ -106,10 +120,10 @@ describe('INVARIANT 3: analyze() never throws for null/undefined/empty string', 
   // Non-string primitives (number, boolean, object, array) are not valid inputs
   // and may throw — but null, undefined, and empty string must always resolve.
   const safeEdgeCases = [
-    ['null',      null],
+    ['null', null],
     ['undefined', undefined],
-    ['empty',     ''],
-    ['whitespace','   '],
+    ['empty', ''],
+    ['whitespace', '   '],
   ];
 
   test.each(safeEdgeCases)('%s → resolves without throwing', async (_label, input) => {
@@ -127,12 +141,12 @@ describe('INVARIANT 4: strategy is always "rule-based" with no API key', () => {
     'annuler',
     'modifier',
     'liste',
-    'quelque chose d\'aléatoire',
+    "quelque chose d'aléatoire",
     'Hello world',
     '12345',
   ];
 
-  test.each(textCases)('strategy for "%s" is rule-based', async (text) => {
+  test.each(textCases)('strategy for "%s" is rule-based', async text => {
     const r = await analyze(text);
     expect(r.strategy).toBe('rule-based');
   });
@@ -144,10 +158,10 @@ describe('INVARIANT 4: strategy is always "rule-based" with no API key', () => {
 
 describe('INVARIANT 5: keyword → intent mapping is deterministic', () => {
   const keywordIntents = [
-    ['créer un rendez-vous',    'create_event'],
+    ['créer un rendez-vous', 'create_event'],
     ['annuler mon rendez-vous', 'cancel_event'],
     ['modifier mon rendez-vous', 'update_event'],
-    ['liste mes rendez-vous',   'list_events'],
+    ['liste mes rendez-vous', 'list_events'],
   ];
 
   test.each(keywordIntents)('"%s" → intent="%s"', async (text, expectedIntent) => {

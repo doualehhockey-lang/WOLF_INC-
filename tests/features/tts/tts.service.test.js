@@ -7,7 +7,10 @@ import { jest } from '@jest/globals';
 // ── Mock logger ───────────────────────────────────────────────────────────────
 jest.unstable_mockModule('../../../src/core/logger.js', () => ({
   childLogger: () => ({
-    debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   }),
 }));
 
@@ -15,16 +18,17 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
   config: {
     TTS_PROVIDER: 'mock',
-    BASE_URL:     'http://localhost:3000',
-    AUDIO_DIR:    '/tmp/audio',
+    BASE_URL: 'http://localhost:3000',
+    AUDIO_DIR: '/tmp/audio',
   },
 }));
 
 // ── Mock metrics ──────────────────────────────────────────────────────────────
 const mockTimer = jest.fn(); // returned by startTimer
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
-  ttsLatency:  { startTimer: jest.fn(() => mockTimer) },
+  ttsLatency: { startTimer: jest.fn(() => mockTimer) },
   inflightTts: { set: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Mock errors (import real class — no mock needed) ─────────────────────────
@@ -39,10 +43,10 @@ jest.unstable_mockModule('../../../src/features/tts/tts.cache.js', () => ({
 }));
 
 // ── Mock providers ────────────────────────────────────────────────────────────
-const mockSynthesizeMock      = jest.fn(async () => Buffer.alloc(44, 0x00));
-const mockSynthesizePiper     = jest.fn(async () => Buffer.alloc(44, 0x01));
+const mockSynthesizeMock = jest.fn(async () => Buffer.alloc(44, 0x00));
+const mockSynthesizePiper = jest.fn(async () => Buffer.alloc(44, 0x01));
 const mockSynthesizeElevenLabs = jest.fn(async () => Buffer.alloc(48, 0x02));
-const mockSynthesizeAzure     = jest.fn(async () => Buffer.alloc(48, 0x03));
+const mockSynthesizeAzure = jest.fn(async () => Buffer.alloc(48, 0x03));
 
 jest.unstable_mockModule('../../../src/features/tts/providers/mock.js', () => ({
   synthesizeMock: mockSynthesizeMock,
@@ -58,10 +62,10 @@ jest.unstable_mockModule('../../../src/features/tts/providers/azure.js', () => (
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
-const { synthesize }    = await import('../../../src/features/tts/tts.service.js');
-const { config }        = await import('../../../src/core/config.js');
-const { TtsError }      = await import('../../../src/core/errors.js');
-const metrics           = await import('../../../src/core/metrics.js');
+const { synthesize } = await import('../../../src/features/tts/tts.service.js');
+const { config } = await import('../../../src/core/config.js');
+const { TtsError } = await import('../../../src/core/errors.js');
+const metrics = await import('../../../src/core/metrics.js');
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
 beforeEach(() => {
@@ -110,7 +114,7 @@ describe('Input validation', () => {
 
 describe('Cache hit', () => {
   test('returns cached result without calling provider', async () => {
-    const cachedBuf = Buffer.alloc(20, 0xFF);
+    const cachedBuf = Buffer.alloc(20, 0xff);
     mockCacheGet.mockResolvedValueOnce({ buffer: cachedBuf, ext: '.wav', mimeType: 'audio/wav' });
     const result = await synthesize('Cached text');
     expect(result.buffer).toBe(cachedBuf);
@@ -119,13 +123,21 @@ describe('Cache hit', () => {
   });
 
   test('sets fallback:false on cache hit', async () => {
-    mockCacheGet.mockResolvedValueOnce({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav' });
+    mockCacheGet.mockResolvedValueOnce({
+      buffer: Buffer.alloc(10),
+      ext: '.wav',
+      mimeType: 'audio/wav',
+    });
     const result = await synthesize('Cache fallback false');
     expect(result.fallback).toBe(false);
   });
 
   test('does not write to cache on a cache hit', async () => {
-    mockCacheGet.mockResolvedValueOnce({ buffer: Buffer.alloc(10), ext: '.wav', mimeType: 'audio/wav' });
+    mockCacheGet.mockResolvedValueOnce({
+      buffer: Buffer.alloc(10),
+      ext: '.wav',
+      mimeType: 'audio/wav',
+    });
     await synthesize('Cache no rewrite');
     expect(mockCacheSet).not.toHaveBeenCalled();
   });
@@ -163,7 +175,9 @@ describe('Provider: mock', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Provider: piper', () => {
-  beforeEach(() => { config.TTS_PROVIDER = 'piper'; });
+  beforeEach(() => {
+    config.TTS_PROVIDER = 'piper';
+  });
 
   test('calls synthesizePiper and returns .wav result', async () => {
     mockSynthesizePiper.mockResolvedValueOnce(Buffer.alloc(44, 0x01));
@@ -179,7 +193,9 @@ describe('Provider: piper', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Provider: elevenlabs', () => {
-  beforeEach(() => { config.TTS_PROVIDER = 'elevenlabs'; });
+  beforeEach(() => {
+    config.TTS_PROVIDER = 'elevenlabs';
+  });
 
   test('calls synthesizeElevenLabs and returns .mp3 result', async () => {
     mockSynthesizeElevenLabs.mockResolvedValueOnce(Buffer.alloc(48, 0x02));
@@ -195,7 +211,9 @@ describe('Provider: elevenlabs', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('Provider: azure', () => {
-  beforeEach(() => { config.TTS_PROVIDER = 'azure'; });
+  beforeEach(() => {
+    config.TTS_PROVIDER = 'azure';
+  });
 
   test('calls synthesizeAzure and returns .mp3 result', async () => {
     mockSynthesizeAzure.mockResolvedValueOnce(Buffer.alloc(48, 0x03));
@@ -262,7 +280,10 @@ describe('Inflight deduplication', () => {
   test('two concurrent calls with same text+locale share a single provider call', async () => {
     let resolveProvider;
     mockSynthesizeMock.mockImplementationOnce(
-      () => new Promise(r => { resolveProvider = () => r(Buffer.alloc(44, 0x00)); }),
+      () =>
+        new Promise(r => {
+          resolveProvider = () => r(Buffer.alloc(44, 0x00));
+        })
     );
 
     const p1 = synthesize('Dedup text');

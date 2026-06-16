@@ -11,19 +11,20 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 const mockTtsCacheHits = { inc: jest.fn() };
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   ttsCacheHits: mockTtsCacheHits,
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // Redis not available — exercises in-memory path without locale arg
 jest.unstable_mockModule('../../../src/infra/redis/redisClient.js', () => ({
-  redis:          null,
+  redis: null,
   redisAvailable: false,
 }));
 
 const { cacheKey, cacheGet, cacheSet } = await import('../../../src/features/tts/tts.cache.js');
 
-const TEXT     = 'Bonjour par défaut';
+const TEXT = 'Bonjour par défaut';
 const PROVIDER = 'mock';
-const result   = { buffer: Buffer.alloc(20, 0xAB), ext: '.wav', mimeType: 'audio/wav' };
+const result = { buffer: Buffer.alloc(20, 0xab), ext: '.wav', mimeType: 'audio/wav' };
 
 beforeEach(() => jest.clearAllMocks());
 

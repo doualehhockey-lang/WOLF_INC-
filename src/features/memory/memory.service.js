@@ -2,12 +2,12 @@
 // Persists to Redis (with TTL) when available; falls back to in-memory Map.
 // All sessions expire after TTL_SEC of inactivity (default 15 min).
 
-import { childLogger }           from '../../core/logger.js';
+import { childLogger } from '../../core/logger.js';
 import { cacheGet, cacheSet, cacheDel } from '../../infra/redis/redisClient.js';
 import { parseSession, defaultSession } from './session.schema.js';
 
-const log    = childLogger('memory');
-const TTL_SEC  = 15 * 60; // 15 minutes
+const log = childLogger('memory');
+const TTL_SEC = 15 * 60; // 15 minutes
 const MAX_TURNS = 6;
 
 // In-memory fallback (instant reads, survives Redis hiccups)
@@ -15,14 +15,20 @@ const MAX_TURNS = 6;
 const _store = new Map();
 
 // GC: prune expired in-memory sessions every 5 min
-setInterval(() => {
-  const cutoff = Date.now() - TTL_SEC * 1_000;
-  let pruned = 0;
-  for (const [sid, s] of _store) {
-    if (s.lastActivity < cutoff) { _store.delete(sid); pruned++; }
-  }
-  if (pruned) log.debug({ pruned }, 'Expired sessions pruned');
-}, 5 * 60 * 1_000).unref();
+setInterval(
+  () => {
+    const cutoff = Date.now() - TTL_SEC * 1_000;
+    let pruned = 0;
+    for (const [sid, s] of _store) {
+      if (s.lastActivity < cutoff) {
+        _store.delete(sid);
+        pruned++;
+      }
+    }
+    if (pruned) log.debug({ pruned }, 'Expired sessions pruned');
+  },
+  5 * 60 * 1_000
+).unref();
 
 // ── Key helpers ───────────────────────────────────────────────────────────────
 
@@ -36,8 +42,13 @@ async function _get(callSid) {
   if (raw) {
     try {
       const parsed = parseSession(JSON.parse(raw));
-      if (parsed) { parsed.lastActivity = Date.now(); return parsed; }
-    } catch { /* corrupt — fall through */ }
+      if (parsed) {
+        parsed.lastActivity = Date.now();
+        return parsed;
+      }
+    } catch {
+      /* corrupt — fall through */
+    }
   }
 
   // 2. In-memory
@@ -73,19 +84,19 @@ export async function addUserTurn(callSid, content) {
 export async function addAgentTurn(callSid, content, nluResult = {}) {
   const s = await _get(callSid);
   _push(s, {
-    role:    'agent',
+    role: 'agent',
     content,
-    intent:  nluResult.intent,
+    intent: nluResult.intent,
     isoDate: nluResult.isoDate ?? null,
     isoTime: nluResult.isoTime ?? null,
     subject: nluResult.subject,
   });
 
   if (nluResult.intent && nluResult.intent !== 'unknown') {
-    s.pendingIntent  = nluResult.intent;
-    s.pendingDate    = nluResult.isoDate    ?? s.pendingDate;
-    s.pendingTime    = nluResult.isoTime    ?? s.pendingTime;
-    s.pendingSubject = nluResult.subject    ?? s.pendingSubject;
+    s.pendingIntent = nluResult.intent;
+    s.pendingDate = nluResult.isoDate ?? s.pendingDate;
+    s.pendingTime = nluResult.isoTime ?? s.pendingTime;
+    s.pendingSubject = nluResult.subject ?? s.pendingSubject;
   }
   await _save(s);
 }
@@ -94,16 +105,14 @@ export async function buildContext(callSid) {
   const s = await _get(callSid);
   if (!s.turns.length) return '';
 
-  const lines = s.turns.map(t =>
-    `[${t.role === 'user' ? 'UTILISATEUR' : 'AGENT'}]: ${t.content}`
-  );
+  const lines = s.turns.map(t => `[${t.role === 'user' ? 'UTILISATEUR' : 'AGENT'}]: ${t.content}`);
   let ctx = `Contexte de la conversation en cours :\n${lines.join('\n')}`;
 
   if (s.pendingDate || s.pendingSubject) {
     const parts = [];
-    if (s.pendingIntent)  parts.push(`intent précédent: ${s.pendingIntent}`);
-    if (s.pendingDate)    parts.push(`date précédente: ${s.pendingDate}`);
-    if (s.pendingTime)    parts.push(`heure précédente: ${s.pendingTime}`);
+    if (s.pendingIntent) parts.push(`intent précédent: ${s.pendingIntent}`);
+    if (s.pendingDate) parts.push(`date précédente: ${s.pendingDate}`);
+    if (s.pendingTime) parts.push(`heure précédente: ${s.pendingTime}`);
     if (s.pendingSubject) parts.push(`sujet précédent: ${s.pendingSubject}`);
     ctx += `\nContexte actif : ${parts.join(', ')}`;
   }
@@ -114,7 +123,7 @@ export async function getLastEntities(callSid) {
   const s = await _get(callSid);
   if (!s.pendingIntent) return null;
   return {
-    intent:  s.pendingIntent,
+    intent: s.pendingIntent,
     isoDate: s.pendingDate,
     isoTime: s.pendingTime,
     subject: s.pendingSubject,
@@ -123,17 +132,34 @@ export async function getLastEntities(callSid) {
 
 export function detectShortAnswer(text) {
   if (!text) return null;
-  const s = text.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const YES = ['oui','yes','ok','ouais','bien sur','parfait','confirme','valide',"c'est ca",'exactement',"d'accord",'dac'];
-  const NO  = ['non','no','nan','pas du tout','annule','laisse tomber','jamais'];
+  const s = text
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const YES = [
+    'oui',
+    'yes',
+    'ok',
+    'ouais',
+    'bien sur',
+    'parfait',
+    'confirme',
+    'valide',
+    "c'est ca",
+    'exactement',
+    "d'accord",
+    'dac',
+  ];
+  const NO = ['non', 'no', 'nan', 'pas du tout', 'annule', 'laisse tomber', 'jamais'];
   if (YES.some(w => s === w || s.startsWith(w + ' '))) return 'confirm';
-  if (NO.some(w => s === w || s.startsWith(w + ' ')))  return 'deny';
+  if (NO.some(w => s === w || s.startsWith(w + ' '))) return 'deny';
   return null;
 }
 
 export async function setLang(callSid, lang) {
   const s = await _get(callSid);
-  s.lang  = lang;
+  s.lang = lang;
   await _save(s);
 }
 
@@ -150,12 +176,12 @@ export async function clearSession(callSid) {
 export function getStats() {
   return {
     activeSessions: _store.size,
-    backend:        process.env.REDIS_URL ? 'redis' : 'memory',
-    sessions:       [..._store.values()].map(s => ({
-      callSid:       s.callSid.slice(-8),
-      turns:         s.turns.length,
+    backend: process.env.REDIS_URL ? 'redis' : 'memory',
+    sessions: [..._store.values()].map(s => ({
+      callSid: s.callSid.slice(-8),
+      turns: s.turns.length,
       pendingIntent: s.pendingIntent,
-      lastActivity:  new Date(s.lastActivity).toISOString(),
+      lastActivity: new Date(s.lastActivity).toISOString(),
     })),
   };
 }

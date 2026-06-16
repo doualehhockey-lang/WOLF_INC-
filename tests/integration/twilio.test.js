@@ -8,54 +8,79 @@ import supertest from 'supertest';
 // ── Mock external dependencies before importing app ───────────────────────────
 
 jest.unstable_mockModule('../../src/core/tracing.js', () => ({
-  initTracing:    jest.fn(() => Promise.resolve()),
+  initTracing: jest.fn(() => Promise.resolve()),
   shutdownTracing: jest.fn(() => Promise.resolve()),
-  startSpan:      jest.fn(() => ({ setAttributes: jest.fn(), setStatus: jest.fn(), recordException: jest.fn(), end: jest.fn() })),
-  withSpan:       jest.fn((_n, _a, fn) => fn({ end: jest.fn() })),
+  startSpan: jest.fn(() => ({
+    setAttributes: jest.fn(),
+    setStatus: jest.fn(),
+    recordException: jest.fn(),
+    end: jest.fn(),
+  })),
+  withSpan: jest.fn((_n, _a, fn) => fn({ end: jest.fn() })),
 }));
 
 jest.unstable_mockModule('../../src/infra/redis/redisClient.js', () => ({
-  redis: null, redisAvailable: false,
-  cacheGet:    jest.fn(() => Promise.resolve(null)),
-  cacheSet:    jest.fn(() => Promise.resolve()),
-  cacheDel:    jest.fn(() => Promise.resolve()),
-  cacheIncr:   jest.fn(() => Promise.resolve(1)),
+  redis: null,
+  redisAvailable: false,
+  isRedisAvailable: jest.fn().mockReturnValue(false),
+  cacheGet: jest.fn(() => Promise.resolve(null)),
+  cacheSet: jest.fn(() => Promise.resolve()),
+  cacheDel: jest.fn(() => Promise.resolve()),
+  cacheIncr: jest.fn(() => Promise.resolve(1)),
   cacheExpire: jest.fn(() => Promise.resolve()),
-  cacheTtl:    jest.fn(() => Promise.resolve(60)),
-  evalScript:  jest.fn(() => Promise.resolve([1, 1])), // [count, allowed=1]
+  cacheTtl: jest.fn(() => Promise.resolve(60)),
+  evalScript: jest.fn(() => Promise.resolve([1, 1])), // [count, allowed=1]
 }));
 
 jest.unstable_mockModule('../../src/infra/db/dbClient.js', () => ({
-  db: null, dbAvailable: false, destroyDb: jest.fn(() => Promise.resolve()),
+  db: null,
+  dbAvailable: false,
+  destroyDb: jest.fn(() => Promise.resolve()),
+  pendingMigrationCount: 0,
 }));
 
 jest.unstable_mockModule('../../src/features/tts/tts.service.js', () => ({
-  synthesize: jest.fn(() => Promise.resolve({
-    buffer: Buffer.alloc(100), ext: '.wav', mimeType: 'audio/wav', fallback: false,
-  })),
+  synthesize: jest.fn(() =>
+    Promise.resolve({
+      buffer: Buffer.alloc(100),
+      ext: '.wav',
+      mimeType: 'audio/wav',
+      fallback: false,
+    })
+  ),
 }));
 
 jest.unstable_mockModule('../../src/services/audio.utils.js', () => ({
-  saveAudio:           jest.fn(() => Promise.resolve({ filepath: '/tmp/test.wav', filename: 'test.wav' })),
+  saveAudio: jest.fn(() => Promise.resolve({ filepath: '/tmp/test.wav', filename: 'test.wav' })),
   downloadTwilioMedia: jest.fn(),
-  mulawToWav:          jest.fn(b => b),
-  pcm16ToWav:          jest.fn(b => b),
+  mulawToWav: jest.fn(b => b),
+  pcm16ToWav: jest.fn(b => b),
 }));
 
 jest.unstable_mockModule('../../src/features/nlu/nlu.service.js', () => ({
-  understand: jest.fn(() => Promise.resolve({
-    ok: true, intent: 'list_events', confidence: 0.9, subject: '',
-    isoDate: null, isoTime: null, needsClarification: false, missing: [], errors: [], strategy: 'mock',
-  })),
+  understand: jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      intent: 'list_events',
+      confidence: 0.9,
+      subject: '',
+      isoDate: null,
+      isoTime: null,
+      needsClarification: false,
+      missing: [],
+      errors: [],
+      strategy: 'mock',
+    })
+  ),
 }));
 
 jest.unstable_mockModule('../../src/features/responder/responder.service.js', () => ({
   autoReply: jest.fn(() => Promise.resolve('Réponse mockée')),
-  getTones:  jest.fn(() => ['friendly', 'pro', 'sec', 'sarcastique', 'wolf-inc']),
+  getTones: jest.fn(() => ['friendly', 'pro', 'sec', 'sarcastique', 'wolf-inc']),
 }));
 
 jest.unstable_mockModule('../../src/features/agent/agent.service.js', () => ({
-  dispatch: jest.fn(() => Promise.resolve({ ok: true, message: 'Vous n\'avez aucun rendez-vous.' })),
+  dispatch: jest.fn(() => Promise.resolve({ ok: true, message: "Vous n'avez aucun rendez-vous." })),
 }));
 
 // ── Import app after mocks ────────────────────────────────────────────────────
@@ -100,7 +125,8 @@ describe('GET /tones', () => {
 
 describe('POST /twilio/voice', () => {
   test('returns TwiML with Gather on valid call', async () => {
-    const res = await request.post('/twilio/voice')
+    const res = await request
+      .post('/twilio/voice')
       .send({ CallSid: 'CA_test_voice', From: '+33600000001' });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/xml/);
@@ -121,8 +147,10 @@ describe('POST /twilio/voice', () => {
 describe('POST /twilio/gather', () => {
   test('processes speech and returns TwiML', async () => {
     const res = await request.post('/twilio/gather').send({
-      CallSid: 'CA_gather_test', From: '+33600000002',
-      SpeechResult: 'liste mes rendez-vous', Confidence: '0.95',
+      CallSid: 'CA_gather_test',
+      From: '+33600000002',
+      SpeechResult: 'liste mes rendez-vous',
+      Confidence: '0.95',
     });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/xml/);
@@ -130,8 +158,10 @@ describe('POST /twilio/gather', () => {
 
   test('detects English locale in TwiML', async () => {
     const res = await request.post('/twilio/gather').send({
-      CallSid: 'CA_gather_en', From: '+33600000020',
-      SpeechResult: 'Please list my appointments tomorrow', Confidence: '0.97',
+      CallSid: 'CA_gather_en',
+      From: '+33600000020',
+      SpeechResult: 'Please list my appointments tomorrow',
+      Confidence: '0.97',
     });
     expect(res.status).toBe(200);
     expect(res.text).toContain('language="en-US"');
@@ -139,8 +169,10 @@ describe('POST /twilio/gather', () => {
 
   test('detects Spanish locale in TwiML', async () => {
     const res = await request.post('/twilio/gather').send({
-      CallSid: 'CA_gather_es', From: '+33600000021',
-      SpeechResult: 'Hola, muéstrame mis citas por favor', Confidence: '0.92',
+      CallSid: 'CA_gather_es',
+      From: '+33600000021',
+      SpeechResult: 'Hola, muéstrame mis citas por favor',
+      Confidence: '0.92',
     });
     expect(res.status).toBe(200);
     expect(res.text).toContain('language="es-ES"');
@@ -148,8 +180,10 @@ describe('POST /twilio/gather', () => {
 
   test('detects Arabic locale in TwiML', async () => {
     const res = await request.post('/twilio/gather').send({
-      CallSid: 'CA_gather_ar', From: '+33600000022',
-      SpeechResult: 'مرحبا، أريد معرفة مواعيدي', Confidence: '0.95',
+      CallSid: 'CA_gather_ar',
+      From: '+33600000022',
+      SpeechResult: 'مرحبا، أريد معرفة مواعيدي',
+      Confidence: '0.95',
     });
     expect(res.status).toBe(200);
     expect(res.text).toContain('language="ar-SA"');
@@ -157,7 +191,8 @@ describe('POST /twilio/gather', () => {
 
   test('handles empty SpeechResult gracefully', async () => {
     const res = await request.post('/twilio/gather').send({
-      CallSid: 'CA_empty_speech', From: '+33600000003',
+      CallSid: 'CA_empty_speech',
+      From: '+33600000003',
     });
     expect(res.status).toBe(200);
     expect(res.text).toContain('<?xml');
@@ -170,13 +205,15 @@ describe('POST /twilio/gather', () => {
 
 describe('POST /twilio/status', () => {
   test('returns 204 on call completed', async () => {
-    const res = await request.post('/twilio/status')
+    const res = await request
+      .post('/twilio/status')
       .send({ CallSid: 'CA_status_test', CallStatus: 'completed' });
     expect(res.status).toBe(204);
   });
 
   test('returns 204 on call failed', async () => {
-    const res = await request.post('/twilio/status')
+    const res = await request
+      .post('/twilio/status')
       .send({ CallSid: 'CA_fail_test', CallStatus: 'failed' });
     expect(res.status).toBe(204);
   });
@@ -188,8 +225,7 @@ describe('POST /twilio/status', () => {
 
 describe('POST /twilio/sms', () => {
   test('returns XML response for valid SMS', async () => {
-    const res = await request.post('/twilio/sms')
-      .send({ From: '+33600000004', Body: 'Bonjour' });
+    const res = await request.post('/twilio/sms').send({ From: '+33600000004', Body: 'Bonjour' });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/xml/);
     expect(res.text).toContain('<Response>');

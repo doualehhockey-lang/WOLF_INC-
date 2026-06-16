@@ -9,8 +9,8 @@ import { jest } from '@jest/globals';
 jest.unstable_mockModule('../../src/core/logger.js', () => ({
   childLogger: () => ({
     debug: jest.fn(),
-    info:  jest.fn(),
-    warn:  jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
     error: jest.fn(),
   }),
 }));
@@ -18,10 +18,10 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 // Config is a plain mutable object — individual tests can override properties.
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
-    WHISPER_BACKEND:    'local-server',
+    WHISPER_BACKEND: 'local-server',
     WHISPER_SERVER_URL: 'http://localhost:9000/transcribe',
-    WHISPER_TIMEOUT:    15_000,
-    OPENAI_API_KEY:     'sk-test-openai',
+    WHISPER_TIMEOUT: 15_000,
+    OPENAI_API_KEY: 'sk-test-openai',
   },
 }));
 
@@ -31,18 +31,20 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest:   jest.fn(),
-  recordFailure:   jest.fn(),
-  recordLatency:   jest.fn(),
+  recordRequest: jest.fn(),
+  recordFailure: jest.fn(),
+  recordLatency: jest.fn(),
   setCircuitState: jest.fn(),
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 
-const { _makeTranscribeWav }                             = await import('../../src/services/whisper.client.js');
-const { CircuitBreaker, CircuitOpenError, TimeoutError, HttpError } = await import('../../src/services/circuitBreaker.js');
-const metrics                                            = await import('../../src/services/metrics.js');
-const { config }                                         = await import('../../src/core/config.js');
+const { _makeTranscribeWav } = await import('../../src/services/whisper.client.js');
+const { CircuitBreaker, CircuitOpenError, TimeoutError, HttpError } =
+  await import('../../src/services/circuitBreaker.js');
+const metrics = await import('../../src/services/metrics.js');
+const { config } = await import('../../src/core/config.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -52,7 +54,7 @@ const validWav = Buffer.alloc(100, 0);
 /** Simulate a successful HTTP response with JSON body. */
 function okResponse(text) {
   return {
-    ok:   true,
+    ok: true,
     status: 200,
     json: async () => ({ text }),
     text: async () => JSON.stringify({ text }),
@@ -62,10 +64,12 @@ function okResponse(text) {
 /** Simulate a failing HTTP response. */
 function errResponse(status, body = 'error') {
   return {
-    ok:     false,
+    ok: false,
     status,
-    json:   async () => { throw new Error('not JSON'); },
-    text:   async () => body,
+    json: async () => {
+      throw new Error('not JSON');
+    },
+    text: async () => body,
   };
 }
 
@@ -79,16 +83,23 @@ function errResponse(status, body = 'error') {
 function makeClient(breakerOverrides = {}, retryOverrides = {}) {
   let fakeNow = 1_000_000;
   const cb = new CircuitBreaker('whisper-test', {
-    failureThreshold:   5,
+    failureThreshold: 5,
     errorRateThreshold: 0.5,
-    minCalls:           10,
-    windowMs:           60_000,
-    openDurationMs:     10_000,
+    minCalls: 10,
+    windowMs: 60_000,
+    openDurationMs: 10_000,
     now: () => fakeNow,
     ...breakerOverrides,
   });
-  const transcribeWav = _makeTranscribeWav(cb, { maxRetries: 2, baseMs: 1, maxMs: 5, ...retryOverrides });
-  const advance       = (ms) => { fakeNow += ms; };
+  const transcribeWav = _makeTranscribeWav(cb, {
+    maxRetries: 2,
+    baseMs: 1,
+    maxMs: 5,
+    ...retryOverrides,
+  });
+  const advance = ms => {
+    fakeNow += ms;
+  };
   return { transcribeWav, cb, advance };
 }
 
@@ -136,7 +147,7 @@ describe('Success — local-server backend', () => {
   test('trims surrounding whitespace from transcription', async () => {
     const { transcribeWav } = makeClient();
     mockApiFetch.mockResolvedValueOnce({
-      ok:   true,
+      ok: true,
       json: async () => ({ text: '  hello   ' }),
       text: async () => '',
     });
@@ -145,22 +156,38 @@ describe('Success — local-server backend', () => {
 
   test('falls back through json field aliases (transcription, result, transcript)', async () => {
     const { transcribeWav: tw1 } = makeClient();
-    mockApiFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ transcription: 'a' }), text: async () => '' });
+    mockApiFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ transcription: 'a' }),
+      text: async () => '',
+    });
     expect(await tw1(validWav)).toBe('a');
 
     const { transcribeWav: tw2 } = makeClient();
-    mockApiFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ result: 'b' }), text: async () => '' });
+    mockApiFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ result: 'b' }),
+      text: async () => '',
+    });
     expect(await tw2(validWav)).toBe('b');
 
     const { transcribeWav: tw3 } = makeClient();
-    mockApiFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ transcript: 'c' }), text: async () => '' });
+    mockApiFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ transcript: 'c' }),
+      text: async () => '',
+    });
     expect(await tw3(validWav)).toBe('c');
   });
 
   test('throws on empty transcription response', async () => {
     // Use maxRetries:0 — an empty-text 200 is a logic error, not a transient network fault
     const { transcribeWav } = makeClient({}, { maxRetries: 0 });
-    mockApiFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ text: '   ' }), text: async () => '' });
+    mockApiFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ text: '   ' }),
+      text: async () => '',
+    });
     await expect(transcribeWav(validWav)).rejects.toThrow('empty response');
   });
 });
@@ -170,7 +197,9 @@ describe('Success — local-server backend', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Success — openai backend', () => {
-  beforeEach(() => { config.WHISPER_BACKEND = 'openai'; });
+  beforeEach(() => {
+    config.WHISPER_BACKEND = 'openai';
+  });
 
   test('returns transcription from OpenAI response', async () => {
     const { transcribeWav } = makeClient();
@@ -192,7 +221,9 @@ describe('Success — openai backend', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Mock backend', () => {
-  beforeEach(() => { config.WHISPER_BACKEND = 'mock'; });
+  beforeEach(() => {
+    config.WHISPER_BACKEND = 'mock';
+  });
 
   test('returns a non-empty phrase without calling apiFetch', async () => {
     const { transcribeWav } = makeClient();
@@ -221,7 +252,7 @@ describe('Timeout', () => {
   const hangFn = (_url, opts) =>
     new Promise((_, reject) => {
       opts.signal.addEventListener('abort', () =>
-        reject(new DOMException('Aborted', 'AbortError')),
+        reject(new DOMException('Aborted', 'AbortError'))
       );
     });
 
@@ -293,12 +324,12 @@ describe('Retry on 5xx', () => {
 describe('No retry on 4xx', () => {
   test.each([400, 401, 403, 404, 422, 429])(
     'does NOT retry on HTTP %i — apiFetch called exactly once',
-    async (status) => {
+    async status => {
       const { transcribeWav } = makeClient({ failureThreshold: 10 });
       mockApiFetch.mockResolvedValueOnce(errResponse(status));
       await expect(transcribeWav(validWav)).rejects.toBeInstanceOf(HttpError);
       expect(mockApiFetch).toHaveBeenCalledTimes(1);
-    },
+    }
   );
 
   test('records http_4xx reason in metrics', async () => {
@@ -465,7 +496,10 @@ describe('Circuit breaker: concurrent probe race', () => {
     // Slow probe — apiFetch hangs until we resolve it
     let resolveApiFetch;
     mockApiFetch.mockImplementationOnce(
-      () => new Promise(r => { resolveApiFetch = () => r(okResponse('done')); }),
+      () =>
+        new Promise(r => {
+          resolveApiFetch = () => r(okResponse('done'));
+        })
     );
 
     const probe1 = transcribeWav(validWav); // starts probe, _halfOpenProbeInFlight=true
@@ -562,7 +596,8 @@ describe('Prometheus metrics', () => {
     config.WHISPER_BACKEND = 'local-server';
     const { transcribeWav } = makeClient({ failureThreshold: 100 }, { maxRetries: 0 });
     mockApiFetch.mockResolvedValueOnce({
-      ok: false, status: 503,
+      ok: false,
+      status: 503,
       text: jest.fn().mockRejectedValueOnce(new Error('body unreadable')),
     });
     await expect(transcribeWav(validWav)).rejects.toThrow('Whisper local 503');
@@ -572,7 +607,7 @@ describe('Prometheus metrics', () => {
     // Remove WHISPER_TIMEOUT from config so the ?? 15_000 default is used
     config.WHISPER_BACKEND = 'local-server';
     const saved = config.WHISPER_TIMEOUT;
-    config.WHISPER_TIMEOUT = undefined;  // triggers ?? 15_000 right side
+    config.WHISPER_TIMEOUT = undefined; // triggers ?? 15_000 right side
     const { transcribeWav } = makeClient({ failureThreshold: 100 }, { maxRetries: 0 });
     mockApiFetch.mockResolvedValueOnce(okResponse('bonjour'));
     const result = await transcribeWav(validWav);

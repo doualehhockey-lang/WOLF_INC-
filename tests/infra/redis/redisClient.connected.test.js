@@ -7,29 +7,31 @@
 import { jest } from '@jest/globals';
 
 // ── Must be set BEFORE module import (top-level await runs at import time) ────
-process.env.REDIS_URL       = 'redis://localhost:6379';
-process.env.BASE_URL        = 'http://localhost:3000';
-process.env.PHONE_SALT      = 'testsalt1234567890';
-process.env.JWT_SECRET      = 'testjwtsecret1234567890testjwtsecret1234567890';
+process.env.REDIS_URL = 'redis://localhost:6379';
+process.env.BASE_URL = 'http://localhost:3000';
+process.env.PHONE_SALT = 'testsalt1234567890';
+process.env.JWT_SECRET = 'testjwtsecret1234567890testjwtsecret1234567890';
 process.env.JWT_REFRESH_SECRET = 'testrefreshsecret1234567890testrefreshsecret';
-process.env.API_KEYS        = 'test-key';
+process.env.API_KEYS = 'test-key';
 
 // ── Capture event listeners ───────────────────────────────────────────────────
 const _listeners = {};
 
 const mockRedisInstance = {
-  connect:   jest.fn(async () => {}),
-  ping:      jest.fn(async () => 'PONG'),
-  get:       jest.fn(async (k) => null),
-  set:       jest.fn(async () => 'OK'),
-  setex:     jest.fn(async () => 'OK'),
-  del:       jest.fn(async () => 1),
-  incr:      jest.fn(async () => 1),
-  expire:    jest.fn(async () => 1),
-  ttl:       jest.fn(async () => -1),
+  connect: jest.fn(async () => {}),
+  ping: jest.fn(async () => 'PONG'),
+  get: jest.fn(async k => null),
+  set: jest.fn(async () => 'OK'),
+  setex: jest.fn(async () => 'OK'),
+  del: jest.fn(async () => 1),
+  incr: jest.fn(async () => 1),
+  expire: jest.fn(async () => 1),
+  ttl: jest.fn(async () => -1),
   getBuffer: jest.fn(async () => null),
-  eval:      jest.fn(async () => 42),
-  on:        jest.fn((event, cb) => { _listeners[event] = cb; }),
+  eval: jest.fn(async () => 42),
+  on: jest.fn((event, cb) => {
+    _listeners[event] = cb;
+  }),
 };
 
 const MockRedis = jest.fn(() => mockRedisInstance);
@@ -42,6 +44,7 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   rateLimitCounter: { inc: jest.fn() },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
@@ -65,10 +68,13 @@ const {
 
 describe('redisClient — connected initialization', () => {
   test('creates Redis instance with REDIS_URL', () => {
-    expect(MockRedis).toHaveBeenCalledWith('redis://localhost:6379', expect.objectContaining({
-      maxRetriesPerRequest: 3,
-      lazyConnect: true,
-    }));
+    expect(MockRedis).toHaveBeenCalledWith(
+      'redis://localhost:6379',
+      expect.objectContaining({
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+      })
+    );
   });
 
   test('calls connect() and ping() on startup', () => {

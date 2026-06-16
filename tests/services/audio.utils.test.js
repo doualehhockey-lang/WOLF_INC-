@@ -10,17 +10,17 @@ jest.unstable_mockModule('../../src/core/config.js', () => ({
 }));
 
 // ── Mock fs/promises ──────────────────────────────────────────────────────────
-const mockMkdir     = jest.fn(async () => {});
+const mockMkdir = jest.fn(async () => {});
 const mockWriteFile = jest.fn(async () => {});
-const mockReaddir   = jest.fn(async () => []);
-const mockUnlink    = jest.fn(async () => {});
-const mockStat      = jest.fn(async () => ({ mtimeMs: Date.now() }));
+const mockReaddir = jest.fn(async () => []);
+const mockUnlink = jest.fn(async () => {});
+const mockStat = jest.fn(async () => ({ mtimeMs: Date.now() }));
 jest.unstable_mockModule('fs/promises', () => ({
-  mkdir:    mockMkdir,
+  mkdir: mockMkdir,
   writeFile: mockWriteFile,
-  readdir:  mockReaddir,
-  unlink:   mockUnlink,
-  stat:     mockStat,
+  readdir: mockReaddir,
+  unlink: mockUnlink,
+  stat: mockStat,
 }));
 
 // ── Mock global fetch ─────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ describe('mulawToWav', () => {
   });
 
   test('returns a Buffer', () => {
-    const mulaw = Buffer.alloc(10, 0x7F);
+    const mulaw = Buffer.alloc(10, 0x7f);
     expect(Buffer.isBuffer(mulawToWav(mulaw))).toBe(true);
   });
 
@@ -102,13 +102,13 @@ describe('mulawToWav', () => {
   });
 
   test('output length is 44 + (input.length * 2)', () => {
-    const mulaw = Buffer.alloc(100, 0x7F);
+    const mulaw = Buffer.alloc(100, 0x7f);
     // mulawToWav converts each byte to 2-byte PCM, then wraps in WAV (44-byte header)
     expect(mulawToWav(mulaw).length).toBe(44 + 100 * 2);
   });
 
   test('decodes 0xFF mulaw byte without throwing', () => {
-    const mulaw = Buffer.from([0xFF]);
+    const mulaw = Buffer.from([0xff]);
     expect(() => mulawToWav(mulaw)).not.toThrow();
   });
 
@@ -133,7 +133,8 @@ describe('downloadTwilioMedia', () => {
   test('adds Authorization header when accountSid and authToken provided', async () => {
     const fakeBuf = Buffer.alloc(10);
     mockFetch.mockResolvedValueOnce({
-      ok: true, arrayBuffer: async () => fakeBuf.buffer,
+      ok: true,
+      arrayBuffer: async () => fakeBuf.buffer,
     });
     await downloadTwilioMedia(URL, 'ACxxx', 'token-yyy');
     const [, opts] = mockFetch.mock.calls[0];
@@ -145,7 +146,8 @@ describe('downloadTwilioMedia', () => {
   test('does NOT add Authorization header when credentials are absent', async () => {
     const fakeBuf = Buffer.alloc(10);
     mockFetch.mockResolvedValueOnce({
-      ok: true, arrayBuffer: async () => fakeBuf.buffer,
+      ok: true,
+      arrayBuffer: async () => fakeBuf.buffer,
     });
     await downloadTwilioMedia(URL);
     const [, opts] = mockFetch.mock.calls[0];
@@ -158,9 +160,10 @@ describe('downloadTwilioMedia', () => {
   });
 
   test('returns Buffer on success', async () => {
-    const fakeBuf = Buffer.alloc(20, 0xCD);
+    const fakeBuf = Buffer.alloc(20, 0xcd);
     mockFetch.mockResolvedValueOnce({
-      ok: true, arrayBuffer: async () => fakeBuf.buffer,
+      ok: true,
+      arrayBuffer: async () => fakeBuf.buffer,
     });
     const result = await downloadTwilioMedia(URL);
     expect(Buffer.isBuffer(result)).toBe(true);
@@ -178,7 +181,7 @@ describe('saveAudio', () => {
   });
 
   test('calls writeFile with the buffer', async () => {
-    const buf = Buffer.alloc(10, 0xAB);
+    const buf = Buffer.alloc(10, 0xab);
     await saveAudio(buf, '/tmp/audio', 'wav');
     expect(mockWriteFile).toHaveBeenCalledWith(expect.any(String), buf);
   });

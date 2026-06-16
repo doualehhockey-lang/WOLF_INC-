@@ -9,8 +9,8 @@ import { jest } from '@jest/globals';
 jest.unstable_mockModule('../../src/core/logger.js', () => ({
   childLogger: () => ({
     debug: jest.fn(),
-    info:  jest.fn(),
-    warn:  jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
     error: jest.fn(),
   }),
 }));
@@ -18,12 +18,12 @@ jest.unstable_mockModule('../../src/core/logger.js', () => ({
 // Config — mutable plain object; individual tests can override TTS_PROVIDER.
 jest.unstable_mockModule('../../src/core/config.js', () => ({
   config: {
-    TTS_PROVIDER:       'elevenlabs',
+    TTS_PROVIDER: 'elevenlabs',
     ELEVENLABS_API_KEY: 'el-test-key',
-    ELEVENLABS_VOICE_ID:'21m00Tcm4TlvDq8ikWAM',
-    AZURE_TTS_KEY:      'azure-test-key',
-    AZURE_TTS_REGION:   'eastus',
-    AZURE_TTS_VOICE:    'fr-FR-DeniseNeural',
+    ELEVENLABS_VOICE_ID: '21m00Tcm4TlvDq8ikWAM',
+    AZURE_TTS_KEY: 'azure-test-key',
+    AZURE_TTS_REGION: 'eastus',
+    AZURE_TTS_VOICE: 'fr-FR-DeniseNeural',
   },
 }));
 
@@ -33,10 +33,11 @@ jest.unstable_mockModule('../../src/infra/http/httpClient.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/metrics.js', () => ({
-  recordRequest:   jest.fn(),
-  recordFailure:   jest.fn(),
-  recordLatency:   jest.fn(),
+  recordRequest: jest.fn(),
+  recordFailure: jest.fn(),
+  recordLatency: jest.fn(),
   setCircuitState: jest.fn(),
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 const mockSynthesizeMock = jest.fn(async () => Buffer.alloc(44, 0));
@@ -51,10 +52,11 @@ jest.unstable_mockModule('../../src/features/tts/providers/piper.js', () => ({
 
 // ── Import AFTER mocks ────────────────────────────────────────────────────────
 
-const { _makeSynthesize }                                            = await import('../../src/services/tts.client.js');
-const { CircuitBreaker, CircuitOpenError, TimeoutError, HttpError }  = await import('../../src/services/circuitBreaker.js');
-const metrics                                                         = await import('../../src/services/metrics.js');
-const { config }                                                      = await import('../../src/core/config.js');
+const { _makeSynthesize } = await import('../../src/services/tts.client.js');
+const { CircuitBreaker, CircuitOpenError, TimeoutError, HttpError } =
+  await import('../../src/services/circuitBreaker.js');
+const metrics = await import('../../src/services/metrics.js');
+const { config } = await import('../../src/core/config.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -64,19 +66,19 @@ const fakeAudio = () => new ArrayBuffer(100);
 /** Simulate a successful audio HTTP response. */
 function okAudioResponse() {
   return {
-    ok:          true,
-    status:      200,
+    ok: true,
+    status: 200,
     arrayBuffer: async () => fakeAudio(),
-    text:        async () => 'ok',
+    text: async () => 'ok',
   };
 }
 
 /** Simulate a successful plain-text response (Azure token). */
 function okTextResponse(body = 'bearer-token-xyz') {
   return {
-    ok:          true,
-    status:      200,
-    text:        async () => body,
+    ok: true,
+    status: 200,
+    text: async () => body,
     arrayBuffer: async () => new ArrayBuffer(0),
   };
 }
@@ -84,9 +86,9 @@ function okTextResponse(body = 'bearer-token-xyz') {
 /** Simulate an HTTP error response. */
 function errResponse(status, body = 'error') {
   return {
-    ok:          false,
+    ok: false,
     status,
-    text:        async () => body,
+    text: async () => body,
     arrayBuffer: async () => new ArrayBuffer(0),
   };
 }
@@ -94,9 +96,7 @@ function errResponse(status, body = 'error') {
 /** apiFetch that blocks until its AbortSignal fires. */
 const hangFn = (_url, opts) =>
   new Promise((_, reject) => {
-    opts.signal.addEventListener('abort', () =>
-      reject(new DOMException('Aborted', 'AbortError')),
-    );
+    opts.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
   });
 
 /**
@@ -109,16 +109,18 @@ const hangFn = (_url, opts) =>
 function makeClient(breakerOverrides = {}, retryOverrides = {}) {
   let fakeNow = 1_000_000;
   const cb = new CircuitBreaker('tts-test', {
-    failureThreshold:   5,
+    failureThreshold: 5,
     errorRateThreshold: 0.5,
-    minCalls:           10,
-    windowMs:           60_000,
-    openDurationMs:     10_000,
+    minCalls: 10,
+    windowMs: 60_000,
+    openDurationMs: 10_000,
     now: () => fakeNow,
     ...breakerOverrides,
   });
   const synthesize = _makeSynthesize(cb, { maxRetries: 2, baseMs: 1, maxMs: 5, ...retryOverrides });
-  const advance    = (ms) => { fakeNow += ms; };
+  const advance = ms => {
+    fakeNow += ms;
+  };
   return { synthesize, cb, advance };
 }
 
@@ -200,13 +202,15 @@ describe('ElevenLabs backend', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Azure backend', () => {
-  beforeEach(() => { config.TTS_PROVIDER = 'azure'; });
+  beforeEach(() => {
+    config.TTS_PROVIDER = 'azure';
+  });
 
   test('makes two apiFetch calls (token + synthesis) and returns MP3', async () => {
     const { synthesize } = makeClient();
     mockApiFetch
-      .mockResolvedValueOnce(okTextResponse('my-token'))  // token request
-      .mockResolvedValueOnce(okAudioResponse());           // synthesis
+      .mockResolvedValueOnce(okTextResponse('my-token')) // token request
+      .mockResolvedValueOnce(okAudioResponse()); // synthesis
     const result = await synthesize('Bonjour', { locale: 'fr-FR' });
     expect(mockApiFetch).toHaveBeenCalledTimes(2);
     expect(result.ext).toBe('.mp3');
@@ -258,7 +262,9 @@ describe('Azure backend', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Mock backend', () => {
-  beforeEach(() => { config.TTS_PROVIDER = 'mock'; });
+  beforeEach(() => {
+    config.TTS_PROVIDER = 'mock';
+  });
 
   test('returns WAV buffer without calling apiFetch', async () => {
     const { synthesize } = makeClient();
@@ -279,7 +285,9 @@ describe('Mock backend', () => {
 });
 
 describe('Piper backend', () => {
-  beforeEach(() => { config.TTS_PROVIDER = 'piper'; });
+  beforeEach(() => {
+    config.TTS_PROVIDER = 'piper';
+  });
 
   test('returns WAV buffer without calling apiFetch', async () => {
     const { synthesize } = makeClient();
@@ -371,12 +379,12 @@ describe('Retry on 5xx', () => {
 describe('No retry on 4xx', () => {
   test.each([400, 401, 403, 404, 422, 429])(
     'does NOT retry on HTTP %i — apiFetch called exactly once',
-    async (status) => {
+    async status => {
       const { synthesize } = makeClient({ failureThreshold: 10 });
       mockApiFetch.mockResolvedValueOnce(errResponse(status));
       await expect(synthesize('test')).rejects.toBeInstanceOf(HttpError);
       expect(mockApiFetch).toHaveBeenCalledTimes(1);
-    },
+    }
   );
 
   test('records http_4xx failure reason in metrics', async () => {
@@ -535,11 +543,14 @@ describe('Circuit breaker: concurrent probe race', () => {
     // Slow probe — apiFetch hangs until we resolve it
     let resolveApiFetch;
     mockApiFetch.mockImplementationOnce(
-      () => new Promise(r => { resolveApiFetch = () => r(okAudioResponse()); }),
+      () =>
+        new Promise(r => {
+          resolveApiFetch = () => r(okAudioResponse());
+        })
     );
 
-    const probe1 = synthesize('slow-probe');  // starts → _halfOpenProbeInFlight = true
-    const probe2 = synthesize('concurrent');  // must be blocked immediately
+    const probe1 = synthesize('slow-probe'); // starts → _halfOpenProbeInFlight = true
+    const probe2 = synthesize('concurrent'); // must be blocked immediately
 
     await expect(probe2).rejects.toBeInstanceOf(CircuitOpenError);
 
@@ -593,9 +604,7 @@ describe('requestId propagation', () => {
   test('concurrent clients with different requestIds do not interfere', async () => {
     const { synthesize: s1 } = makeClient();
     const { synthesize: s2 } = makeClient();
-    mockApiFetch
-      .mockResolvedValueOnce(okAudioResponse())
-      .mockResolvedValueOnce(okAudioResponse());
+    mockApiFetch.mockResolvedValueOnce(okAudioResponse()).mockResolvedValueOnce(okAudioResponse());
     const [r1, r2] = await Promise.all([
       s1('text one', { requestId: 'r1' }),
       s2('text two', { requestId: 'r2' }),
@@ -672,7 +681,8 @@ describe('_elevenlabs — res.text().catch(() => "") (line 59)', () => {
     config.TTS_PROVIDER = 'elevenlabs';
     const { synthesize } = makeClient({ failureThreshold: 100 }, { maxRetries: 0 });
     mockApiFetch.mockResolvedValueOnce({
-      ok: false, status: 500,
+      ok: false,
+      status: 500,
       text: jest.fn().mockRejectedValueOnce(new Error('unreadable')),
     });
     await expect(synthesize('test', {})).rejects.toThrow('ElevenLabs 500');
@@ -680,12 +690,15 @@ describe('_elevenlabs — res.text().catch(() => "") (line 59)', () => {
 });
 
 describe('_azure — res.text().catch(() => "") (lines 84, 106)', () => {
-  beforeEach(() => { config.TTS_PROVIDER = 'azure'; });
+  beforeEach(() => {
+    config.TTS_PROVIDER = 'azure';
+  });
 
   test('catch handler fires when token request text() rejects (line 84)', async () => {
     const { synthesize } = makeClient({ failureThreshold: 100 }, { maxRetries: 0 });
     mockApiFetch.mockResolvedValueOnce({
-      ok: false, status: 401,
+      ok: false,
+      status: 401,
       text: jest.fn().mockRejectedValueOnce(new Error('unreadable')),
     });
     await expect(synthesize('test', {})).rejects.toThrow('Azure token 401');
@@ -696,7 +709,8 @@ describe('_azure — res.text().catch(() => "") (lines 84, 106)', () => {
     mockApiFetch
       .mockResolvedValueOnce({ ok: true, text: jest.fn().mockResolvedValueOnce('tok') })
       .mockResolvedValueOnce({
-        ok: false, status: 500,
+        ok: false,
+        status: 500,
         text: jest.fn().mockRejectedValueOnce(new Error('unreadable')),
       });
     await expect(synthesize('test', {})).rejects.toThrow('Azure TTS 500');

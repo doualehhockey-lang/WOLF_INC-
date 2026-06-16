@@ -10,24 +10,25 @@ jest.unstable_mockModule('../../../src/core/logger.js', () => ({
 }));
 
 jest.unstable_mockModule('../../../src/core/config.js', () => ({
-  config: { CLAUDE_API_KEY: 'test-key', CLAUDE_MODEL: 'claude-haiku-4-5-20251001', OLLAMA_MODEL: 'llama3' },
+  config: { CLAUDE_API_KEY: 'test-key', CLAUDE_MODEL: 'claude-haiku-4-5-20251001' },
 }));
 
 const mockTimer = jest.fn();
 jest.unstable_mockModule('../../../src/core/metrics.js', () => ({
   nluLatency: { startTimer: jest.fn(() => mockTimer) },
+  auditLogFailures: { inc: jest.fn() },
 }));
 
 jest.unstable_mockModule('../../../src/features/agent/intent.normalizer.js', () => ({
   normalizeIntent: jest.fn(i => i),
 }));
 
-const mockBuildContext    = jest.fn(async () => '');
+const mockBuildContext = jest.fn(async () => '');
 const mockGetLastEntities = jest.fn(async () => null);
 const mockDetectShortAnswer = jest.fn(() => null);
 jest.unstable_mockModule('../../../src/features/memory/memory.service.js', () => ({
-  buildContext:      mockBuildContext,
-  getLastEntities:   mockGetLastEntities,
+  buildContext: mockBuildContext,
+  getLastEntities: mockGetLastEntities,
   detectShortAnswer: mockDetectShortAnswer,
 }));
 
@@ -36,12 +37,12 @@ jest.unstable_mockModule('../../../src/services/claude.client.js', () => ({
   analyze: mockAnalyzeClaude,
 }));
 
-jest.unstable_mockModule('../../../src/services/ollama.client.js', () => ({
-  analyze: jest.fn(),
-}));
-
 const mockResolveDate = jest.fn(async () => ({
-  date: null, time: null, iso: null, hasDate: false, hasTime: false,
+  date: null,
+  time: null,
+  iso: null,
+  hasDate: false,
+  hasTime: false,
 }));
 jest.unstable_mockModule('../../../src/services/dateparser.js', () => ({
   resolve: mockResolveDate,
@@ -50,7 +51,16 @@ jest.unstable_mockModule('../../../src/services/dateparser.js', () => ({
 const { understand } = await import('../../../src/features/nlu/nlu.service.js');
 
 function llmOk(overrides = {}) {
-  return { intent: 'list_events', subject: '', date: '', time: '', confidence: 0.9, errors: [], strategy: 'claude', ...overrides };
+  return {
+    intent: 'list_events',
+    subject: '',
+    date: '',
+    time: '',
+    confidence: 0.9,
+    errors: [],
+    strategy: 'claude',
+    ...overrides,
+  };
 }
 
 beforeEach(() => {
@@ -58,7 +68,13 @@ beforeEach(() => {
   mockBuildContext.mockResolvedValue('');
   mockGetLastEntities.mockResolvedValue(null);
   mockDetectShortAnswer.mockReturnValue(null);
-  mockResolveDate.mockResolvedValue({ date: null, time: null, iso: null, hasDate: false, hasTime: false });
+  mockResolveDate.mockResolvedValue({
+    date: null,
+    time: null,
+    iso: null,
+    hasDate: false,
+    hasTime: false,
+  });
   mockAnalyzeClaude.mockResolvedValue(llmOk());
 });
 
@@ -69,9 +85,13 @@ beforeEach(() => {
 describe('_resolveDateTime — dateparser throws (line 36)', () => {
   test('returns best-effort result when dateparser resolve throws', async () => {
     mockResolveDate.mockRejectedValueOnce(new Error('dateparser unavailable'));
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'create_event', date: '2026-06-15', time: '10:00',
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'create_event',
+        date: '2026-06-15',
+        time: '10:00',
+      })
+    );
 
     const result = await understand('réunion le 15 juin à 10h', 'CA-dp-catch');
     // Should not throw and should have some date/time info
@@ -82,9 +102,13 @@ describe('_resolveDateTime — dateparser throws (line 36)', () => {
 
   test('does not throw when resolve rejects with non-Error', async () => {
     mockResolveDate.mockRejectedValueOnce('string-rejection');
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'create_event', date: 'demain', time: null,
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'create_event',
+        date: 'demain',
+        time: null,
+      })
+    );
 
     await expect(understand('réunion demain', 'CA-dp-str')).resolves.toBeDefined();
   });
@@ -98,7 +122,10 @@ describe('_resolveImplicit — implicit-update branch (lines 71-75)', () => {
   test('resolves "modifier" as implicit update_event', async () => {
     mockDetectShortAnswer.mockReturnValue(null);
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'create_event', isoDate: '2026-06-10', isoTime: '09:00', subject: 'dentiste',
+      intent: 'create_event',
+      isoDate: '2026-06-10',
+      isoTime: '09:00',
+      subject: 'dentiste',
     });
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'unknown', confidence: 0.2 }));
 
@@ -110,7 +137,10 @@ describe('_resolveImplicit — implicit-update branch (lines 71-75)', () => {
   test('resolves "changer" as implicit update_event', async () => {
     mockDetectShortAnswer.mockReturnValue(null);
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'create_event', isoDate: '2026-07-01', isoTime: null, subject: null,
+      intent: 'create_event',
+      isoDate: '2026-07-01',
+      isoTime: null,
+      subject: null,
     });
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'unknown', confidence: 0.15 }));
 
@@ -122,7 +152,10 @@ describe('_resolveImplicit — implicit-update branch (lines 71-75)', () => {
   test('resolves "décaler" (normalised) as implicit update_event', async () => {
     mockDetectShortAnswer.mockReturnValue(null);
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'create_event', isoDate: '2026-06-15', isoTime: '14:00', subject: 'réunion',
+      intent: 'create_event',
+      isoDate: '2026-06-15',
+      isoTime: '14:00',
+      subject: 'réunion',
     });
     mockAnalyzeClaude.mockResolvedValueOnce(llmOk({ intent: 'unknown', confidence: 0.1 }));
 
@@ -135,12 +168,19 @@ describe('_resolveImplicit — implicit-update branch (lines 71-75)', () => {
   test('preserves date/time from nlu when present in implicit-update', async () => {
     mockDetectShortAnswer.mockReturnValue(null);
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'create_event', isoDate: '2026-06-01', isoTime: '09:00', subject: null,
+      intent: 'create_event',
+      isoDate: '2026-06-01',
+      isoTime: '09:00',
+      subject: null,
     });
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'unknown', confidence: 0.2,
-      date: '2026-06-20', time: '15:00', // nlu has values → should be kept
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'unknown',
+        confidence: 0.2,
+        date: '2026-06-20',
+        time: '15:00', // nlu has values → should be kept
+      })
+    );
 
     const result = await understand('repousser à vendredi', 'CA-implicit-repousse');
     expect(result._resolved).toBe('implicit-update');
@@ -153,11 +193,19 @@ describe('_resolveImplicit — implicit-update branch (lines 71-75)', () => {
   test('falls back to lastEntities date when nlu has no date in implicit-update', async () => {
     mockDetectShortAnswer.mockReturnValue(null);
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'create_event', isoDate: '2026-08-05', isoTime: '10:30', subject: null,
+      intent: 'create_event',
+      isoDate: '2026-08-05',
+      isoTime: '10:30',
+      subject: null,
     });
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'unknown', confidence: 0.2, date: '', time: '', // nlu has no date
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'unknown',
+        confidence: 0.2,
+        date: '',
+        time: '', // nlu has no date
+      })
+    );
 
     const result = await understand('déplacer ce créneau', 'CA-implicit-deplace');
     expect(result._resolved).toBe('implicit-update');
@@ -174,11 +222,17 @@ describe('_resolveImplicit — no implicit resolution for high confidence', () =
   test('does not apply implicit-update when confidence >= 0.4 and intent is known', async () => {
     mockDetectShortAnswer.mockReturnValue(null);
     mockGetLastEntities.mockResolvedValueOnce({
-      intent: 'create_event', isoDate: '2026-06-01', isoTime: null, subject: null,
+      intent: 'create_event',
+      isoDate: '2026-06-01',
+      isoTime: null,
+      subject: null,
     });
-    mockAnalyzeClaude.mockResolvedValueOnce(llmOk({
-      intent: 'list_events', confidence: 0.95, // high confidence known intent
-    }));
+    mockAnalyzeClaude.mockResolvedValueOnce(
+      llmOk({
+        intent: 'list_events',
+        confidence: 0.95, // high confidence known intent
+      })
+    );
 
     const result = await understand('modifier mon agenda', 'CA-no-implicit');
     // High confidence known intent → no implicit resolution
